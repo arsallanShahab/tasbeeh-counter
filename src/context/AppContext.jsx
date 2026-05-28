@@ -32,7 +32,15 @@ export const AppProvider = ({ children }) => {
       setLists(store.get("lists", SEED_LISTS));
       setPinned(store.get("pinned", ["after-salah", "istighfar-100", "durood-100"]));
       setStats(store.get("stats", { total: 0, byDate: {}, perDhikr: {} }));
-      setSettings({ ...DEFAULT_SETTINGS, ...store.get("settings", {}) });
+      
+      // Load and migrate settings if legacy format
+      const loadedSettings = store.get("settings", {});
+      if (loadedSettings.theme === "dark" || loadedSettings.theme === "light") {
+        loadedSettings.appearance = loadedSettings.theme;
+        loadedSettings.theme = "emerald";
+      }
+      
+      setSettings({ ...DEFAULT_SETTINGS, ...loadedSettings });
       setLoaded(true);
     };
     loadState();

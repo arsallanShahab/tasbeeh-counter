@@ -35,7 +35,8 @@ export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, h
 
 export const DEFAULT_SETTINGS = {
   lang: "both",
-  theme: "dark",
+  theme: "emerald",
+  appearance: "dark",
   translit: true,
   haptics: true,
   sound: false,
@@ -48,18 +49,96 @@ export const DEFAULT_SETTINGS = {
 };
 
 export const THEMES = {
-  dark: {
-    "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820",
-    "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee",
-    "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c",
-    "--gold": "#e0bd5c", "--danger": "#e07a6b",
+  classic: {
+    name: "Classic Sabḥa",
+    dark: {
+      "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820",
+      "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee",
+      "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c",
+      "--gold": "#e0bd5c", "--danger": "#e07a6b",
+    },
+    light: {
+      "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff",
+      "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a",
+      "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6",
+      "--gold": "#b0851f", "--danger": "#c14a3a",
+    }
   },
-  light: {
-    "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff",
-    "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a",
-    "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6",
-    "--gold": "#b0851f", "--danger": "#c14a3a",
+  emerald: {
+    name: "Emerald Forest",
+    dark: {
+      "--bg": "#04100b", "--bg2": "#061a12", "--surface": "#09261a",
+      "--surface2": "#0e3827", "--line": "#144a34", "--text": "#ecfdf5",
+      "--muted": "#52b28c", "--primary": "#10b981", "--primary-dim": "#064e3b",
+      "--gold": "#fbbf24", "--danger": "#f87171",
+    },
+    light: {
+      "--bg": "#f0fdf4", "--bg2": "#dcfce7", "--surface": "#ffffff",
+      "--surface2": "#f0fdf4", "--line": "#bbf7d0", "--text": "#064e3b",
+      "--muted": "#166534", "--primary": "#047857", "--primary-dim": "#a7f3d0",
+      "--gold": "#d97706", "--danger": "#dc2626",
+    }
   },
+  lapis: {
+    name: "Ocean Lapis",
+    dark: {
+      "--bg": "#040d1a", "--bg2": "#06152b", "--surface": "#092040",
+      "--surface2": "#0f305c", "--line": "#15437d", "--text": "#f0f7ff",
+      "--muted": "#6c93c4", "--primary": "#3b82f6", "--primary-dim": "#1e3a8a",
+      "--gold": "#fbbf24", "--danger": "#f87171",
+    },
+    light: {
+      "--bg": "#f0f9ff", "--bg2": "#e0f2fe", "--surface": "#ffffff",
+      "--surface2": "#f0f9ff", "--line": "#bae6fd", "--text": "#1e3a8a",
+      "--muted": "#0369a1", "--primary": "#1d4ed8", "--primary-dim": "#bfdbfe",
+      "--gold": "#d97706", "--danger": "#dc2626",
+    }
+  },
+  rose: {
+    name: "Royal Rose",
+    dark: {
+      "--bg": "#12040a", "--bg2": "#1c0610", "--surface": "#2b0a19",
+      "--surface2": "#3d0f25", "--line": "#541433", "--text": "#fff1f2",
+      "--muted": "#c9829a", "--primary": "#f43f5e", "--primary-dim": "#4c0519",
+      "--gold": "#fbbf24", "--danger": "#f87171",
+    },
+    light: {
+      "--bg": "#fff5f5", "--bg2": "#ffe4e6", "--surface": "#ffffff",
+      "--surface2": "#fff5f5", "--line": "#fecdd3", "--text": "#4c0519",
+      "--muted": "#be123c", "--primary": "#be123c", "--primary-dim": "#fecdd3",
+      "--gold": "#d97706", "--danger": "#dc2626",
+    }
+  },
+  amber: {
+    name: "Golden Amber",
+    dark: {
+      "--bg": "#120b04", "--bg2": "#1c1106", "--surface": "#2b1a09",
+      "--surface2": "#3d250d", "--line": "#543313", "--text": "#fef3c7",
+      "--muted": "#cf9d5e", "--primary": "#f59e0b", "--primary-dim": "#78350f",
+      "--gold": "#fbbf24", "--danger": "#f87171",
+    },
+    light: {
+      "--bg": "#fffbeb", "--bg2": "#fef3c7", "--surface": "#ffffff",
+      "--surface2": "#fffbeb", "--line": "#fde68a", "--text": "#78350f",
+      "--muted": "#b45309", "--primary": "#b45309", "--primary-dim": "#fde68a",
+      "--gold": "#b45309", "--danger": "#dc2626",
+    }
+  },
+  mono: {
+    name: "Slate Obsidian",
+    dark: {
+      "--bg": "#050505", "--bg2": "#0f0f0f", "--surface": "#1a1a1a",
+      "--surface2": "#262626", "--line": "#383838", "--text": "#fafafa",
+      "--muted": "#a3a3a3", "--primary": "#737373", "--primary-dim": "#262626",
+      "--gold": "#e5e5e5", "--danger": "#ef4444",
+    },
+    light: {
+      "--bg": "#fafafa", "--bg2": "#f5f5f5", "--surface": "#ffffff",
+      "--surface2": "#fafafa", "--line": "#e5e5e5", "--text": "#171717",
+      "--muted": "#525252", "--primary": "#404040", "--primary-dim": "#e5e5e5",
+      "--gold": "#a3a3a3", "--danger": "#ef4444",
+    }
+  }
 };
 
 export const BEAD_THEMES = [

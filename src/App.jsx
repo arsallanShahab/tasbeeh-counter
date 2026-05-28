@@ -7,15 +7,17 @@ import CounterView from "./components/counter/CounterView";
 import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
 import Navbar from "./components/layout/Navbar";
+import NewDhikrModal from "./components/library/NewDhikrModal";
+import NewListModal from "./components/library/NewListModal";
 
 const AppContent = () => {
-  const { loaded, view, settings } = useApp();
+  const { loaded, view, settings, modal, setModal } = useApp();
 
   if (!loaded) {
     return (
       <div 
-        className="font-body flex min-h-screen items-center justify-center bg-[#07140f]" 
-        style={{ ...THEMES.dark, background: "var(--bg)" }}
+        className="font-body flex min-h-screen items-center justify-center bg-[#030806]" 
+        style={{ ...THEMES.emerald.dark, background: "var(--bg)" }}
       >
         <p 
           className="font-arabic text-3xl text-[var(--gold)]" 
@@ -28,7 +30,8 @@ const AppContent = () => {
     );
   }
 
-  const themeVars = THEMES[settings.theme] || THEMES.dark;
+  const activeThemeGroup = THEMES[settings.theme] || THEMES.emerald;
+  const themeVars = activeThemeGroup[settings.appearance || "dark"];
 
   return (
     <div 
@@ -67,6 +70,16 @@ const AppContent = () => {
       </div>
 
       <Navbar />
+
+      {/* Render modular modals at root level for viewport positioning immune to layout boundaries */}
+      <NewDhikrModal 
+        isOpen={modal === "dhikr"} 
+        onClose={() => setModal(null)} 
+      />
+      <NewListModal 
+        isOpen={modal === "list"} 
+        onClose={() => setModal(null)} 
+      />
     </div>
   );
 };

@@ -7,7 +7,7 @@ import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
-import { BEAD_THEMES } from "../../constants/dhikrData";
+import { BEAD_THEMES, THEMES } from "../../constants/dhikrData";
 import { buildCustom } from "../../utils/theme";
 
 export const SettingsView = () => {
@@ -52,24 +52,66 @@ export const SettingsView = () => {
         </Row>
       </Card>
 
-      <Card className="px-5 py-1">
-        <div className="py-3.5">
-          <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
-            {settings.theme === "dark" ? (
-              <Moon size={19} className="text-[var(--gold)]" />
-            ) : (
+      <Card className="px-5 py-4">
+        <div className="mb-3 flex items-center justify-between font-semibold text-sm">
+          <div className="flex items-center gap-3">
+            {settings.appearance === "light" ? (
               <Sun size={19} className="text-[var(--gold)]" />
+            ) : (
+              <Moon size={19} className="text-[var(--gold)]" />
             )}
-            <span className="text-[var(--text)]">Theme</span>
+            <span className="text-[var(--text)]">Appearance</span>
           </div>
-          <Seg 
-            value={settings.theme} 
-            onChange={(v) => set("theme", v)} 
-            options={[{ v: "dark", l: "Dark" }, { v: "light", l: "Light" }]} 
-          />
+          <div className="w-36">
+            <Seg 
+              value={settings.appearance || "dark"} 
+              onChange={(v) => set("appearance", v)} 
+              options={[{ v: "dark", l: "Dark" }, { v: "light", l: "Light" }]} 
+            />
+          </div>
         </div>
-        <div className="border-t border-[var(--line)]" />
-        <div className="py-3.5">
+
+        <div className="border-t border-[var(--line)] my-3" />
+
+        <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
+          <Palette size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Theme Preset</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(THEMES).map(([key, value]) => {
+            const isSel = settings.theme === key;
+            const previewVars = value[settings.appearance || "dark"];
+            return (
+              <button
+                key={key}
+                onClick={() => set("theme", key)}
+                className="flex items-center gap-2.5 rounded-2xl border p-2.5 text-left cursor-pointer transition-all active:scale-[0.97]"
+                style={{
+                  borderColor: isSel ? "var(--primary)" : "var(--line)",
+                  background: isSel ? "var(--surface2)" : "transparent"
+                }}
+              >
+                <div 
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-black/10 shadow-sm"
+                  style={{ background: previewVars["--primary"] }}
+                >
+                  <span className="font-arabic text-[9px] text-white" dir="rtl">س</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-[var(--text)] truncate">{value.name}</p>
+                  <p className="text-[9px] text-[var(--muted)] truncate">
+                    {key === "classic" ? "Sandstone Sage" : key === "emerald" ? "Forest Mint" : key === "lapis" ? "Blue Sapphire" : key === "rose" ? "Velvet Ruby" : key === "amber" ? "Honey Amber" : "Obsidian Mono"}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-[var(--line)] my-4" />
+
+        <div>
           <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
             <Disc size={19} className="text-[var(--gold)]" />
             <span className="text-[var(--text)]">Counter style</span>

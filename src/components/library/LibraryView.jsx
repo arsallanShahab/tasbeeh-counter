@@ -2,8 +2,6 @@ import React from "react";
 import { Plus, Trash2, Pin, PinOff, Sparkles } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
-import NewDhikrModal from "./NewDhikrModal";
-import NewListModal from "./NewListModal";
 import { OCCASIONS, ICONS } from "../../constants/dhikrData";
 
 export const LibraryView = () => {
@@ -27,17 +25,17 @@ export const LibraryView = () => {
     <div className="space-y-6 anim-fade">
       <header className="flex items-center justify-between pt-2">
         <h1 className="font-display text-2xl text-[var(--text)]">Library</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2.5">
           <button 
             onClick={() => setModal("dhikr")} 
-            className="rounded-xl border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--text)] cursor-pointer hover:bg-[var(--surface2)]"
+            className="rounded-2xl border border-[var(--line)] px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-[var(--text)] font-semibold cursor-pointer hover:bg-[var(--surface2)] active:scale-[0.96] transition-all duration-300 shrink-0"
           >
             + Dhikr
           </button>
           <button 
             onClick={() => setModal("list")} 
-            className="rounded-xl px-3 py-1.5 text-sm font-medium text-white cursor-pointer active:scale-95 transition-all hover:brightness-110" 
-            style={{ background: "var(--primary)" }}
+            className="rounded-2xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white cursor-pointer shadow-lg shadow-[var(--primary)]/10 hover:shadow-[var(--primary)]/20 active:scale-[0.96] hover:brightness-105 transition-all duration-300 shrink-0" 
+            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dim))" }}
           >
             + List
           </button>
@@ -142,16 +140,6 @@ export const LibraryView = () => {
           ))}
         </div>
       </section>
-
-      {/* Render modular modals */}
-      <NewDhikrModal 
-        isOpen={modal === "dhikr"} 
-        onClose={() => setModal(null)} 
-      />
-      <NewListModal 
-        isOpen={modal === "list"} 
-        onClose={() => setModal(null)} 
-      />
     </div>
   );
 };
