@@ -295,8 +295,8 @@ export const CounterView = () => {
                   resetSession(); 
                   setComplete(false); 
                 }} 
-                className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white cursor-pointer shadow-lg shadow-[var(--primary)]/10 hover:shadow-[var(--primary)]/20 hover:brightness-105 active:scale-[0.96] transition-all duration-300" 
-                style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dim))" }}
+                className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white cursor-pointer active:scale-[0.96] transition-all duration-300 shadow-sm" 
+                style={{ background: "var(--primary)" }}
               >
                 Again
               </button>
@@ -355,8 +355,8 @@ export const CounterView = () => {
               <button 
                 onClick={() => applyTarget(customT)} 
                 disabled={!customT} 
-                className="rounded-2xl px-6 font-semibold text-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed shadow-md shadow-[var(--primary)]/10 hover:shadow-[var(--primary)]/20 active:scale-[0.96] hover:brightness-105 transition-all duration-300" 
-                style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dim))" }}
+                className="rounded-2xl px-6 font-semibold text-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed active:scale-[0.96] transition-all duration-300 shadow-sm" 
+                style={{ background: "var(--primary)" }}
               >
                 Set
               </button>

@@ -211,8 +211,8 @@ export const NewListModal = ({ isOpen, onClose }) => {
           <button 
             onClick={handleSave} 
             disabled={!isListValid}
-            className="w-full rounded-2xl py-4 font-semibold text-white cursor-pointer shadow-lg shadow-[var(--primary)]/10 hover:shadow-[var(--primary)]/20 hover:brightness-105 active:scale-[0.96] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 mt-2" 
-            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dim))" }}
+            className="w-full rounded-2xl py-4 font-semibold text-white cursor-pointer active:scale-[0.96] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 mt-2 shadow-sm" 
+            style={{ background: "var(--primary)" }}
           >
             {isListValid ? "Save & Create Set List" : "Name list & add steps"}
           </button>
