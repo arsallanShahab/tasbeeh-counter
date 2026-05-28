@@ -21,6 +21,8 @@ export const AppProvider = ({ children }) => {
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEdit] = useState(false);
   const [customT, setCustomT] = useState("");
+  const [activeOccasion, setActiveOccasion] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   
   const saveTimer = useRef(null);
   const audioRef = useRef(null);
@@ -309,6 +311,10 @@ export const AppProvider = ({ children }) => {
         setTargetEdit,
         customT,
         setCustomT,
+        activeOccasion,
+        setActiveOccasion,
+        searchQuery,
+        setSearchQuery,
         dById,
         vibe,
         click,

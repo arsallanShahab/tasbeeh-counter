@@ -17,11 +17,12 @@ export const LibraryView = () => {
     togglePin,
     startList,
     startDhikr,
-    settings
+    settings,
+    searchQuery,
+    setSearchQuery,
+    activeOccasion,
+    setActiveOccasion
   } = useApp();
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeOccasion, setActiveOccasion] = useState("all");
 
   // Dynamic search & occasion tagging filtering
   const filteredLists = lists.filter((l) => {
@@ -70,7 +71,7 @@ export const LibraryView = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search transliterations, translations, Arabic..."
-          className="w-full rounded-2xl border border-[var(--line)] bg-[var(--surface2)] pl-11 pr-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 transition-all font-semibold shadow-sm"
+          className="w-full rounded-2xl border border-[var(--line)] bg-[var(--surface)] pl-11 pr-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 transition-all font-semibold"
         />
       </div>
 
@@ -79,7 +80,7 @@ export const LibraryView = () => {
         <button
           onClick={() => setActiveOccasion("all")}
           className="rounded-full px-4 py-2 text-xs font-bold whitespace-nowrap border cursor-pointer shrink-0 transition-all duration-200"
-          style={activeOccasion === "all" ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--bg2)" }}
+          style={activeOccasion === "all" ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--surface)" }}
         >
           All
         </button>
@@ -88,7 +89,7 @@ export const LibraryView = () => {
             key={k}
             onClick={() => setActiveOccasion(k)}
             className="rounded-full px-4 py-2 text-xs font-bold whitespace-nowrap border cursor-pointer shrink-0 transition-all duration-200"
-            style={activeOccasion === k ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--bg2)" }}
+            style={activeOccasion === k ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--surface)" }}
           >
             {v}
           </button>
