@@ -328,7 +328,7 @@ export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, h
 
 export const DEFAULT_SETTINGS = {
   lang: "both",
-  theme: "emerald",
+  theme: "classic",
   appearance: "dark",
   translit: true,
   haptics: true,

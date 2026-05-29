@@ -94,7 +94,7 @@ export const AppProvider = ({ children }) => {
       const loadedSettings = store.get("settings", {});
       if (loadedSettings.theme === "dark" || loadedSettings.theme === "light") {
         loadedSettings.appearance = loadedSettings.theme;
-        loadedSettings.theme = "emerald";
+        loadedSettings.theme = "classic";
       }
 
       // Lossless alert deep-link schema upgrade

@@ -108,7 +108,14 @@ export const SettingsView = () => {
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold text-[var(--text)] truncate">{value.name}</p>
                   <p className="text-[9px] text-[var(--muted)] truncate">
-                    {key === "classic" ? "Sandstone Sage" : key === "emerald" ? "Forest Mint" : key === "lapis" ? "Blue Sapphire" : key === "rose" ? "Velvet Ruby" : key === "amber" ? "Honey Amber" : "Obsidian Mono"}
+                    {key === "classic" ? "Sandstone Sage" :
+                     key === "emerald" ? "Forest Mint" :
+                     key === "sage" ? "Oatmeal Sage" :
+                     key === "clay" ? "Warm Terracotta" :
+                     key === "olive" ? "Olive Grove" :
+                     key === "slate" ? "Misty Slate" :
+                     key === "mocha" ? "Warm Stone" :
+                     key === "rose" ? "Velvet Ruby" : "Obsidian Mono"}
                   </p>
                 </div>
               </button>

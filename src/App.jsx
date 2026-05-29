@@ -17,7 +17,7 @@ const AppContent = () => {
     return (
       <div 
         className="font-body flex min-h-screen items-center justify-center bg-[#030806]" 
-        style={{ ...THEMES.emerald.dark, background: "var(--bg)" }}
+        style={{ ...THEMES.classic.dark, background: "var(--bg)" }}
       >
         <p 
           className="font-arabic text-3xl text-[var(--gold)]" 
@@ -30,7 +30,7 @@ const AppContent = () => {
     );
   }
 
-  const activeThemeGroup = THEMES[settings.theme] || THEMES.emerald;
+  const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
   const themeVars = activeThemeGroup[settings.appearance || "dark"];
 
   return (
