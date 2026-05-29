@@ -8,7 +8,13 @@ const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
   const [loaded, setLoaded] = useState(false);
-  const [view, setViewInternal] = useState("home");
+  const [view, setViewInternal] = useState(() => {
+    const h = window.location.hash.slice(1);
+    const questionIndex = h.indexOf("?");
+    const path = questionIndex !== -1 ? h.slice(0, questionIndex) : h;
+    const valid = ["home", "library", "stats", "settings", "counter"];
+    return valid.includes(path) ? path : "home";
+  });
   const [dhikrs, setDhikrs] = useState(SEED_DHIKRS);
   const [lists, setLists] = useState(SEED_LISTS);
   const [pinned, setPinned] = useState(["after-salah", "istighfar-100", "durood-100"]);
@@ -16,12 +22,24 @@ export const AppProvider = ({ children }) => {
   const [settings, setSettingsInternal] = useState(DEFAULT_SETTINGS);
   
   const [session, setSession] = useState(null);
-  const [modal, setModalInternal] = useState(null);
+  const [modal, setModalInternal] = useState(() => {
+    const h = window.location.hash.slice(1);
+    const questionIndex = h.indexOf("?");
+    if (questionIndex === -1) return null;
+    const params = new URLSearchParams(h.slice(questionIndex + 1));
+    return params.get("modal") || null;
+  });
   const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEditInternal] = useState(false);
   const [customT, setCustomT] = useState("");
-  const [activeOccasion, setActiveOccasionInternal] = useState("all");
+  const [activeOccasion, setActiveOccasionInternal] = useState(() => {
+    const h = window.location.hash.slice(1);
+    const questionIndex = h.indexOf("?");
+    if (questionIndex === -1) return "all";
+    const params = new URLSearchParams(h.slice(questionIndex + 1));
+    return params.get("occasion") || "all";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   
   const saveTimer = useRef(null);
@@ -92,15 +110,110 @@ export const AppProvider = ({ children }) => {
     }
   }, [settings.haptics]);
 
-  const setView = useCallback((newView) => {
-    setViewInternal(newView);
-    vibe(5);
+  const updateHash = useCallback(({ view: nextView, occasion: nextOccasion, modal: nextModal }) => {
+    const currentHash = window.location.hash;
+    const questionIndex = currentHash.indexOf("?");
+    let viewPath = currentHash.slice(1);
+    let queryStr = "";
+    if (questionIndex !== -1) {
+      viewPath = currentHash.slice(1, questionIndex);
+      queryStr = currentHash.slice(questionIndex + 1);
+    }
+    const params = new URLSearchParams(queryStr);
+    
+    const v = nextView !== undefined ? nextView : (["home", "library", "stats", "settings", "counter"].includes(viewPath) ? viewPath : "home");
+    const occ = nextOccasion !== undefined ? nextOccasion : (params.get("occasion") || "all");
+    const md = nextModal !== undefined ? nextModal : (params.get("modal") || null);
+
+    const newParams = new URLSearchParams();
+    if (occ !== "all") {
+      newParams.set("occasion", occ);
+    }
+    if (md) {
+      newParams.set("modal", md);
+    }
+    
+    const newQueryStr = newParams.toString();
+    const newHash = newQueryStr ? `${v}?${newQueryStr}` : v;
+    
+    if (window.location.hash !== `#${newHash}`) {
+      window.location.hash = newHash;
+    } else {
+      // If the target hash is identical, still trigger feedback
+      vibe(5);
+    }
   }, [vibe]);
 
-  const setModal = useCallback((newModal) => {
-    setModalInternal(newModal);
-    vibe(6);
+  /* Hash routing listener */
+  useEffect(() => {
+    const handleHashChange = () => {
+      const currentHash = window.location.hash;
+      const questionIndex = currentHash.indexOf("?");
+      let viewPath = currentHash.slice(1);
+      let queryStr = "";
+      if (questionIndex !== -1) {
+        viewPath = currentHash.slice(1, questionIndex);
+        queryStr = currentHash.slice(questionIndex + 1);
+      }
+      
+      const params = new URLSearchParams(queryStr);
+      
+      const validViews = ["home", "library", "stats", "settings", "counter"];
+      const targetView = validViews.includes(viewPath) ? viewPath : "home";
+      const targetOccasion = params.get("occasion") || "all";
+      const targetModal = params.get("modal") || null;
+      
+      let changed = false;
+
+      setViewInternal((prev) => {
+        if (prev !== targetView) {
+          changed = true;
+          return targetView;
+        }
+        return prev;
+      });
+
+      setActiveOccasionInternal((prev) => {
+        if (prev !== targetOccasion) {
+          changed = true;
+          return targetOccasion;
+        }
+        return prev;
+      });
+
+      setModalInternal((prev) => {
+        if (prev !== targetModal) {
+          changed = true;
+          return targetModal;
+        }
+        return prev;
+      });
+
+      if (changed) {
+        vibe(5);
+      }
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    
+    // Ensure initial hash is set if empty
+    if (!window.location.hash) {
+      window.history.replaceState(null, "", "#home");
+    } else {
+      // Trigger initial parsing
+      handleHashChange();
+    }
+    
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, [vibe]);
+
+  const setView = useCallback((newView) => {
+    updateHash({ view: newView });
+  }, [updateHash]);
+
+  const setModal = useCallback((newModal) => {
+    updateHash({ modal: newModal });
+  }, [updateHash]);
 
   const setTargetEdit = useCallback((newTargetEdit) => {
     setTargetEditInternal(newTargetEdit);
@@ -108,9 +221,8 @@ export const AppProvider = ({ children }) => {
   }, [vibe]);
 
   const setActiveOccasion = useCallback((newOccasion) => {
-    setActiveOccasionInternal(newOccasion);
-    vibe(5);
-  }, [vibe]);
+    updateHash({ occasion: newOccasion });
+  }, [updateHash]);
 
   const setSettings = useCallback((newSettingsVal) => {
     setSettingsInternal((prev) => {
