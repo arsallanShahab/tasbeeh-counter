@@ -18,7 +18,7 @@ export const NewDhikrModal = ({ isOpen, onClose }) => {
 
   const handleQuickTarget = (v) => {
     setNd(prev => ({ ...prev, target: v }));
-    vibe(5);
+    vibe(8);
   };
 
   return (

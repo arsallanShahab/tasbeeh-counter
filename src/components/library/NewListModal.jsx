@@ -19,7 +19,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
       steps: [...l.steps, { dhikr: pick.dhikr, target: Number(pick.target) || 33 }]
     }));
     setPick({ dhikr: "", target: 33 });
-    vibe(5);
+    vibe(8);
   };
 
   const handleSave = () => {
@@ -32,7 +32,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
 
   const handleQuickTarget = (v) => {
     setPick(prev => ({ ...prev, target: v }));
-    vibe(5);
+    vibe(8);
   };
 
   const inputCls = "w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 transition-all font-semibold";
@@ -86,7 +86,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
                 <button
                   key={k}
                   type="button"
-                  onClick={() => { setNl({ ...nl, occasion: k }); vibe(5); }}
+                  onClick={() => { setNl({ ...nl, occasion: k }); vibe(8); }}
                   className="rounded-full px-4.5 py-2 text-xs font-bold whitespace-nowrap transition-all border cursor-pointer shrink-0"
                   style={nl.occasion === k ? { background: "linear-gradient(135deg, var(--primary), var(--primary-dim))", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--bg2)" }}
                 >
@@ -104,7 +104,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
                 <button
                   key={k}
                   type="button"
-                  onClick={() => { setNl({ ...nl, icon: k }); vibe(5); }}
+                  onClick={() => { setNl({ ...nl, icon: k }); vibe(8); }}
                   className="flex h-11 w-11 items-center justify-center rounded-2xl border transition-all cursor-pointer relative"
                   style={nl.icon === k ? { background: "var(--primary-dim)", borderColor: "var(--gold)" } : { borderColor: "var(--line)", background: "var(--bg2)" }}
                 >

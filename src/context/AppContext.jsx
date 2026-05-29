@@ -147,7 +147,7 @@ export const AppProvider = ({ children }) => {
       window.location.hash = newHash;
     } else {
       // If the target hash is identical, still trigger feedback
-      vibe(5);
+      vibe(8);
     }
   }, [vibe]);
 
@@ -197,7 +197,7 @@ export const AppProvider = ({ children }) => {
       });
 
       if (changed) {
-        vibe(5);
+        vibe(8);
       }
     };
 
@@ -224,7 +224,7 @@ export const AppProvider = ({ children }) => {
 
   const setTargetEdit = useCallback((newTargetEdit) => {
     setTargetEditInternal(newTargetEdit);
-    vibe(5);
+    vibe(8);
   }, [vibe]);
 
   const setActiveOccasion = useCallback((newOccasion) => {
@@ -240,10 +240,10 @@ export const AppProvider = ({ children }) => {
           if (!hapticsRef.current) {
             hapticsRef.current = new WebHaptics();
           }
-          hapticsRef.current.trigger("soft");
+          hapticsRef.current.trigger("selection");
         } catch (e) {
           if (navigator.vibrate) {
-            navigator.vibrate(5);
+            navigator.vibrate(8);
           }
         }
       }
@@ -382,7 +382,7 @@ export const AppProvider = ({ children }) => {
         };
       });
 
-      vibe(5);
+      vibe(8);
       return { ...s, counts };
     });
   }, [session, vibe]);
@@ -397,7 +397,7 @@ export const AppProvider = ({ children }) => {
         stepIndex: 0
       };
     });
-    vibe(5);
+    vibe(8);
   }, [vibe]);
 
   const goStep = useCallback((dir) => {
@@ -405,7 +405,7 @@ export const AppProvider = ({ children }) => {
       if (!s) return s;
       const nextIndex = Math.min(Math.max(s.stepIndex + dir, 0), s.steps.length - 1);
       if (nextIndex !== s.stepIndex) {
-        vibe(6);
+        vibe(8);
       }
       setComplete(false);
       return { ...s, stepIndex: nextIndex };
@@ -422,12 +422,12 @@ export const AppProvider = ({ children }) => {
     });
     setTargetEdit(false);
     setCustomT("");
-    vibe(6);
+    vibe(8);
   }, [vibe]);
 
   const togglePin = useCallback((id) => {
     setPinned((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
-    vibe(6);
+    vibe(8);
   }, [vibe]);
 
   const saveDhikr = useCallback((nd, setNd) => {
