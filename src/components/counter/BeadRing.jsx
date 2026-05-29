@@ -49,7 +49,7 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
       d.moved = true;
     }
     
-    const steps = Math.round(-d.acc / STEP); // one full revolution drag = one lap
+    const steps = Math.round(d.acc / STEP); // one full revolution drag = one lap
     if (steps !== d.steps) {
       const diff = steps - d.steps;
       for (let k = 0; k < Math.abs(diff); k++) {

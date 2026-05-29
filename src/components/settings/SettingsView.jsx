@@ -250,7 +250,7 @@ export const SettingsView = () => {
           Gestures
         </div>
         <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Beads: tap to count, or drag the beads around the loop — left to count up, right to go back. Ring: tap to count, swipe left/right to switch dhikr. Tap the target under the number to change it (33 / 100 / 300 / 1000 / custom).
+          Beads: tap to count, or drag the beads around the loop — clockwise to count up, counter-clockwise to go back. Ring: tap to count, swipe left/right to switch dhikr. Tap the target under the number to change it (33 / 100 / 300 / 1000 / custom).
         </p>
         <div className="mb-3 mt-4 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
           <Keyboard size={17} className="text-[var(--gold)]" /> 

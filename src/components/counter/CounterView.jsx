@@ -243,33 +243,33 @@ export const CounterView = () => {
 
       <p className="mb-2 text-center text-xs text-[var(--muted)] px-4 leading-relaxed">
         {beads 
-          ? "Tap to count · drag the beads — left to count up, right to go back" 
+          ? "Tap to count · drag the beads — clockwise to count up, counter-clockwise to go back" 
           : "Tap to count · swipe ← → to change dhikr · ⌫ to undo"
         }
       </p>
       
       <div className="mb-2 flex items-center justify-center gap-3">
         <button 
-          onClick={() => { goStep(-1); vibe(6); }} 
+          onClick={() => goStep(-1)} 
           disabled={i === 0} 
           className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
         >
           <ChevronLeft />
         </button>
         <button 
-          onClick={() => { decrement(); vibe(5); }} 
+          onClick={decrement} 
           className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--line)] text-[var(--text)] cursor-pointer"
         >
           <Undo2 size={20} />
         </button>
         <button 
-          onClick={() => { resetSession(); vibe(6); }} 
+          onClick={resetSession} 
           className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--line)] text-[var(--danger)] cursor-pointer"
         >
           <RotateCcw size={20} />
         </button>
         <button 
-          onClick={() => { goStep(1); vibe(6); }} 
+          onClick={() => goStep(1)} 
           disabled={i === session.steps.length - 1} 
           className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
         >
