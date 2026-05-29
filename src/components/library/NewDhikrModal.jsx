@@ -3,7 +3,7 @@ import { X, Type, Languages, Target } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
 export const NewDhikrModal = ({ isOpen, onClose }) => {
-  const { saveDhikr } = useApp();
+  const { saveDhikr, vibe } = useApp();
   const [nd, setNd] = useState({ tr: "", arabic: "", en: "", ur: "", target: 33 });
 
   if (!isOpen) return null;
@@ -18,6 +18,7 @@ export const NewDhikrModal = ({ isOpen, onClose }) => {
 
   const handleQuickTarget = (v) => {
     setNd(prev => ({ ...prev, target: v }));
+    vibe(5);
   };
 
   return (

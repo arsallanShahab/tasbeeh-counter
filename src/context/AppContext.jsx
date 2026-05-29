@@ -8,20 +8,20 @@ const AppContext = createContext(null);
 
 export const AppProvider = ({ children }) => {
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState("home");
+  const [view, setViewInternal] = useState("home");
   const [dhikrs, setDhikrs] = useState(SEED_DHIKRS);
   const [lists, setLists] = useState(SEED_LISTS);
   const [pinned, setPinned] = useState(["after-salah", "istighfar-100", "durood-100"]);
   const [stats, setStats] = useState({ total: 0, byDate: {}, perDhikr: {} });
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettingsInternal] = useState(DEFAULT_SETTINGS);
   
   const [session, setSession] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModalInternal] = useState(null);
   const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
-  const [targetEdit, setTargetEdit] = useState(false);
+  const [targetEdit, setTargetEditInternal] = useState(false);
   const [customT, setCustomT] = useState("");
-  const [activeOccasion, setActiveOccasion] = useState("all");
+  const [activeOccasion, setActiveOccasionInternal] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   
   const saveTimer = useRef(null);
@@ -42,7 +42,7 @@ export const AppProvider = ({ children }) => {
         loadedSettings.theme = "emerald";
       }
       
-      setSettings({ ...DEFAULT_SETTINGS, ...loadedSettings });
+      setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
       setLoaded(true);
     };
     loadState();
@@ -91,6 +91,46 @@ export const AppProvider = ({ children }) => {
       }
     }
   }, [settings.haptics]);
+
+  const setView = useCallback((newView) => {
+    setViewInternal(newView);
+    vibe(5);
+  }, [vibe]);
+
+  const setModal = useCallback((newModal) => {
+    setModalInternal(newModal);
+    vibe(6);
+  }, [vibe]);
+
+  const setTargetEdit = useCallback((newTargetEdit) => {
+    setTargetEditInternal(newTargetEdit);
+    vibe(5);
+  }, [vibe]);
+
+  const setActiveOccasion = useCallback((newOccasion) => {
+    setActiveOccasionInternal(newOccasion);
+    vibe(5);
+  }, [vibe]);
+
+  const setSettings = useCallback((newSettingsVal) => {
+    setSettingsInternal((prev) => {
+      const next = typeof newSettingsVal === "function" ? newSettingsVal(prev) : newSettingsVal;
+      // Triggers click feedback vibration when changing settings
+      if (prev.haptics || next.haptics) {
+        try {
+          if (!hapticsRef.current) {
+            hapticsRef.current = new WebHaptics();
+          }
+          hapticsRef.current.trigger("soft");
+        } catch (e) {
+          if (navigator.vibrate) {
+            navigator.vibrate(5);
+          }
+        }
+      }
+      return next;
+    });
+  }, []);
 
   const click = useCallback(() => {
     if (!settings.sound) return;
@@ -238,7 +278,8 @@ export const AppProvider = ({ children }) => {
         stepIndex: 0
       };
     });
-  }, []);
+    vibe(5);
+  }, [vibe]);
 
   const goStep = useCallback((dir) => {
     setSession((s) => {
@@ -267,7 +308,8 @@ export const AppProvider = ({ children }) => {
 
   const togglePin = useCallback((id) => {
     setPinned((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
-  }, []);
+    vibe(6);
+  }, [vibe]);
 
   const saveDhikr = useCallback((nd, setNd) => {
     if (!nd.tr.trim() || !nd.arabic.trim()) return;
