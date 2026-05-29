@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
-import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS } from "../constants/dhikrData";
+import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION } from "../constants/dhikrData";
 import { store } from "../utils/storage";
 import { dateKey } from "../utils/stats";
 import { WebHaptics } from "web-haptics";
@@ -48,8 +48,39 @@ export const AppProvider = ({ children }) => {
   /* Load state from storage on init */
   useEffect(() => {
     const loadState = async () => {
-      setDhikrs(store.get("dhikrs", SEED_DHIKRS));
-      setLists(store.get("lists", SEED_LISTS));
+      const storedVersion = store.get("storage_version", 1);
+      
+      let loadedDhikrs = store.get("dhikrs", null);
+      let loadedLists = store.get("lists", null);
+      
+      if (!loadedDhikrs || !loadedLists || storedVersion < STORAGE_VERSION) {
+        // Upgrade / Migrate required!
+        // 1. Keep custom items that user created
+        const customDhikrs = loadedDhikrs ? loadedDhikrs.filter(d => d.id.startsWith("c_") || d.tags?.includes("custom")) : [];
+        const customLists = loadedLists ? loadedLists.filter(l => l.id.startsWith("c_")) : [];
+        
+        // 2. Overwrite defaults with new SEED_DHIKRS & SEED_LISTS, appending custom items
+        loadedDhikrs = [...SEED_DHIKRS, ...customDhikrs];
+        loadedLists = [...SEED_LISTS, ...customLists];
+        
+        // 3. Clear active session on structure upgrade to avoid mismatch crashes
+        setSession(null);
+        setComplete(false);
+        store.set("session", null);
+        store.set("complete", false);
+        
+        // 4. Save migrated arrays to storage
+        store.set("dhikrs", loadedDhikrs);
+        store.set("lists", loadedLists);
+        store.set("storage_version", STORAGE_VERSION);
+      } else {
+        // Normal load
+        setSession(store.get("session", null));
+        setComplete(store.get("complete", false));
+      }
+      
+      setDhikrs(loadedDhikrs);
+      setLists(loadedLists);
       setPinned(store.get("pinned", ["after-salah", "istighfar-100", "durood-100"]));
       setStats(store.get("stats", { total: 0, byDate: {}, perDhikr: {} }));
       
@@ -61,11 +92,6 @@ export const AppProvider = ({ children }) => {
       }
       
       setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
-      
-      // Load saved active session state
-      setSession(store.get("session", null));
-      setComplete(store.get("complete", false));
-      
       setLoaded(true);
     };
     loadState();

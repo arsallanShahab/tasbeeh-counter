@@ -1,5 +1,5 @@
 import {
-  Sun, Moon, Sunrise, Sunset, Heart, Star, Sparkles
+  Sun, Moon, Sunrise, Sunset, Heart, Star, Sparkles, BookOpen, Shield, Trophy
 } from "lucide-react";
 
 export const SEED_DHIKRS = [
@@ -321,9 +321,10 @@ export const SEED_LISTS = [
 export const OCCASIONS = {
   "after-salah": "After Salah", morning: "Morning", evening: "Evening",
   friday: "Friday", repentance: "Repentance", distress: "In Distress", general: "General", custom: "Custom",
+  sleep: "Sleep", forgiveness: "Forgiveness", tawheed: "Tawheed", gratitude: "Gratitude"
 };
 
-export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles };
+export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
 
 export const DEFAULT_SETTINGS = {
   lang: "both",
@@ -444,3 +445,5 @@ export const BEAD_THEMES = [
   { id: "amethyst", name: "Amethyst", dark: ["#9a78c0", "#5a3a86", "#2a1648"], gold: ["#d6b4ff", "#9a5ad8", "#5a2a9a"], front: ["#f0e0ff", "#bd84ff", "#6e2eb8"], glow: "#bd84ff", thread: "#341a52", arc: "#9a5ad8" },
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
+
+export const STORAGE_VERSION = 2;
