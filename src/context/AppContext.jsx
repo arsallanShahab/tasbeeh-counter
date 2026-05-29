@@ -61,6 +61,11 @@ export const AppProvider = ({ children }) => {
       }
       
       setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
+      
+      // Load saved active session state
+      setSession(store.get("session", null));
+      setComplete(store.get("complete", false));
+      
       setLoaded(true);
     };
     loadState();
@@ -76,9 +81,11 @@ export const AppProvider = ({ children }) => {
       store.set("pinned", pinned);
       store.set("stats", stats);
       store.set("settings", settings);
+      store.set("session", session);
+      store.set("complete", complete);
     }, 700);
     return () => clearTimeout(saveTimer.current);
-  }, [dhikrs, lists, pinned, stats, settings, loaded]);
+  }, [dhikrs, lists, pinned, stats, settings, session, complete, loaded]);
 
   /* Utility functions */
   const dById = useCallback((id) => dhikrs.find((d) => d.id === id), [dhikrs]);

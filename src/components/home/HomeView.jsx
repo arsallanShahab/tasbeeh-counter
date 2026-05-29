@@ -17,7 +17,9 @@ export const HomeView = () => {
     startList,
     startDhikr,
     setActiveOccasion,
-    setSearchQuery
+    setSearchQuery,
+    session,
+    complete
   } = useApp();
 
   const hr = new Date().getHours();
@@ -124,6 +126,42 @@ export const HomeView = () => {
           </div>
         </div>
       </Card>
+
+      {/* Premium Continue Session Widget */}
+      {session && !complete && session.counts.some(c => c > 0) && (() => {
+        const idx = session.stepIndex;
+        const currentCount = session.counts[idx];
+        const currentTarget = session.steps[idx].target;
+        const totalSteps = session.steps.length;
+        return (
+          <Card 
+            className="p-5 border-2 border-[var(--gold)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
+            onClick={() => setView("counter")}
+          >
+            <div className="space-y-1 min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[var(--gold)] animate-ping" />
+                Active Session
+              </p>
+              <h3 className="font-display text-xl font-bold text-[var(--text)] truncate leading-tight">
+                {session.title}
+              </h3>
+              <p className="text-xs text-[var(--muted)] truncate mt-0.5">
+                {totalSteps > 1 
+                  ? `Recited: Step ${idx + 1} of ${totalSteps} (${currentCount} / ${currentTarget})`
+                  : `Recited: ${currentCount} / ${currentTarget} times`
+                }
+              </p>
+            </div>
+            <button 
+              className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer active:scale-[0.96] transition-all duration-300 flex items-center gap-1 shrink-0 shadow-sm"
+              style={{ background: "var(--gold)" }}
+            >
+              Resume →
+            </button>
+          </Card>
+        );
+      })()}
 
       {/* Redesigned Quick Navigation Categories Carousel */}
       <div className="space-y-3">
