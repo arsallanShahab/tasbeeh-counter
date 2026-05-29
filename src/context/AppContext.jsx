@@ -41,6 +41,12 @@ export const AppProvider = ({ children }) => {
     return params.get("occasion") || "all";
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [notifyPermission, setNotifyPermission] = useState(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      return Notification.permission;
+    }
+    return "default";
+  });
   
   const saveTimer = useRef(null);
   const audioRef = useRef(null);
@@ -89,6 +95,22 @@ export const AppProvider = ({ children }) => {
       if (loadedSettings.theme === "dark" || loadedSettings.theme === "light") {
         loadedSettings.appearance = loadedSettings.theme;
         loadedSettings.theme = "emerald";
+      }
+
+      // Lossless alert deep-link schema upgrade
+      if (loadedSettings.alerts && Array.isArray(loadedSettings.alerts)) {
+        loadedSettings.alerts = loadedSettings.alerts.map((alert) => {
+          if (alert.id === "morning" && !alert.targetId) {
+            return { ...alert, targetType: "list", targetId: "morning-short" };
+          }
+          if (alert.id === "evening" && !alert.targetId) {
+            return { ...alert, targetType: "list", targetId: "evening-short" };
+          }
+          if (alert.id === "sleep" && !alert.targetId) {
+            return { ...alert, targetType: "list", targetId: "before-sleep" };
+          }
+          return alert;
+        });
       }
       
       setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
@@ -330,6 +352,40 @@ export const AppProvider = ({ children }) => {
     openSession([{ dhikr: d.id, target: d.target }], d.tr, "general");
   }, [openSession]);
 
+  /* Deep-link query parameter scanner hook */
+  useEffect(() => {
+    if (!loaded) return;
+
+    const checkDeepLink = () => {
+      const h = window.location.hash.slice(1);
+      const questionIndex = h.indexOf("?");
+      if (questionIndex === -1) return;
+      const params = new URLSearchParams(h.slice(questionIndex + 1));
+
+      if (params.has("dhikr")) {
+        const dId = params.get("dhikr");
+        const d = dhikrs.find((x) => x.id === dId);
+        if (d) {
+          window.history.replaceState(null, "", "#counter");
+          startDhikr(d);
+        }
+      } else if (params.has("list")) {
+        const lId = params.get("list");
+        const l = lists.find((x) => x.id === lId);
+        if (l) {
+          window.history.replaceState(null, "", "#counter");
+          startList(l);
+        }
+      }
+    };
+
+    // Scan immediately when app loads & gets hydrated
+    checkDeepLink();
+
+    window.addEventListener("hashchange", checkDeepLink);
+    return () => window.removeEventListener("hashchange", checkDeepLink);
+  }, [loaded, dhikrs, lists, startDhikr, startList]);
+
   const increment = useCallback(() => {
     if (!session) return;
     setSession((s) => {
@@ -471,6 +527,76 @@ export const AppProvider = ({ children }) => {
     setModal(null);
   }, []);
 
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return false;
+    const permission = await Notification.requestPermission();
+    setNotifyPermission(permission);
+    return permission === "granted";
+  }, []);
+
+  const triggerNotification = useCallback((title, body, url = "/#home") => {
+    try {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.showNotification(title, {
+            body,
+            icon: "/favicon.svg",
+            vibrate: [200, 100, 200],
+            badge: "/favicon.svg",
+            tag: "sabha-reminder",
+            data: { url }
+          });
+        });
+      } else {
+        const n = new Notification(title, { body, icon: "/favicon.svg" });
+        n.onclick = () => {
+          window.focus();
+          if (url) {
+            window.location.hash = url.startsWith("/#") ? url.slice(2) : url;
+          }
+        };
+      }
+    } catch (e) {
+      console.warn("Notification display failed:", e);
+    }
+  }, []);
+
+  /* Notification check loop */
+  useEffect(() => {
+    if (notifyPermission !== "granted" || !settings.alertsEnabled || !settings.alerts) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, "0");
+      const m = String(now.getMinutes()).padStart(2, "0");
+      const timeStr = `${h}:${m}`;
+      const today = dateKey();
+
+      settings.alerts.forEach((alert) => {
+        if (alert.enabled && alert.time === timeStr) {
+          const firedKey = `fired_${alert.id}`;
+          const lastFired = store.get(firedKey, "");
+          if (lastFired !== today) {
+            let deepLink = "/#home";
+            if (alert.targetType === "dhikr" && alert.targetId) {
+              deepLink = `/#counter?dhikr=${alert.targetId}`;
+            } else if (alert.targetType === "list" && alert.targetId) {
+              deepLink = `/#counter?list=${alert.targetId}`;
+            }
+            triggerNotification(
+              alert.title, 
+              alert.body || "It's time for your dhikr recitations.",
+              deepLink
+            );
+            store.set(firedKey, today);
+          }
+        }
+      });
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [notifyPermission, settings.alerts, settings.alertsEnabled, triggerNotification]);
+
   return (
     <AppContext.Provider
       value={{
@@ -515,7 +641,9 @@ export const AppProvider = ({ children }) => {
         applyTarget,
         togglePin,
         saveDhikr,
-        saveList
+        saveList,
+        notifyPermission,
+        requestNotificationPermission
       }}
     >
       {children}

@@ -338,100 +338,51 @@ export const DEFAULT_SETTINGS = {
   counterStyle: "beads",
   beadTheme: "onyx",
   activeStyle: "glow",
-  customBead: { dark: "#15302a", gold: "#d8a93a" }
+  customBead: { dark: "#15302a", gold: "#d8a93a" },
+  alertsEnabled: true,
+  alerts: [
+    { id: "morning", title: "Morning Adhkar 🌅", body: "Begin your morning with beautiful remembrance.", time: "08:00", enabled: true, targetType: "list", targetId: "morning-short" },
+    { id: "evening", title: "Evening Adhkar 🌙", body: "Recite your evening prayers for peace and protection.", time: "17:00", enabled: true, targetType: "list", targetId: "evening-short" },
+    { id: "sleep", title: "Bedtime Remembrance 🛏️", body: "Recite the sleep sunnah tasbeeh before resting.", time: "22:00", enabled: true, targetType: "list", targetId: "before-sleep" }
+  ]
 };
 
 export const THEMES = {
   classic: {
-    name: "Classic Sabḥa",
-    dark: {
-      "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820",
-      "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee",
-      "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c",
-      "--gold": "#e0bd5c", "--danger": "#e07a6b",
-    },
-    light: {
-      "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff",
-      "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a",
-      "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6",
-      "--gold": "#b0851f", "--danger": "#c14a3a",
-    }
+    name: "Sabḥa",
+    dark: { "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820", "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee", "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c", "--gold": "#e0bd5c", "--danger": "#e07a6b" },
+    light: { "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff", "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a", "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6", "--gold": "#b0851f", "--danger": "#c14a3a" },
   },
-  emerald: {
-    name: "Emerald Forest",
-    dark: {
-      "--bg": "#04100b", "--bg2": "#061a12", "--surface": "#09261a",
-      "--surface2": "#0e3827", "--line": "#144a34", "--text": "#ecfdf5",
-      "--muted": "#52b28c", "--primary": "#10b981", "--primary-dim": "#064e3b",
-      "--gold": "#fbbf24", "--danger": "#f87171",
-    },
-    light: {
-      "--bg": "#f0fdf4", "--bg2": "#dcfce7", "--surface": "#ffffff",
-      "--surface2": "#f0fdf4", "--line": "#bbf7d0", "--text": "#064e3b",
-      "--muted": "#166534", "--primary": "#047857", "--primary-dim": "#a7f3d0",
-      "--gold": "#d97706", "--danger": "#dc2626",
-    }
+  sage: {
+    name: "Sage & Oat",
+    dark: { "--bg": "#10140e", "--bg2": "#161b12", "--surface": "#1d231a", "--surface2": "#272f23", "--line": "#343d2e", "--text": "#eef1e7", "--muted": "#97a393", "--primary": "#7ea888", "--primary-dim": "#2b3a2d", "--gold": "#cdb277", "--danger": "#cf7e68" },
+    light: { "--bg": "#f3f0e7", "--bg2": "#ebe6d9", "--surface": "#fffdf8", "--surface2": "#f4f1e9", "--line": "#ddd6c5", "--text": "#2e3830", "--muted": "#717d6f", "--primary": "#5e8268", "--primary-dim": "#cdddcf", "--gold": "#a98b4e", "--danger": "#b5654d" },
   },
-  lapis: {
-    name: "Ocean Lapis",
-    dark: {
-      "--bg": "#040d1a", "--bg2": "#06152b", "--surface": "#092040",
-      "--surface2": "#0f305c", "--line": "#15437d", "--text": "#f0f7ff",
-      "--muted": "#6c93c4", "--primary": "#3b82f6", "--primary-dim": "#1e3a8a",
-      "--gold": "#fbbf24", "--danger": "#f87171",
-    },
-    light: {
-      "--bg": "#f0f9ff", "--bg2": "#e0f2fe", "--surface": "#ffffff",
-      "--surface2": "#f0f9ff", "--line": "#bae6fd", "--text": "#1e3a8a",
-      "--muted": "#0369a1", "--primary": "#1d4ed8", "--primary-dim": "#bfdbfe",
-      "--gold": "#d97706", "--danger": "#dc2626",
-    }
+  clay: {
+    name: "Warm Clay",
+    dark: { "--bg": "#150f0a", "--bg2": "#1b140d", "--surface": "#241a12", "--surface2": "#30231a", "--line": "#3d2e22", "--text": "#f4ece2", "--muted": "#b09680", "--primary": "#c67d5f", "--primary-dim": "#3a261b", "--gold": "#cda35f", "--danger": "#d27c63" },
+    light: { "--bg": "#f7f0e6", "--bg2": "#f1e7d8", "--surface": "#fffcf6", "--surface2": "#f7f1e8", "--line": "#e6d8c5", "--text": "#3b2c24", "--muted": "#87705f", "--primary": "#b06a4f", "--primary-dim": "#edd6c6", "--gold": "#a98545", "--danger": "#b55440" },
+  },
+  olive: {
+    name: "Olive Grove",
+    dark: { "--bg": "#12130c", "--bg2": "#181910", "--surface": "#202116", "--surface2": "#2b2c1e", "--line": "#393b29", "--text": "#eff0e4", "--muted": "#9b9d82", "--primary": "#9ba259", "--primary-dim": "#313321", "--gold": "#cbb06e", "--danger": "#cf7d64" },
+    light: { "--bg": "#f2f1e7", "--bg2": "#eae8d9", "--surface": "#fdfdf7", "--surface2": "#f2f1e7", "--line": "#dcdac5", "--text": "#33352a", "--muted": "#75775f", "--primary": "#7c7f48", "--primary-dim": "#d8dab9", "--gold": "#a98b46", "--danger": "#b25a45" },
+  },
+  slate: {
+    name: "Misty Slate",
+    dark: { "--bg": "#0c1114", "--bg2": "#11171b", "--surface": "#182025", "--surface2": "#212c32", "--line": "#2e3b42", "--text": "#eaf1f4", "--muted": "#8ea0aa", "--primary": "#79a0b8", "--primary-dim": "#25333b", "--gold": "#c8ad77", "--danger": "#cf7e6e" },
+    light: { "--bg": "#eef0ef", "--bg2": "#e3e8e8", "--surface": "#ffffff", "--surface2": "#f1f4f4", "--line": "#d2d9da", "--text": "#28323a", "--muted": "#6a7780", "--primary": "#5b7c92", "--primary-dim": "#cfdce2", "--gold": "#a78c52", "--danger": "#b25a4e" },
+  },
+  mocha: {
+    name: "Warm Stone",
+    dark: { "--bg": "#13100c", "--bg2": "#1a1610", "--surface": "#221c15", "--surface2": "#2e261d", "--line": "#3b3128", "--text": "#f3ece2", "--muted": "#ad9b88", "--primary": "#a98a6c", "--primary-dim": "#38291f", "--gold": "#cda85f", "--danger": "#d07e64" },
+    light: { "--bg": "#f5f0e8", "--bg2": "#ede5d9", "--surface": "#fffcf7", "--surface2": "#f5efe6", "--line": "#e3d8c8", "--text": "#382f28", "--muted": "#857668", "--primary": "#8a6f57", "--primary-dim": "#e3d4c3", "--gold": "#ab8a4c", "--danger": "#b35a46" },
   },
   rose: {
-    name: "Royal Rose",
-    dark: {
-      "--bg": "#12040a", "--bg2": "#1c0610", "--surface": "#2b0a19",
-      "--surface2": "#3d0f25", "--line": "#541433", "--text": "#fff1f2",
-      "--muted": "#c9829a", "--primary": "#f43f5e", "--primary-dim": "#4c0519",
-      "--gold": "#fbbf24", "--danger": "#f87171",
-    },
-    light: {
-      "--bg": "#fff5f5", "--bg2": "#ffe4e6", "--surface": "#ffffff",
-      "--surface2": "#fff5f5", "--line": "#fecdd3", "--text": "#4c0519",
-      "--muted": "#be123c", "--primary": "#be123c", "--primary-dim": "#fecdd3",
-      "--gold": "#d97706", "--danger": "#dc2626",
-    }
+    name: "Faded Rose",
+    dark: { "--bg": "#140f10", "--bg2": "#1b1416", "--surface": "#241a1c", "--surface2": "#312326", "--line": "#3f2e31", "--text": "#f4ebec", "--muted": "#b29699", "--primary": "#bd848d", "--primary-dim": "#3a2629", "--gold": "#cda75f", "--danger": "#d07d66" },
+    light: { "--bg": "#f6f0ee", "--bg2": "#efe3e1", "--surface": "#fffbfa", "--surface2": "#f6efed", "--line": "#e6d4d1", "--text": "#392b2c", "--muted": "#8a7271", "--primary": "#9a6b73", "--primary-dim": "#ecd7d6", "--gold": "#a98a4d", "--danger": "#b3564a" },
   },
-  amber: {
-    name: "Golden Amber",
-    dark: {
-      "--bg": "#120b04", "--bg2": "#1c1106", "--surface": "#2b1a09",
-      "--surface2": "#3d250d", "--line": "#543313", "--text": "#fef3c7",
-      "--muted": "#cf9d5e", "--primary": "#f59e0b", "--primary-dim": "#78350f",
-      "--gold": "#fbbf24", "--danger": "#f87171",
-    },
-    light: {
-      "--bg": "#fffbeb", "--bg2": "#fef3c7", "--surface": "#ffffff",
-      "--surface2": "#fffbeb", "--line": "#fde68a", "--text": "#78350f",
-      "--muted": "#b45309", "--primary": "#b45309", "--primary-dim": "#fde68a",
-      "--gold": "#b45309", "--danger": "#dc2626",
-    }
-  },
-  mono: {
-    name: "Slate Obsidian",
-    dark: {
-      "--bg": "#050505", "--bg2": "#0f0f0f", "--surface": "#1a1a1a",
-      "--surface2": "#262626", "--line": "#383838", "--text": "#fafafa",
-      "--muted": "#a3a3a3", "--primary": "#737373", "--primary-dim": "#262626",
-      "--gold": "#e5e5e5", "--danger": "#ef4444",
-    },
-    light: {
-      "--bg": "#fafafa", "--bg2": "#f5f5f5", "--surface": "#ffffff",
-      "--surface2": "#fafafa", "--line": "#e5e5e5", "--text": "#171717",
-      "--muted": "#525252", "--primary": "#404040", "--primary-dim": "#e5e5e5",
-      "--gold": "#a3a3a3", "--danger": "#ef4444",
-    }
-  }
 };
 
 export const BEAD_THEMES = [
@@ -446,4 +397,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;

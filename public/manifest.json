@@ -1,0 +1,24 @@
+{
+  "name": "Sabḥa — Digital Tasbeeh & Dhikr Counter",
+  "short_name": "Sabḥa",
+  "description": "Sabḥa is a digital tasbeeh / dhikr counter designed for mobile and desktop. Track your daily adhkar, build custom routines, analyze streaks, and customize beautiful bead themes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07140f",
+  "theme_color": "#07140f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ]
+}
