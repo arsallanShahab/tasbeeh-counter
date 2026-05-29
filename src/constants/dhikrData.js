@@ -3,27 +3,319 @@ import {
 } from "lucide-react";
 
 export const SEED_DHIKRS = [
-  { id: "subhanallah", tr: "SubhanAllah", arabic: "سُبْحَانَ ٱللَّٰهِ", en: "Glory be to Allah", ur: "اللہ پاک ہے", target: 33, tags: ["after-salah", "general"] },
-  { id: "alhamdulillah", tr: "Alhamdulillah", arabic: "ٱلْحَمْدُ لِلَّٰهِ", en: "All praise is for Allah", ur: "سب تعریف اللہ کے لیے ہے", target: 33, tags: ["after-salah", "general"] },
-  { id: "allahuakbar", tr: "Allahu Akbar", arabic: "ٱللَّٰهُ أَكْبَرُ", en: "Allah is the Greatest", ur: "اللہ سب سے بڑا ہے", target: 34, tags: ["after-salah", "general"] },
-  { id: "astaghfirullah", tr: "Astaghfirullah", arabic: "أَسْتَغْفِرُ ٱللَّٰهَ", en: "I seek the forgiveness of Allah", ur: "میں اللہ سے بخشش مانگتا ہوں", target: 100, tags: ["general", "repentance"] },
-  { id: "subhanwabihamdihi", tr: "SubhanAllahi wa bihamdihi", arabic: "سُبْحَانَ ٱللَّٰهِ وَبِحَمْدِهِ", en: "Glory and praise be to Allah", ur: "اللہ پاک ہے اور سب تعریف اسی کی ہے", target: 100, tags: ["general", "morning", "evening"] },
-  { id: "subhanalazeem", tr: "SubhanAllahil ‘Azeem", arabic: "سُبْحَانَ ٱللَّٰهِ ٱلْعَظِيمِ", en: "Glory be to Allah, the Magnificent", ur: "اللہ عظمت والا پاک ہے", target: 100, tags: ["general"] },
-  { id: "lailaha", tr: "La ilaha illallah", arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", en: "There is no god but Allah", ur: "اللہ کے سوا کوئی معبود نہیں", target: 100, tags: ["general"] },
-  { id: "lahawla", tr: "La hawla wa la quwwata illa billah", arabic: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِٱللَّٰهِ", en: "There is no might nor power except with Allah", ur: "نیکی کی توفیق اور گناہ سے بچنا صرف اللہ کی مدد سے ہے", target: 100, tags: ["general", "distress"] },
-  { id: "durood", tr: "Allahumma salli ‘ala Muhammad", arabic: "ٱللَّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ", en: "O Allah, send blessings upon Muhammad and the family of Muhammad", ur: "اے اللہ! محمد ﷺ اور آلِ محمد پر درود بھیج", target: 100, tags: ["general", "friday"] },
-  { id: "hasbunallah", tr: "Hasbunallahu wa ni‘mal wakeel", arabic: "حَسْبُنَا ٱللَّٰهُ وَنِعْمَ ٱلْوَكِيلُ", en: "Allah is sufficient for us, and He is the best disposer of affairs", ur: "ہمیں اللہ کافی ہے اور وہ بہترین کارساز ہے", target: 100, tags: ["general", "distress"] },
-  { id: "tahleel", tr: "La ilaha illallahu wahdahu…", arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ", en: "None has the right to be worshipped but Allah alone, with no partner; His is the dominion and the praise, and He is over all things competent", ur: "اللہ کے سوا کوئی معبود نہیں، وہ اکیلا ہے، اس کا کوئی شریک نہیں؛ اسی کی بادشاہی اور اسی کے لیے تعریف ہے، اور وہ ہر چیز پر قادر ہے", target: 10, tags: ["morning", "evening", "general"] },
-  { id: "kalima1", tr: "La ilaha illallahu Muhammadur Rasulullah", arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ مُحَمَّدٌ رَسُولُ ٱللَّٰهِ", en: "There is no god but Allah; Muhammad is the Messenger of Allah", ur: "اللہ کے سوا کوئی معبود نہیں، محمد ﷺ اللہ کے رسول ہیں", target: 100, tags: ["general"] },
+  {
+    id: "subhanallah",
+    tr: "SubhanAllah",
+    arabic: "سُبْحَانَ اللّٰهِ",
+    en: "Glory be to Allah",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "alhamdulillah",
+    tr: "Alhamdulillah",
+    arabic: "الْحَمْدُ لِلّٰهِ",
+    en: "All praise belongs to Allah",
+    target: 100,
+    tags: ["general", "gratitude"]
+  },
+
+  {
+    id: "allahuakbar",
+    tr: "Allahu Akbar",
+    arabic: "اللّٰهُ أَكْبَرُ",
+    en: "Allah is the Greatest",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "astaghfirullah",
+    tr: "Astaghfirullah",
+    arabic: "أَسْتَغْفِرُ اللّٰهَ",
+    en: "I seek Allah's forgiveness",
+    target: 100,
+    tags: ["repentance", "forgiveness"]
+  },
+
+  {
+    id: "astaghfirullah_wa_atubu",
+    tr: "Astaghfirullaha wa atubu ilayh",
+    arabic: "أَسْتَغْفِرُ اللّٰهَ وَأَتُوبُ إِلَيْهِ",
+    en: "I seek Allah's forgiveness and repent to Him",
+    target: 100,
+    tags: ["repentance"]
+  },
+
+  {
+    id: "subhanwabihamdihi",
+    tr: "SubhanAllahi wa bihamdihi",
+    arabic: "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ",
+    en: "Glory and praise be to Allah",
+    target: 100,
+    tags: ["morning", "evening", "general"]
+  },
+
+  {
+    id: "subhanalazeem",
+    tr: "SubhanAllahil Azeem",
+    arabic: "سُبْحَانَ اللّٰهِ الْعَظِيمِ",
+    en: "Glory be to Allah, the Magnificent",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "kalimatain",
+    tr: "SubhanAllahi wa bihamdihi, SubhanAllahil Azeem",
+    arabic: "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ، سُبْحَانَ اللّٰهِ الْعَظِيمِ",
+    en: "Two beloved phrases to Allah",
+    target: 100,
+    tags: ["general", "high-reward"]
+  },
+
+  {
+    id: "lailaha",
+    tr: "La ilaha illallah",
+    arabic: "لَا إِلَٰهَ إِلَّا اللّٰهُ",
+    en: "There is no god worthy of worship except Allah",
+    target: 100,
+    tags: ["tawheed"]
+  },
+
+  {
+    id: "tahleel",
+    tr: "La ilaha illallahu wahdahu la sharika lah...",
+    arabic:
+      "لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
+    en: "None has the right to be worshipped except Allah alone...",
+    target: 100,
+    tags: ["morning", "evening", "protection"]
+  },
+
+  {
+    id: "lahawla",
+    tr: "La hawla wa la quwwata illa billah",
+    arabic: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ",
+    en: "There is no power nor might except with Allah",
+    target: 100,
+    tags: ["distress", "general"]
+  },
+
+  {
+    id: "hasbunallah",
+    tr: "Hasbunallahu wa ni'mal wakeel",
+    arabic: "حَسْبُنَا اللّٰهُ وَنِعْمَ الْوَكِيلُ",
+    en: "Allah is sufficient for us and the best disposer of affairs",
+    target: 100,
+    tags: ["anxiety", "distress"]
+  },
+
+  {
+    id: "salawat",
+    tr: "Allahumma salli ala Muhammad",
+    arabic: "اللّٰهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ",
+    en: "O Allah send blessings upon Muhammad ﷺ",
+    target: 100,
+    tags: ["friday", "general"]
+  },
+
+  {
+    id: "sayyidul_istighfar",
+    tr: "Allahumma anta Rabbi la ilaha illa Ant...",
+    arabic:
+      "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ...",
+    en: "The chief supplication for seeking forgiveness",
+    target: 1,
+    tags: ["morning", "evening", "forgiveness"]
+  },
+
+  {
+    id: "protection_words",
+    tr: "A'udhu bi kalimatillahit tammati min sharri ma khalaq",
+    arabic:
+      "أَعُوذُ بِكَلِمَاتِ اللّٰهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ",
+    en: "I seek refuge in Allah's perfect words...",
+    target: 3,
+    tags: ["protection", "evening"]
+  },
+
+  {
+    id: "radhitu_billah",
+    tr: "Radhitu billahi Rabba...",
+    arabic:
+      "رَضِيتُ بِاللّٰهِ رَبًّا وَبِالْإِسْلَامِ دِينًا وَبِمُحَمَّدٍ ﷺ نَبِيًّا",
+    en: "I am pleased with Allah as Lord...",
+    target: 3,
+    tags: ["morning", "evening"]
+  },
+
+  {
+    id: "bismillah_protection",
+    tr: "Bismillahil ladhi la yadurru...",
+    arabic:
+      "بِسْمِ اللّٰهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ",
+    en: "In the name of Allah with whose name nothing can harm",
+    target: 3,
+    tags: ["morning", "evening", "protection"]
+  },
+
+  {
+    id: "subhan_adada",
+    tr: "SubhanAllahi wa bihamdihi adada khalqihi...",
+    arabic:
+      "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ وَرِضَا نَفْسِهِ...",
+    en: "Glory and praise be to Allah equal to His creation...",
+    target: 3,
+    tags: ["morning", "high-reward"]
+  },
+
+  {
+    id: "sleep_tasbeeh",
+    tr: "SubhanAllah • Alhamdulillah • Allahu Akbar",
+    arabic: "سُبْحَانَ اللّٰهِ • الْحَمْدُ لِلّٰهِ • اللّٰهُ أَكْبَرُ",
+    en: "Tasbeeh before sleep",
+    target: 100,
+    tags: ["sleep"]
+  }
 ];
 
 export const SEED_LISTS = [
-  { id: "after-salah", name: "After Salah", occasion: "after-salah", icon: "sun", note: "Tasbeeh Faatimah — recited after each obligatory prayer (total 100).", steps: [{ dhikr: "subhanallah", target: 33 }, { dhikr: "alhamdulillah", target: 33 }, { dhikr: "allahuakbar", target: 34 }] },
-  { id: "istighfar-100", name: "Istighfar ×100", occasion: "repentance", icon: "heart", steps: [{ dhikr: "astaghfirullah", target: 100 }] },
-  { id: "durood-100", name: "Durood Sharif ×100", occasion: "friday", icon: "star", steps: [{ dhikr: "durood", target: 100 }] },
-  { id: "tasbih-100", name: "SubhanAllahi wa bihamdihi ×100", occasion: "general", icon: "sparkles", steps: [{ dhikr: "subhanwabihamdihi", target: 100 }] },
-  { id: "morning", name: "Morning Adhkar (short)", occasion: "morning", icon: "sunrise", note: "A short selection — the full morning adhkar are longer.", steps: [{ dhikr: "subhanwabihamdihi", target: 100 }, { dhikr: "tahleel", target: 10 }, { dhikr: "astaghfirullah", target: 100 }] },
-  { id: "evening", name: "Evening Adhkar (short)", occasion: "evening", icon: "moon", note: "A short selection — the full evening adhkar are longer.", steps: [{ dhikr: "subhanwabihamdihi", target: 100 }, { dhikr: "tahleel", target: 10 }, { dhikr: "astaghfirullah", target: 100 }] },
+  {
+    id: "after-salah",
+    name: "After Salah",
+    occasion: "after-salah",
+    icon: "mosque",
+    steps: [
+      { dhikr: "subhanallah", target: 33 },
+      { dhikr: "alhamdulillah", target: 33 },
+      { dhikr: "allahuakbar", target: 34 }
+    ]
+  },
+
+  {
+    id: "before-sleep",
+    name: "Before Sleep Sunnah Tasbeeh",
+    occasion: "sleep",
+    icon: "moon",
+    steps: [
+      { dhikr: "subhanallah", target: 33 },
+      { dhikr: "alhamdulillah", target: 33 },
+      { dhikr: "allahuakbar", target: 34 }
+    ]
+  },
+
+  {
+    id: "istighfar-100",
+    name: "Forgiveness ×100",
+    occasion: "forgiveness",
+    icon: "heart",
+    steps: [
+      { dhikr: "astaghfirullah_wa_atubu", target: 100 }
+    ]
+  },
+
+  {
+    id: "sayyidul-istighfar",
+    name: "Sayyidul Istighfar",
+    occasion: "forgiveness",
+    icon: "shield",
+    steps: [
+      { dhikr: "sayyidul_istighfar", target: 1 }
+    ]
+  },
+
+  {
+    id: "durood-100",
+    name: "Durood Sharif ×100",
+    occasion: "friday",
+    icon: "star",
+    steps: [
+      { dhikr: "salawat", target: 100 }
+    ]
+  },
+
+  {
+    id: "tasbeeh-100",
+    name: "SubhanAllahi wa bihamdihi ×100",
+    occasion: "general",
+    icon: "sparkles",
+    steps: [
+      { dhikr: "subhanwabihamdihi", target: 100 }
+    ]
+  },
+
+  {
+    id: "tahleel-100",
+    name: "Tahleel ×100",
+    occasion: "tawheed",
+    icon: "star",
+    steps: [
+      { dhikr: "tahleel", target: 100 }
+    ]
+  },
+
+  {
+    id: "anxiety-relief",
+    name: "For Anxiety & Hardship",
+    occasion: "distress",
+    icon: "heart",
+    steps: [
+      { dhikr: "hasbunallah", target: 100 },
+      { dhikr: "lahawla", target: 100 }
+    ]
+  },
+
+  {
+    id: "morning-short",
+    name: "Morning Adhkar (Short)",
+    occasion: "morning",
+    icon: "sunrise",
+    steps: [
+      { dhikr: "radhitu_billah", target: 3 },
+      { dhikr: "bismillah_protection", target: 3 },
+      { dhikr: "subhan_adada", target: 3 },
+      { dhikr: "subhanwabihamdihi", target: 100 },
+      { dhikr: "tahleel", target: 100 }
+    ]
+  },
+
+  {
+    id: "evening-short",
+    name: "Evening Adhkar (Short)",
+    occasion: "evening",
+    icon: "moon",
+    steps: [
+      { dhikr: "radhitu_billah", target: 3 },
+      { dhikr: "bismillah_protection", target: 3 },
+      { dhikr: "protection_words", target: 3 },
+      { dhikr: "subhanwabihamdihi", target: 100 }
+    ]
+  },
+
+  {
+    id: "high-reward",
+    name: "Highest Reward Dhikr",
+    occasion: "general",
+    icon: "trophy",
+    steps: [
+      { dhikr: "kalimatain", target: 100 },
+      { dhikr: "subhanwabihamdihi", target: 100 },
+      { dhikr: "tahleel", target: 100 }
+    ]
+  },
+
+  {
+    id: "gratitude",
+    name: "Shukr & Gratitude",
+    occasion: "gratitude",
+    icon: "heart",
+    steps: [
+      { dhikr: "alhamdulillah", target: 100 },
+      { dhikr: "subhanallah", target: 100 }
+    ]
+  }
 ];
 
 export const OCCASIONS = {
