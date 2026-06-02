@@ -1,4 +1,5 @@
 import React from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES } from "./constants/dhikrData";
 import HomeView from "./components/home/HomeView";
@@ -62,11 +63,21 @@ const AppContent = () => {
       </svg>
 
       <div className={`relative mx-auto max-w-md px-5 pt-4 transition-all duration-300 ${view === "counter" ? "pb-6" : "pb-28"}`}>
-        {view === "home" && <HomeView />}
-        {view === "library" && <LibraryView />}
-        {view === "counter" && <CounterView />}
-        {view === "stats" && <StatsView />}
-        {view === "settings" && <SettingsView />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {view === "home" && <HomeView />}
+            {view === "library" && <LibraryView />}
+            {view === "counter" && <CounterView />}
+            {view === "stats" && <StatsView />}
+            {view === "settings" && <SettingsView />}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <Navbar />

@@ -32,6 +32,29 @@
   line-height: 2.1;
 }
 
+/* Ant-design inspired easing curves */
+:root {
+  --ease-out-quint: cubic-bezier(.215,.61,.355,1);
+  --ease-in-out-quint: cubic-bezier(.86,0,.07,1);
+  --ease-out-circ: cubic-bezier(.08,.82,.17,1);
+  --ease-in-out-circ: cubic-bezier(.78,.14,.15,.86);
+  --ease-out-back: cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Default smooth transitions on common interactive elements */
+button, a, input, textarea, select {
+  transition: background-color .25s var(--ease-out-quint),
+              border-color .25s var(--ease-out-quint),
+              color .25s var(--ease-out-quint),
+              box-shadow .25s var(--ease-out-quint),
+              transform .2s var(--ease-out-quint),
+              opacity .25s var(--ease-out-quint);
+}
+
+button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -54,20 +77,62 @@
   100% { opacity: .4; }
 }
 
+/* Modal enter/exit (ant design "zoom" motion) */
+@keyframes zoomIn {
+  0%   { transform: scale(.2); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes zoomOut {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(.2); opacity: 0; }
+}
+@keyframes maskIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes maskOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Page transition (slide-up + fade like ant motion-fall) */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pageOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
 .anim-fade {
-  animation: fadeUp .45s cubic-bezier(.2,.7,.3,1) both;
+  animation: fadeUp .45s var(--ease-out-quint) both;
 }
 
 .anim-pop {
-  animation: popIn .35s cubic-bezier(.2,.7,.3,1) both;
+  animation: popIn .35s var(--ease-out-quint) both;
 }
 
+.anim-mask-in   { animation: maskIn .25s var(--ease-out-quint) both; }
+.anim-mask-out  { animation: maskOut .2s var(--ease-out-quint) both; }
+.anim-zoom-in   { animation: zoomIn .28s var(--ease-out-circ) both; }
+.anim-zoom-out  { animation: zoomOut .22s var(--ease-in-out-circ) both; }
+.anim-page-in   { animation: pageIn .35s var(--ease-out-quint) both; }
+
 .tap-num {
-  transition: transform .12s cubic-bezier(.2,.7,.3,1);
+  transition: transform .12s var(--ease-out-quint);
 }
 
 .tap-num.bump {
   transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

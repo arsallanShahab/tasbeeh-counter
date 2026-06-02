@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Plus, Trash2, Pin, PinOff, Sparkles, Search } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
@@ -102,11 +103,12 @@ export const LibraryView = () => {
         {filteredLists.length === 0 ? (
           <p className="text-center text-xs text-[var(--muted)] py-4 font-semibold">No tasbeeh sets match your parameters.</p>
         ) : (
-          <div className="space-y-3">
+          <motion.div layout className="space-y-3">
+            <AnimatePresence initial={false}>
             {filteredLists.map((l) => {
               const Ico = ICONS[l.icon] || Sparkles;
               return (
-                <Card key={l.id} className="flex items-center gap-3 p-4">
+                <Card animated key={l.id} className="flex items-center gap-3 p-4">
                   <div 
                     className="flex h-11 w-11 items-center justify-center rounded-2xl shrink-0" 
                     style={{ background: "var(--surface2)" }}
@@ -149,7 +151,8 @@ export const LibraryView = () => {
                 </Card>
               );
             })}
-          </div>
+            </AnimatePresence>
+          </motion.div>
         )}
       </section>
 
@@ -159,9 +162,10 @@ export const LibraryView = () => {
         {filteredDhikrs.length === 0 ? (
           <p className="text-center text-xs text-[var(--muted)] py-4 font-semibold">No dhikrs match your parameters.</p>
         ) : (
-          <div className="space-y-3">
+          <motion.div layout className="space-y-3">
+            <AnimatePresence initial={false}>
             {filteredDhikrs.map((d) => (
-              <Card key={d.id} className="flex items-center gap-3 p-4">
+              <Card animated key={d.id} className="flex items-center gap-3 p-4">
                 <button 
                   onClick={() => startDhikr(d)} 
                   className="min-w-0 flex-1 text-left cursor-pointer"
@@ -201,7 +205,8 @@ export const LibraryView = () => {
                 )}
               </Card>
             ))}
-          </div>
+            </AnimatePresence>
+          </motion.div>
         )}
       </section>
     </div>

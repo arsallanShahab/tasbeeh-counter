@@ -1,16 +1,16 @@
 import React, { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { X, Plus, Sparkles, FolderHeart, LayoutGrid, Check } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { OCCASIONS, ICONS } from "../../constants/dhikrData";
 import Card from "../common/Card";
+import Modal from "../common/Modal";
 
 export const NewListModal = ({ isOpen, onClose }) => {
   const { dhikrs, dById, saveList, vibe } = useApp();
-  
+
   const [nl, setNl] = useState({ name: "", occasion: "general", icon: "sparkles", steps: [] });
   const [pick, setPick] = useState({ dhikr: "", target: 33 });
-
-  if (!isOpen) return null;
 
   const addStep = () => {
     if (!pick.dhikr) return;
@@ -38,14 +38,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
   const inputCls = "w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 transition-all font-semibold";
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-all duration-300" 
-      onClick={onClose}
-    >
-      <div 
-        className="anim-pop max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 no-scrollbar shadow-2xl" 
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen} onClose={onClose}>
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -130,11 +123,17 @@ export const NewListModal = ({ isOpen, onClose }) => {
                 No steps added yet. Add a dhikr below to start your timeline.
               </p>
             ) : (
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 no-scrollbar">
+              <motion.div layout className="space-y-2 max-h-[160px] overflow-y-auto pr-1 no-scrollbar">
+                <AnimatePresence initial={false}>
                 {nl.steps.map((s, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm anim-fade"
+                  <motion.div
+                    key={`${s.dhikr}-${idx}`}
+                    layout
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 40, transition: { duration: 0.18 } }}
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                    className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface2)] text-[10px] font-bold text-[var(--gold)] shrink-0">
@@ -153,9 +152,10 @@ export const NewListModal = ({ isOpen, onClose }) => {
                         <X size={16} />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+                </AnimatePresence>
+              </motion.div>
             )}
 
             {/* Step Adder Widget */}
@@ -219,8 +219,7 @@ export const NewListModal = ({ isOpen, onClose }) => {
             {isListValid ? "Save & Create Set List" : "Name list & add steps"}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

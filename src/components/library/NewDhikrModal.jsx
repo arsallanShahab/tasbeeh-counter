@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { X, Type, Languages, Target } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import Modal from "../common/Modal";
 
 export const NewDhikrModal = ({ isOpen, onClose }) => {
   const { saveDhikr, vibe } = useApp();
   const [nd, setNd] = useState({ tr: "", arabic: "", en: "", ur: "", target: 33 });
-
-  if (!isOpen) return null;
 
   const handleSave = () => {
     if (!nd.tr.trim() || !nd.arabic.trim()) return;
@@ -22,14 +21,7 @@ export const NewDhikrModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 transition-all duration-300" 
-      onClick={onClose}
-    >
-      <div 
-        className="anim-pop max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 no-scrollbar shadow-2xl" 
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal isOpen={isOpen} onClose={onClose}>
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -143,8 +135,7 @@ export const NewDhikrModal = ({ isOpen, onClose }) => {
             {isValid ? "Save & Add Dhikr" : "Fill Required Fields"}
           </button>
         </div>
-      </div>
-    </div>
+      </Modal>
   );
 };
 
