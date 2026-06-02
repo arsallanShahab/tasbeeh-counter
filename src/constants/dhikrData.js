@@ -908,11 +908,22 @@ export const OCCASIONS = {
 
 export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
 
+export const DHIKR_FIELDS = {
+  arabic: { label: "Arabic" },
+  translit: { label: "Transliteration" },
+  translation: { label: "Translation" },
+};
+
+export const DEFAULT_DHIKR_FIELD_ORDER = ["arabic", "translit", "translation"];
+export const DEFAULT_DHIKR_FIELD_VISIBLE = { arabic: true, translit: true, translation: true };
+
 export const DEFAULT_SETTINGS = {
   lang: "both",
   theme: "classic",
   appearance: "dark",
   translit: true,
+  dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
+  dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
   haptics: true,
   sound: false,
   autoAdvance: true,
@@ -979,4 +990,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 4;
+export const STORAGE_VERSION = 5;
