@@ -550,7 +550,15 @@ export const SettingsView = () => {
           </div>
           <Toggle 
             on={settings.alertsEnabled} 
-            onClick={() => set("alertsEnabled", !settings.alertsEnabled)} 
+            onClick={async () => {
+              const enabling = !settings.alertsEnabled;
+              set("alertsEnabled", enabling);
+              if (enabling && notifyPermission === "default") {
+                await requestNotificationPermission();
+              } else if (enabling && notifyPermission === "denied") {
+                window.alert("Notifications are blocked. Please enable them in your browser/device settings for this app.");
+              }
+            }} 
           />
         </div>
 
@@ -568,7 +576,7 @@ export const SettingsView = () => {
                 </span>
               ) : notifyPermission === "denied" ? (
                 <span className="text-[10px] font-bold text-[var(--danger)] bg-[var(--danger)]/10 px-2.5 py-1 rounded-full shrink-0">
-                  Blocked in Browser
+                  Blocked
                 </span>
               ) : (
                 <button
@@ -580,6 +588,18 @@ export const SettingsView = () => {
               )}
             </div>
 
+            {notifyPermission === "denied" && (
+              <p className="text-[10px] text-[var(--danger)] leading-relaxed px-1 -mt-2 font-medium">
+                Notifications are blocked. Open your browser or device settings → find this site/app → allow notifications, then refresh.
+              </p>
+            )}
+
+            {/* iOS PWA limitation */}
+            {typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && (
+              <p className="text-[10px] text-[var(--gold)] leading-relaxed px-1 -mt-2 font-medium">
+                ⚠️ On iOS, notifications only fire while the app is open. Keep Sabḥa open or in the background for timely alerts.
+              </p>
+            )}
             {/* List of active alerts */}
             <div className="space-y-2">
               {settings.alerts && settings.alerts.map((a) => {

@@ -460,7 +460,61 @@ export const AppProvider = ({ children }) => {
     return permission === "granted";
   }, []);
 
-  const triggerNotification = useCallback((title, body, url = "/#home") => {
+  /* Auto-request notification permission when alerts are enabled */
+  useEffect(() => {
+    if (!loaded || !settings.alertsEnabled) return;
+    if (notifyPermission === "default" && "Notification" in window) {
+      // Small delay so it doesn't fire instantly on first render
+      const timer = setTimeout(() => {
+        Notification.requestPermission().then((perm) => {
+          setNotifyPermission(perm);
+        });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [loaded, settings.alertsEnabled, notifyPermission]);
+
+  /* Sync alert configs to service worker for background scheduling */
+  const syncAlertsToSW = useCallback(() => {
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({
+      type: "SYNC_ALERTS",
+      alerts: settings.alerts || [],
+      enabled: !!settings.alertsEnabled
+    });
+  }, [settings.alerts, settings.alertsEnabled]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    syncAlertsToSW();
+    // Also sync when SW becomes active (e.g. after first install)
+    const onControllerChange = () => syncAlertsToSW();
+    navigator.serviceWorker?.addEventListener("controllerchange", onControllerChange);
+    return () => navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange);
+  }, [loaded, syncAlertsToSW]);
+
+  /* Register periodic background sync (Android Chrome) */
+  useEffect(() => {
+    if (!loaded || !settings.alertsEnabled || notifyPermission !== "granted") return;
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker.ready.then(async (reg) => {
+      if ("periodicSync" in reg) {
+        try {
+          const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+          if (status.state === "granted") {
+            await reg.periodicSync.register("sabha-alert-check", {
+              minInterval: 15 * 60 * 1000 // 15 minutes minimum
+            });
+          }
+        } catch (e) {
+          // periodicSync not supported or denied — foreground fallback handles this
+        }
+      }
+    });
+  }, [loaded, settings.alertsEnabled, notifyPermission]);
+
+  const triggerNotification = useCallback((title, body, alertId, url = "/") => {
     try {
       if ("serviceWorker" in navigator && navigator.serviceWorker.ready) {
         navigator.serviceWorker.ready.then((reg) => {
@@ -469,8 +523,12 @@ export const AppProvider = ({ children }) => {
             icon: "/favicon.svg",
             vibrate: [200, 100, 200],
             badge: "/favicon.svg",
-            tag: "sabha-reminder",
-            data: { url }
+            tag: `sabha-${alertId || "reminder"}`,
+            data: { url },
+            actions: [
+              { action: "open", title: "Begin" },
+              { action: "dismiss", title: "Later" }
+            ]
           });
         });
       } else {
@@ -487,11 +545,11 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  /* Notification check loop */
+  /* Foreground notification check loop + visibility-change handler */
   useEffect(() => {
     if (notifyPermission !== "granted" || !settings.alertsEnabled || !settings.alerts) return;
 
-    const interval = setInterval(() => {
+    const checkAlerts = () => {
       const now = new Date();
       const h = String(now.getHours()).padStart(2, "0");
       const m = String(now.getMinutes()).padStart(2, "0");
@@ -512,15 +570,33 @@ export const AppProvider = ({ children }) => {
             triggerNotification(
               alert.title, 
               alert.body || "It's time for your dhikr recitations.",
+              alert.id,
               deepLink
             );
             store.set(firedKey, today);
           }
         }
       });
-    }, 30000); // Check every 30 seconds
+    };
 
-    return () => clearInterval(interval);
+    // Check immediately on mount / re-enable
+    checkAlerts();
+
+    // Check every 15 seconds
+    const interval = setInterval(checkAlerts, 15000);
+
+    // Also check when user returns to the app (visibility change)
+    const onVisChange = () => {
+      if (document.visibilityState === "visible") {
+        checkAlerts();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisChange);
+    };
   }, [notifyPermission, settings.alerts, settings.alertsEnabled, triggerNotification]);
 
   return (
