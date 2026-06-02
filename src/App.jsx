@@ -8,6 +8,7 @@ import CounterView from "./components/counter/CounterView";
 import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
 import Navbar from "./components/layout/Navbar";
+import AppHeader from "./components/layout/AppHeader";
 import NewDhikrModal from "./components/library/NewDhikrModal";
 import NewListModal from "./components/library/NewListModal";
 
@@ -62,7 +63,7 @@ const AppContent = () => {
         <rect width="100%" height="100%" fill="url(#geo)" />
       </svg>
 
-      <div className={`relative mx-auto max-w-md px-5 pt-4 transition-all duration-300 ${view === "counter" ? "pb-6" : "pb-28"}`}>
+      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${view === "counter" ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
@@ -80,6 +81,7 @@ const AppContent = () => {
         </AnimatePresence>
       </div>
 
+      <AppHeader />
       <Navbar />
 
       {/* Render modular modals at root level for viewport positioning immune to layout boundaries */}
