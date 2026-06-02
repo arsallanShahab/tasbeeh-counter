@@ -1,5 +1,6 @@
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES } from "./constants/dhikrData";
 import HomeView from "./components/home/HomeView";
@@ -14,16 +15,17 @@ import NewListModal from "./components/library/NewListModal";
 
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
+  const location = useLocation();
 
   if (!loaded) {
     return (
-      <div 
-        className="font-body flex min-h-screen items-center justify-center bg-[#030806]" 
+      <div
+        className="font-body flex min-h-screen items-center justify-center bg-[#030806]"
         style={{ ...THEMES.classic.dark, background: "var(--bg)" }}
       >
-        <p 
-          className="font-arabic text-3xl text-[var(--gold)]" 
-          style={{ animation: "shimmer 1.4s ease infinite" }} 
+        <p
+          className="font-arabic text-3xl text-[var(--gold)]"
+          style={{ animation: "shimmer 1.4s ease infinite" }}
           dir="rtl"
         >
           سُبْحَة
@@ -36,27 +38,27 @@ const AppContent = () => {
   const themeVars = activeThemeGroup[settings.appearance || "dark"];
 
   return (
-    <div 
-      className="font-body min-h-screen transition-colors duration-300 relative overflow-x-hidden" 
-      style={{ 
-        ...themeVars, 
-        background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))", 
-        color: "var(--text)" 
+    <div
+      className="font-body min-h-screen transition-colors duration-300 relative overflow-x-hidden"
+      style={{
+        ...themeVars,
+        background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))",
+        color: "var(--text)",
       }}
     >
       {/* Dynamic Geometric Background Grid */}
-      <svg 
-        className="pointer-events-none fixed inset-0 h-full w-full select-none" 
-        style={{ opacity: 0.04 }} 
+      <svg
+        className="pointer-events-none fixed inset-0 h-full w-full select-none"
+        style={{ opacity: 0.04 }}
         aria-hidden="true"
       >
         <defs>
           <pattern id="geo" width="62" height="62" patternUnits="userSpaceOnUse">
-            <path 
-              d="M31 2 L38 24 L60 31 L38 38 L31 60 L24 38 L2 31 L24 24 Z" 
-              fill="none" 
-              stroke="var(--primary)" 
-              strokeWidth="1" 
+            <path
+              d="M31 2 L38 24 L60 31 L38 38 L31 60 L24 38 L2 31 L24 24 Z"
+              fill="none"
+              stroke="var(--primary)"
+              strokeWidth="1"
             />
           </pattern>
         </defs>
@@ -66,17 +68,20 @@ const AppContent = () => {
       <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${view === "counter" ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={view}
+            key={location.pathname}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
-            {view === "home" && <HomeView />}
-            {view === "library" && <LibraryView />}
-            {view === "counter" && <CounterView />}
-            {view === "stats" && <StatsView />}
-            {view === "settings" && <SettingsView />}
+            <Routes location={location}>
+              <Route path="/" element={<HomeView />} />
+              <Route path="/library" element={<LibraryView />} />
+              <Route path="/counter" element={<CounterView />} />
+              <Route path="/stats" element={<StatsView />} />
+              <Route path="/settings" element={<SettingsView />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -84,15 +89,9 @@ const AppContent = () => {
       <AppHeader />
       <Navbar />
 
-      {/* Render modular modals at root level for viewport positioning immune to layout boundaries */}
-      <NewDhikrModal 
-        isOpen={modal === "dhikr"} 
-        onClose={() => setModal(null)} 
-      />
-      <NewListModal 
-        isOpen={modal === "list"} 
-        onClose={() => setModal(null)} 
-      />
+      {/* Top-level modals — open state lives in URL search params (?modal=dhikr|list) */}
+      <NewDhikrModal isOpen={modal === "dhikr"} onClose={() => setModal(null)} />
+      <NewListModal isOpen={modal === "list"} onClose={() => setModal(null)} />
     </div>
   );
 };

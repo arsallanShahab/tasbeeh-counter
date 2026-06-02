@@ -64,7 +64,7 @@ self.addEventListener("fetch", (e) => {
 // Notification Click Event (Opens the app and handles deep linking)
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const targetUrl = (e.notification.data && e.notification.data.url) ? e.notification.data.url : "/#home";
+  const targetUrl = (e.notification.data && e.notification.data.url) ? e.notification.data.url : "/";
   const absoluteTargetUrl = new URL(targetUrl, self.location.origin).href;
 
   e.waitUntil(

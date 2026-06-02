@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION } from "../constants/dhikrData";
 import { store } from "../utils/storage";
 import { dateKey } from "../utils/stats";
@@ -6,40 +7,36 @@ import { WebHaptics } from "web-haptics";
 
 const AppContext = createContext(null);
 
+const VALID_VIEWS = ["home", "library", "stats", "settings", "counter"];
+
+const pathToView = (pathname) => {
+  const p = (pathname || "/").replace(/^\//, "").replace(/\/$/, "") || "home";
+  return VALID_VIEWS.includes(p) ? p : "home";
+};
+
+const viewToPath = (view) => (view === "home" ? "/" : `/${view}`);
+
 export const AppProvider = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const view = pathToView(location.pathname);
+  const modal = searchParams.get("modal") || null;
+  const activeOccasion = searchParams.get("occasion") || "all";
+
   const [loaded, setLoaded] = useState(false);
-  const [view, setViewInternal] = useState(() => {
-    const h = window.location.hash.slice(1);
-    const questionIndex = h.indexOf("?");
-    const path = questionIndex !== -1 ? h.slice(0, questionIndex) : h;
-    const valid = ["home", "library", "stats", "settings", "counter"];
-    return valid.includes(path) ? path : "home";
-  });
   const [dhikrs, setDhikrs] = useState(SEED_DHIKRS);
   const [lists, setLists] = useState(SEED_LISTS);
   const [pinned, setPinned] = useState(["after-salah", "istighfar-100", "durood-100"]);
   const [stats, setStats] = useState({ total: 0, byDate: {}, perDhikr: {} });
   const [settings, setSettingsInternal] = useState(DEFAULT_SETTINGS);
-  
+
   const [session, setSession] = useState(null);
-  const [modal, setModalInternal] = useState(() => {
-    const h = window.location.hash.slice(1);
-    const questionIndex = h.indexOf("?");
-    if (questionIndex === -1) return null;
-    const params = new URLSearchParams(h.slice(questionIndex + 1));
-    return params.get("modal") || null;
-  });
   const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEditInternal] = useState(false);
   const [customT, setCustomT] = useState("");
-  const [activeOccasion, setActiveOccasionInternal] = useState(() => {
-    const h = window.location.hash.slice(1);
-    const questionIndex = h.indexOf("?");
-    if (questionIndex === -1) return "all";
-    const params = new URLSearchParams(h.slice(questionIndex + 1));
-    return params.get("occasion") || "all";
-  });
   const [searchQuery, setSearchQuery] = useState("");
   const [notifyPermission, setNotifyPermission] = useState(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -47,6 +44,44 @@ export const AppProvider = ({ children }) => {
     }
     return "default";
   });
+
+  // Router-based navigation helpers (replace legacy hash-routing)
+  const setView = useCallback(
+    (newView) => {
+      navigate(viewToPath(newView));
+    },
+    [navigate]
+  );
+
+  const setModal = useCallback(
+    (newModal) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (newModal) next.set("modal", newModal);
+          else next.delete("modal");
+          return next;
+        },
+        { replace: false }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const setActiveOccasion = useCallback(
+    (newOccasion) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (!newOccasion || newOccasion === "all") next.delete("occasion");
+          else next.set("occasion", newOccasion);
+          return next;
+        },
+        { replace: false }
+      );
+    },
+    [setSearchParams]
+  );
   
   const saveTimer = useRef(null);
   const audioRef = useRef(null);
@@ -165,119 +200,10 @@ export const AppProvider = ({ children }) => {
     }
   }, [settings.haptics]);
 
-  const updateHash = useCallback(({ view: nextView, occasion: nextOccasion, modal: nextModal }) => {
-    const currentHash = window.location.hash;
-    const questionIndex = currentHash.indexOf("?");
-    let viewPath = currentHash.slice(1);
-    let queryStr = "";
-    if (questionIndex !== -1) {
-      viewPath = currentHash.slice(1, questionIndex);
-      queryStr = currentHash.slice(questionIndex + 1);
-    }
-    const params = new URLSearchParams(queryStr);
-    
-    const v = nextView !== undefined ? nextView : (["home", "library", "stats", "settings", "counter"].includes(viewPath) ? viewPath : "home");
-    const occ = nextOccasion !== undefined ? nextOccasion : (params.get("occasion") || "all");
-    const md = nextModal !== undefined ? nextModal : (params.get("modal") || null);
-
-    const newParams = new URLSearchParams();
-    if (occ !== "all") {
-      newParams.set("occasion", occ);
-    }
-    if (md) {
-      newParams.set("modal", md);
-    }
-    
-    const newQueryStr = newParams.toString();
-    const newHash = newQueryStr ? `${v}?${newQueryStr}` : v;
-    
-    if (window.location.hash !== `#${newHash}`) {
-      window.location.hash = newHash;
-    } else {
-      // If the target hash is identical, still trigger feedback
-      vibe(8);
-    }
-  }, [vibe]);
-
-  /* Hash routing listener */
-  useEffect(() => {
-    const handleHashChange = () => {
-      const currentHash = window.location.hash;
-      const questionIndex = currentHash.indexOf("?");
-      let viewPath = currentHash.slice(1);
-      let queryStr = "";
-      if (questionIndex !== -1) {
-        viewPath = currentHash.slice(1, questionIndex);
-        queryStr = currentHash.slice(questionIndex + 1);
-      }
-      
-      const params = new URLSearchParams(queryStr);
-      
-      const validViews = ["home", "library", "stats", "settings", "counter"];
-      const targetView = validViews.includes(viewPath) ? viewPath : "home";
-      const targetOccasion = params.get("occasion") || "all";
-      const targetModal = params.get("modal") || null;
-      
-      let changed = false;
-
-      setViewInternal((prev) => {
-        if (prev !== targetView) {
-          changed = true;
-          return targetView;
-        }
-        return prev;
-      });
-
-      setActiveOccasionInternal((prev) => {
-        if (prev !== targetOccasion) {
-          changed = true;
-          return targetOccasion;
-        }
-        return prev;
-      });
-
-      setModalInternal((prev) => {
-        if (prev !== targetModal) {
-          changed = true;
-          return targetModal;
-        }
-        return prev;
-      });
-
-      if (changed) {
-        vibe(8);
-      }
-    };
-
-    window.addEventListener("hashchange", handleHashChange);
-    
-    // Ensure initial hash is set if empty
-    if (!window.location.hash) {
-      window.history.replaceState(null, "", "#home");
-    } else {
-      // Trigger initial parsing
-      handleHashChange();
-    }
-    
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [vibe]);
-
-  const setView = useCallback((newView) => {
-    updateHash({ view: newView });
-  }, [updateHash]);
-
-  const setModal = useCallback((newModal) => {
-    updateHash({ modal: newModal });
-  }, [updateHash]);
-
   const setTargetEdit = useCallback((newTargetEdit) => {
     setTargetEditInternal(newTargetEdit);
     vibe(8);
   }, [vibe]);
-
-  const setActiveOccasion = useCallback((newOccasion) => {
-    updateHash({ occasion: newOccasion });
-  }, [updateHash]);
 
   const setSettings = useCallback((newSettingsVal) => {
     setSettingsInternal((prev) => {
@@ -342,7 +268,7 @@ export const AppProvider = ({ children }) => {
     });
     setComplete(false);
     setView("counter");
-  }, []);
+  }, [setView]);
 
   const startList = useCallback((list) => {
     openSession(list.steps.map((s) => ({ ...s })), list.name, list.occasion, list.id);
@@ -352,39 +278,39 @@ export const AppProvider = ({ children }) => {
     openSession([{ dhikr: d.id, target: d.target }], d.tr, "general");
   }, [openSession]);
 
-  /* Deep-link query parameter scanner hook */
+  /* Deep-link query parameter scanner — handles notification deep links like /counter?dhikr=ID */
   useEffect(() => {
     if (!loaded) return;
-
-    const checkDeepLink = () => {
-      const h = window.location.hash.slice(1);
-      const questionIndex = h.indexOf("?");
-      if (questionIndex === -1) return;
-      const params = new URLSearchParams(h.slice(questionIndex + 1));
-
-      if (params.has("dhikr")) {
-        const dId = params.get("dhikr");
-        const d = dhikrs.find((x) => x.id === dId);
-        if (d) {
-          window.history.replaceState(null, "", "#counter");
-          startDhikr(d);
-        }
-      } else if (params.has("list")) {
-        const lId = params.get("list");
-        const l = lists.find((x) => x.id === lId);
-        if (l) {
-          window.history.replaceState(null, "", "#counter");
-          startList(l);
-        }
+    const dhikrParam = searchParams.get("dhikr");
+    const listParam = searchParams.get("list");
+    if (dhikrParam) {
+      const d = dhikrs.find((x) => x.id === dhikrParam);
+      if (d) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("dhikr");
+            return next;
+          },
+          { replace: true }
+        );
+        startDhikr(d);
       }
-    };
-
-    // Scan immediately when app loads & gets hydrated
-    checkDeepLink();
-
-    window.addEventListener("hashchange", checkDeepLink);
-    return () => window.removeEventListener("hashchange", checkDeepLink);
-  }, [loaded, dhikrs, lists, startDhikr, startList]);
+    } else if (listParam) {
+      const l = lists.find((x) => x.id === listParam);
+      if (l) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("list");
+            return next;
+          },
+          { replace: true }
+        );
+        startList(l);
+      }
+    }
+  }, [loaded, searchParams, dhikrs, lists, startDhikr, startList, setSearchParams]);
 
   const increment = useCallback(() => {
     if (!session) return;
@@ -518,14 +444,14 @@ export const AppProvider = ({ children }) => {
     setDhikrs((ds) => [...ds, { ...nd, id, target: Number(nd.target) || 33, tags: ["custom", "general"] }]);
     setNd({ tr: "", arabic: "", en: "", ur: "", target: 33 });
     setModal(null);
-  }, []);
+  }, [setModal]);
 
   const saveList = useCallback((nl, setNl) => {
     if (!nl.name.trim() || nl.steps.length === 0) return;
     setLists((ls) => [...ls, { ...nl, id: "c_" + Date.now() }]);
     setNl({ name: "", occasion: "custom", icon: "sparkles", steps: [] });
     setModal(null);
-  }, []);
+  }, [setModal]);
 
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -552,7 +478,7 @@ export const AppProvider = ({ children }) => {
         n.onclick = () => {
           window.focus();
           if (url) {
-            window.location.hash = url.startsWith("/#") ? url.slice(2) : url;
+            window.location.href = url;
           }
         };
       }
@@ -577,11 +503,11 @@ export const AppProvider = ({ children }) => {
           const firedKey = `fired_${alert.id}`;
           const lastFired = store.get(firedKey, "");
           if (lastFired !== today) {
-            let deepLink = "/#home";
+            let deepLink = "/";
             if (alert.targetType === "dhikr" && alert.targetId) {
-              deepLink = `/#counter?dhikr=${alert.targetId}`;
+              deepLink = `/counter?dhikr=${alert.targetId}`;
             } else if (alert.targetType === "list" && alert.targetId) {
-              deepLink = `/#counter?list=${alert.targetId}`;
+              deepLink = `/counter?list=${alert.targetId}`;
             }
             triggerNotification(
               alert.title, 

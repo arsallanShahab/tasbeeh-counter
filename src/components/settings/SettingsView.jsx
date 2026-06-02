@@ -1,15 +1,273 @@
 import React, { useState } from "react";
-import { 
-  Globe, Moon, Sun, Disc, Palette, Vibrate, Volume2, 
+import {
+  Globe, Moon, Sun, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles,
-  Bell, Trash2, Plus, Check, Link
+  Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
-import { BEAD_THEMES, THEMES } from "../../constants/dhikrData";
+import { BEAD_THEMES, THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS } from "../../constants/dhikrData";
 import { buildCustom } from "../../utils/theme";
+
+const QuickCollectionsEditor = ({ value, onChange }) => {
+  const [picking, setPicking] = useState(false);
+  const list = (value && value.length > 0 ? value : []).filter((k) => OCCASIONS[k]);
+  const remaining = Object.keys(OCCASIONS).filter((k) => !list.includes(k));
+
+  const move = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= list.length) return;
+    const next = [...list];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  };
+
+  const remove = (key) => onChange(list.filter((k) => k !== key));
+  const add = (key) => {
+    onChange([...list, key]);
+    setPicking(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <AnimatePresence initial={false}>
+        {list.map((key, idx) => {
+          const Icon = OCCASION_ICONS[key] || Sparkles;
+          return (
+            <motion.div
+              key={key}
+              layout
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="flex items-center gap-2 rounded-2xl border px-3 py-2"
+              style={{
+                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                background: "color-mix(in srgb, var(--surface2) 60%, transparent)",
+              }}
+            >
+              <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
+              <div
+                className="flex h-7 w-7 items-center justify-center rounded-xl shrink-0"
+                style={{
+                  background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                  color: "var(--primary)",
+                }}
+              >
+                <Icon size={15} />
+              </div>
+              <span className="flex-1 text-sm font-medium text-[var(--text)] truncate">{OCCASIONS[key]}</span>
+              <div className="flex items-center gap-1">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => move(idx, -1)}
+                  disabled={idx === 0}
+                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+                  style={{ color: "var(--muted)" }}
+                  aria-label="Move up"
+                >
+                  <ChevronUp size={15} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => move(idx, 1)}
+                  disabled={idx === list.length - 1}
+                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+                  style={{ color: "var(--muted)" }}
+                  aria-label="Move down"
+                >
+                  <ChevronDown size={15} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => remove(key)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
+                  style={{
+                    background: "color-mix(in srgb, var(--danger) 14%, transparent)",
+                    color: "var(--danger)",
+                  }}
+                  aria-label="Remove"
+                >
+                  <Trash2 size={13} />
+                </motion.button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
+      {list.length === 0 && (
+        <p className="text-center text-xs text-[var(--muted)] py-2 font-medium">
+          No quick collections — the Home grid will be hidden.
+        </p>
+      )}
+
+      {/* Add picker */}
+      {remaining.length > 0 && (
+        <div className="mt-1">
+          {!picking ? (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setPicking(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed px-3 py-2.5 text-xs font-bold cursor-pointer"
+              style={{
+                borderColor: "color-mix(in srgb, var(--primary) 40%, transparent)",
+                color: "var(--primary)",
+                background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+              }}
+            >
+              <Plus size={14} /> Add a collection
+            </motion.button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl border p-2"
+              style={{
+                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                background: "color-mix(in srgb, var(--bg2) 50%, transparent)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Choose one</span>
+                <button
+                  onClick={() => setPicking(false)}
+                  className="text-[11px] font-bold text-[var(--muted)] cursor-pointer hover:text-[var(--text)]"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {remaining.map((key) => {
+                  const Icon = OCCASION_ICONS[key] || Sparkles;
+                  return (
+                    <motion.button
+                      key={key}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => add(key)}
+                      className="flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left cursor-pointer"
+                      style={{
+                        borderColor: "color-mix(in srgb, var(--line) 60%, transparent)",
+                        background: "color-mix(in srgb, var(--surface) 70%, transparent)",
+                      }}
+                    >
+                      <Icon size={14} className="text-[var(--gold)] shrink-0" />
+                      <span className="text-[11px] font-semibold text-[var(--text)] truncate">{OCCASIONS[key]}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DhikrFieldList = ({ order, visible, onOrderChange, onVisibleChange }) => {
+  // Make sure list shows all known fields; appends any missing from defaults
+  const fullOrder = [...order, ...DEFAULT_DHIKR_FIELD_ORDER.filter((k) => !order.includes(k))];
+  const visibleCount = fullOrder.filter((k) => visible[k] !== false).length;
+
+  const move = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= fullOrder.length) return;
+    const next = [...fullOrder];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onOrderChange(next);
+  };
+
+  const toggle = (key) => {
+    const isOn = visible[key] !== false;
+    // Don't allow hiding the last visible field
+    if (isOn && visibleCount <= 1) return;
+    onVisibleChange({ ...visible, [key]: !isOn });
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <AnimatePresence initial={false}>
+        {fullOrder.map((key, idx) => {
+          const meta = DHIKR_FIELDS[key];
+          if (!meta) return null;
+          const on = visible[key] !== false;
+          const lastVisible = on && visibleCount <= 1;
+          return (
+            <motion.div
+              key={key}
+              layout
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="flex items-center gap-2 rounded-2xl border px-3 py-2"
+              style={{
+                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                background: on
+                  ? "color-mix(in srgb, var(--surface2) 60%, transparent)"
+                  : "transparent",
+              }}
+            >
+              <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
+              <div className="flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold"
+                style={{
+                  background: "color-mix(in srgb, var(--gold) 18%, transparent)",
+                  color: "var(--gold)",
+                }}
+              >
+                {idx + 1}
+              </div>
+              <span className="flex-1 text-sm font-medium text-[var(--text)]">{meta.label}</span>
+              <div className="flex items-center gap-1">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => move(idx, -1)}
+                  disabled={idx === 0}
+                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+                  style={{ color: "var(--muted)" }}
+                  aria-label="Move up"
+                >
+                  <ChevronUp size={15} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => move(idx, 1)}
+                  disabled={idx === fullOrder.length - 1}
+                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+                  style={{ color: "var(--muted)" }}
+                  aria-label="Move down"
+                >
+                  <ChevronDown size={15} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => toggle(key)}
+                  disabled={lastVisible}
+                  title={lastVisible ? "At least one field must remain visible" : on ? "Hide" : "Show"}
+                  className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: on
+                      ? "color-mix(in srgb, var(--primary) 18%, transparent)"
+                      : "color-mix(in srgb, var(--surface2) 60%, transparent)",
+                    color: on ? "var(--primary)" : "var(--muted)",
+                  }}
+                  aria-label={on ? "Hide field" : "Show field"}
+                >
+                  {on ? <Eye size={14} /> : <EyeOff size={14} />}
+                </motion.button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const SettingsView = () => {
   const {
@@ -50,13 +308,38 @@ export const SettingsView = () => {
             options={[{ v: "en", l: "English" }, { v: "ur", l: "اردو" }, { v: "both", l: "Both" }]} 
           />
         </div>
-        <div className="border-t border-[var(--line)]" />
-        <Row icon={Sparkles} label="Show transliteration">
-          <Toggle 
-            on={settings.translit} 
-            onClick={() => set("translit", !settings.translit)} 
-          />
-        </Row>
+      </Card>
+
+      {/* Dhikr Display — priority order + visibility */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <Sparkles size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Dhikr Display</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Reorder priority and toggle visibility. Top items show first on the counter page. At least one must remain visible.
+        </p>
+        <DhikrFieldList
+          order={settings.dhikrFieldOrder || DEFAULT_DHIKR_FIELD_ORDER}
+          visible={settings.dhikrFieldVisible || DEFAULT_DHIKR_FIELD_VISIBLE}
+          onOrderChange={(next) => set("dhikrFieldOrder", next)}
+          onVisibleChange={(next) => set("dhikrFieldVisible", next)}
+        />
+      </Card>
+
+      {/* Quick Collections — Home grid configuration */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <LayoutGrid size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Quick Collections</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Choose which occasion shortcuts appear on the Home grid, and in what order. Tapping one opens the Library filtered to that category.
+        </p>
+        <QuickCollectionsEditor
+          value={settings.quickCollections || DEFAULT_QUICK_COLLECTIONS}
+          onChange={(next) => set("quickCollections", next)}
+        />
       </Card>
 
       <Card className="px-5 py-4">

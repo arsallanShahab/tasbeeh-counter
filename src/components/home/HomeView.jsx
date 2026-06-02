@@ -1,11 +1,11 @@
 import React from "react";
-import { 
-  Plus, Sparkles, Sunrise, Moon, Sun, Star, ArrowRight, Zap, Target 
+import {
+  Plus, Sparkles, Sunrise, Moon, Sun, Star, ArrowRight, Zap, Target
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
-import { ICONS } from "../../constants/dhikrData";
+import { ICONS, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS } from "../../constants/dhikrData";
 
 export const HomeView = () => {
   const {
@@ -19,7 +19,8 @@ export const HomeView = () => {
     setActiveOccasion,
     setSearchQuery,
     session,
-    complete
+    complete,
+    settings,
   } = useApp();
 
   const hr = new Date().getHours();
@@ -43,13 +44,17 @@ export const HomeView = () => {
   const DAILY_GOAL = 300;
   const progressPercent = Math.min((today / DAILY_GOAL) * 100, 100);
 
-  // Quick navigation link categories mapping
-  const quickCategories = [
-    { key: "morning", label: "Morning", icon: Sunrise },
-    { key: "evening", label: "Evening", icon: Moon },
-    { key: "after-salah", label: "After Salah", icon: Sun },
-    { key: "friday", label: "Friday", icon: Star }
-  ];
+  // Quick collections — derived from user settings (configurable in Settings)
+  const quickKeys = (settings?.quickCollections && settings.quickCollections.length > 0)
+    ? settings.quickCollections
+    : DEFAULT_QUICK_COLLECTIONS;
+  const quickCategories = quickKeys
+    .filter((k) => OCCASIONS[k])
+    .map((k) => ({
+      key: k,
+      label: OCCASIONS[k],
+      icon: OCCASION_ICONS[k] || Sparkles,
+    }));
 
   const handleQuickLink = (catKey) => {
     setActiveOccasion(catKey);
@@ -163,10 +168,14 @@ export const HomeView = () => {
         );
       })()}
 
-      {/* Redesigned Quick Navigation Categories Carousel */}
+      {/* Quick Collections — configurable via Settings */}
+      {quickCategories.length > 0 && (
       <div className="space-y-3">
         <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">Quick Collections</h2>
-        <div className="grid grid-cols-4 gap-2">
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${Math.min(quickCategories.length, 4)}, minmax(0, 1fr))` }}
+        >
           {quickCategories.map((cat) => {
             const CatIcon = cat.icon;
             return (
@@ -187,6 +196,7 @@ export const HomeView = () => {
           })}
         </div>
       </div>
+      )}
 
       {/* Redesigned Active Session Reminder Card */}
       <Card className="p-5 border-2 border-[var(--primary)] bg-[var(--surface)] shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Navigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Undo2, RotateCcw,
   Pencil, Sparkles, Check, X
@@ -7,57 +8,81 @@ import {
 import { useApp } from "../../context/AppContext";
 import { resolveBeadTheme } from "../../utils/theme";
 import BeadRing from "./BeadRing";
-import Card from "../common/Card";
+import TransBlock from "./TransBlock";
+import DhikrReader from "./DhikrReader";
 
 const spring = { type: "spring", stiffness: 380, damping: 30 };
 const softSpring = { type: "spring", stiffness: 220, damping: 26 };
 
-export const TransBlock = ({ d, translit, lang }) => {
-  if (!d) return null;
-  return (
-    <motion.div
-      key={d.id}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={softSpring}
-      className="text-center"
-    >
-      <p className="font-arabic text-4xl leading-relaxed text-[var(--text)]" dir="rtl">
-        {d.arabic}
-      </p>
-      {translit && (
-        <p className="mt-2 text-base font-medium text-[var(--gold)]">{d.tr}</p>
-      )}
-      {(lang === "en" || lang === "both") && (
-        <p className="mt-1 text-sm text-[var(--muted)]">{d.en}</p>
-      )}
-      {(lang === "ur" || lang === "both") && (
-        <p className="font-urdu mt-1 text-base text-[var(--muted)]" dir="rtl">{d.ur}</p>
-      )}
-    </motion.div>
-  );
-};
-
-const SoftPill = ({ children, label, tone = "default", disabled, ...props }) => {
+const SoftPill = ({ children, label, hint, tone = "default", disabled, ...props }) => {
+  const [hovered, setHovered] = useState(false);
   const color = tone === "danger" ? "var(--danger)" : "var(--text)";
   const hoverBg =
     tone === "danger"
       ? "color-mix(in srgb, var(--danger) 14%, transparent)"
       : "color-mix(in srgb, var(--primary) 14%, transparent)";
+
   return (
-    <motion.button
-      whileHover={disabled ? {} : { scale: 1.04, backgroundColor: hoverBg }}
-      whileTap={disabled ? {} : { scale: 0.92 }}
-      transition={{ type: "spring", stiffness: 500, damping: 22 }}
-      disabled={disabled}
-      aria-label={label}
-      className="flex items-center justify-center rounded-full px-4 py-2.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-      style={{ color, background: "transparent" }}
-      {...props}
-    >
-      {children}
-    </motion.button>
+    <div className="relative">
+      <AnimatePresence>
+        {hovered && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 whitespace-nowrap rounded-lg px-2.5 py-1 text-[10px] font-semibold"
+            style={{
+              background: "color-mix(in srgb, var(--surface) 95%, transparent)",
+              color: "var(--text)",
+              border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
+              boxShadow:
+                "0 6px 20px -12px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 6%, transparent)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+          >
+            <span>{label}</span>
+            {hint && (
+              <span className="ml-1.5 rounded-md px-1 py-px text-[9px] font-bold"
+                style={{
+                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
+                  color: "var(--muted)",
+                }}
+              >
+                {hint}
+              </span>
+            )}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full h-1.5 w-1.5 rotate-45"
+              style={{
+                background: "color-mix(in srgb, var(--surface) 95%, transparent)",
+                borderRight: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
+                borderBottom: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
+                marginTop: -3,
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <motion.button
+        whileHover={disabled ? {} : { scale: 1.04, backgroundColor: hoverBg }}
+        whileTap={disabled ? {} : { scale: 0.92 }}
+        transition={{ type: "spring", stiffness: 500, damping: 22 }}
+        disabled={disabled}
+        aria-label={label}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
+        onPointerDown={() => setHovered(false)}
+        className="flex items-center justify-center rounded-full px-4 py-2.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ color, background: "transparent" }}
+        {...props}
+      >
+        {children}
+      </motion.button>
+    </div>
   );
 };
 
@@ -84,6 +109,14 @@ export const CounterView = () => {
     vibe
   } = useApp();
 
+  const [readerOpen, setReaderOpen] = useState(false);
+
+  // Close reader on dhikr change
+  useEffect(() => {
+    setReaderOpen(false);
+  }, [session?.stepIndex]);
+
+
   useEffect(() => {
     if (view !== "counter") return;
     const onKey = (e) => {
@@ -100,13 +133,13 @@ export const CounterView = () => {
   }, [view, session, settings, increment, decrement, goStep, resetSession, setView]);
 
   if (!session) {
-    setView("home");
-    return null;
+    return <Navigate to="/" replace />;
   }
 
+  const stepOutOfBounds = session && !session.steps[session.stepIndex];
   useEffect(() => {
-    if (session && !session.steps[session.stepIndex]) setView("home");
-  }, [session, setView]);
+    if (stepOutOfBounds) setView("home");
+  }, [stepOutOfBounds, setView]);
 
   const i = session.stepIndex;
   const step = session.steps[i];
@@ -231,7 +264,7 @@ export const CounterView = () => {
       </motion.header>
 
       {session.steps.length > 1 && (
-        <div className="mt-3 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <div
             className="flex gap-1 rounded-full p-1"
             style={{ background: "color-mix(in srgb, var(--surface2) 50%, transparent)" }}
@@ -270,13 +303,31 @@ export const CounterView = () => {
         </div>
       )}
 
-      <div className="mt-16 md:mt-8 px-2">
-        <AnimatePresence mode="wait">
-          <TransBlock key={d?.id} d={d} translit={settings.translit} lang={settings.lang} />
-        </AnimatePresence>
+      {/* Absolutely positioned dhikr text — anchored near top, can expand over background */}
+      <div className="relative mt-7 px-2" style={{ minHeight: "13rem" }}>
+        <div className="absolute inset-x-2 top-0 z-10">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={d?.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={softSpring}
+            >
+              <TransBlock
+                d={d}
+                lang={settings.lang}
+                fieldOrder={settings.dhikrFieldOrder}
+                fieldVisible={settings.dhikrFieldVisible}
+                onOpenReader={() => setReaderOpen(true)}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="flex flex-1 items-end justify-center pb-8 md:items-center md:pb-0">
+      {/* Ring placed below optical center for natural mobile balance */}
+      <div className="flex flex-1 items-end justify-center pb-4 md:items-center md:pb-0">
         {beads ? (
           <BeadRing
             count={count}
@@ -303,7 +354,32 @@ export const CounterView = () => {
               animate={{ opacity: 0.12 + p * 0.35, scale: done ? 1.06 : 1 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             />
-            <svg viewBox="0 0 200 200" className="relative h-full w-full -rotate-90">
+            {/* Completion shockwave — back layer, staggered ripples decaying outward */}
+            <AnimatePresence>
+              {done &&
+                [0, 0.22, 0.44].map((delay, idx) => (
+                  <motion.div
+                    key={`ring-sweep-${idx}`}
+                    className="pointer-events-none absolute rounded-full"
+                    style={{
+                      left: "50%", top: "50%",
+                      width: "86%", height: "86%",
+                      marginLeft: "-43%", marginTop: "-43%",
+                      border: `${2.2 - idx * 0.5}px solid var(--gold)`,
+                      zIndex: 0,
+                    }}
+                    initial={{ opacity: 0.55 - idx * 0.12, scale: 1 }}
+                    animate={{ opacity: 0, scale: 2.1 + idx * 0.25 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      duration: 1.6,
+                      delay,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                  />
+                ))}
+            </AnimatePresence>
+            <svg viewBox="0 0 200 200" className="relative h-full w-full -rotate-90" style={{ zIndex: 1 }}>
               <circle cx="100" cy="100" r="86" fill="none" stroke="var(--surface2)" strokeWidth="10" />
               <motion.circle
                 cx="100" cy="100" r="86"
@@ -315,22 +391,6 @@ export const CounterView = () => {
                 animate={{ strokeDashoffset: C * (1 - p) }}
                 transition={{ type: "spring", stiffness: 120, damping: 22 }}
               />
-              <AnimatePresence>
-                {done && (
-                  <motion.circle
-                    key="ring-sweep"
-                    cx="100" cy="100" r="86"
-                    fill="none"
-                    stroke="var(--gold)"
-                    strokeWidth="4"
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: [0, 0.9, 0], scale: [0.96, 1.18, 1.3] }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    style={{ transformOrigin: "100px 100px" }}
-                  />
-                )}
-              </AnimatePresence>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               {centerContent}
@@ -367,22 +427,24 @@ export const CounterView = () => {
         <SoftPill
           onClick={() => goStep(-1)}
           disabled={i === 0}
-          label="Prev"
+          label="Previous dhikr"
+          hint="←"
         >
           <ChevronLeft size={18} />
         </SoftPill>
-        <SoftPill onClick={decrement} label="Undo">
+        <SoftPill onClick={decrement} label="Undo count" hint="⌫">
           <Undo2 size={17} />
         </SoftPill>
         <div className="mx-0.5 h-6 w-px" style={{ background: "color-mix(in srgb, var(--line) 60%, transparent)" }} />
-        <SoftPill onClick={resetSession} label="Reset" tone="danger">
+        <SoftPill onClick={resetSession} label="Reset session" hint="R" tone="danger">
           <RotateCcw size={17} />
         </SoftPill>
         <div className="mx-0.5 h-6 w-px" style={{ background: "color-mix(in srgb, var(--line) 60%, transparent)" }} />
         <SoftPill
           onClick={() => goStep(1)}
           disabled={i === session.steps.length - 1}
-          label="Next"
+          label="Next dhikr"
+          hint="→"
         >
           <ChevronRight size={18} />
         </SoftPill>
@@ -535,6 +597,13 @@ export const CounterView = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DhikrReader
+        open={readerOpen}
+        onClose={() => setReaderOpen(false)}
+        d={d}
+        lang={settings.lang}
+      />
     </div>
   );
 };

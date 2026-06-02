@@ -91,7 +91,33 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       />
 
-      <svg viewBox="0 0 200 200" className="relative h-full w-full">
+      {/* Completion shockwave — staggered ripples that emerge from the ring and decay outward */}
+      <AnimatePresence>
+        {done &&
+          [0, 0.22, 0.44].map((delay, idx) => (
+            <motion.div
+              key={`sweep-${idx}`}
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                left: "50%", top: "50%",
+                width: "92%", height: "92%",
+                marginLeft: "-46%", marginTop: "-46%",
+                border: `${1.8 - idx * 0.4}px solid ${theme.gold[1]}`,
+                zIndex: 0,
+              }}
+              initial={{ opacity: 0.55 - idx * 0.12, scale: 1 }}
+              animate={{ opacity: 0, scale: 2.1 + idx * 0.25 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 1.6,
+                delay,
+                ease: [0.16, 1, 0.3, 1], // quintic ease-out — natural decay
+              }}
+            />
+          ))}
+      </AnimatePresence>
+
+      <svg viewBox="0 0 200 200" className="relative h-full w-full" style={{ zIndex: 1 }}>
         <defs>
           <radialGradient id="beadDark" cx="0.35" cy="0.3" r="0.78">
             <stop offset="0%" stopColor={theme.dark[0]} />
@@ -196,26 +222,12 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
           );
         })}
 
-        {/* Completion sweep */}
-        <AnimatePresence>
-          {done && (
-            <motion.circle
-              key="completion-sweep"
-              cx="100" cy="100" r="92"
-              fill="none"
-              stroke={theme.gold[1]}
-              strokeWidth="3"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: [0, 0.9, 0], scale: [0.95, 1.15, 1.25] }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.1, ease: "easeOut" }}
-              style={{ transformOrigin: "100px 100px" }}
-            />
-          )}
-        </AnimatePresence>
       </svg>
 
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+      <div
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+        style={{ zIndex: 2 }}
+      >
         {children}
       </div>
 
@@ -223,15 +235,22 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
         {totalLaps > 1 && (
           <motion.div
             key={`lap-${Math.max(lap, 1)}`}
-            className="pointer-events-none absolute bottom-2 left-0 right-0 text-center"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-5 text-center"
+            style={{ zIndex: 3 }}
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
           >
             <span
-              className="rounded-full bg-[var(--surface2)] px-3 py-1 text-xs font-medium"
-              style={{ color: theme.arc }}
+              className="rounded-full px-3 py-1 text-[11px] font-bold whitespace-nowrap backdrop-blur-xl"
+              style={{
+                background: "color-mix(in srgb, var(--surface) 88%, transparent)",
+                color: theme.arc,
+                border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
+                boxShadow:
+                  "0 4px 14px -8px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
+              }}
             >
               lap {Math.max(lap, 1)} / {totalLaps}
             </span>

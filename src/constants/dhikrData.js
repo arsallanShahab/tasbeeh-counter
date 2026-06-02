@@ -86,10 +86,10 @@ export const SEED_DHIKRS = [
 
   {
     id: "tahleel",
-    tr: "La ilaha illallahu wahdahu la sharika lah...",
+    tr: "La ilaha illallahu wahdahu la sharika lah, lahul mulku wa lahul hamdu wa huwa ala kulli shay'in qadeer",
     arabic:
       "لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
-    en: "None has the right to be worshipped except Allah alone...",
+    en: "None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He has power over all things",
     target: 100,
     tags: ["morning", "evening", "protection"]
   },
@@ -123,10 +123,10 @@ export const SEED_DHIKRS = [
 
   {
     id: "sayyidul_istighfar",
-    tr: "Allahumma anta Rabbi la ilaha illa Ant...",
+    tr: "Allahumma Anta Rabbi la ilaha illa Anta, khalaqtani wa ana abduka, wa ana ala ahdika wa wa'dika mastata'tu, a'udhu bika min sharri ma sana'tu, abu'u laka bi ni'matika alayya wa abu'u bi dhanbi faghfir li fa innahu la yaghfirudh-dhunuba illa Anta",
     arabic:
-      "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ...",
-    en: "The chief supplication for seeking forgiveness",
+      "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ",
+    en: "O Allah, You are my Lord. There is no god but You. You created me and I am Your servant; I keep Your covenant and pledge to the best of my ability. I seek refuge in You from the evil of what I have done. I acknowledge Your favor upon me and I acknowledge my sin, so forgive me, for none forgives sins but You — the Chief Supplication for Forgiveness",
     target: 1,
     tags: ["morning", "evening", "forgiveness"]
   },
@@ -136,37 +136,37 @@ export const SEED_DHIKRS = [
     tr: "A'udhu bi kalimatillahit tammati min sharri ma khalaq",
     arabic:
       "أَعُوذُ بِكَلِمَاتِ اللّٰهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ",
-    en: "I seek refuge in Allah's perfect words...",
+    en: "I seek refuge in the perfect words of Allah from the evil of what He has created",
     target: 3,
     tags: ["protection", "evening"]
   },
 
   {
     id: "radhitu_billah",
-    tr: "Radhitu billahi Rabba...",
+    tr: "Radhitu billahi Rabba, wa bil-Islami deena, wa bi-Muhammadin ﷺ Nabiyya",
     arabic:
       "رَضِيتُ بِاللّٰهِ رَبًّا وَبِالْإِسْلَامِ دِينًا وَبِمُحَمَّدٍ ﷺ نَبِيًّا",
-    en: "I am pleased with Allah as Lord...",
+    en: "I am pleased with Allah as my Lord, with Islam as my religion, and with Muhammad ﷺ as my Prophet",
     target: 3,
     tags: ["morning", "evening"]
   },
 
   {
     id: "bismillah_protection",
-    tr: "Bismillahil ladhi la yadurru...",
+    tr: "Bismillahil ladhi la yadurru ma'asmihi shay'un fil ardi wa la fis-sama'i wa Huwas-Samee'ul Aleem",
     arabic:
-      "بِسْمِ اللّٰهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ",
-    en: "In the name of Allah with whose name nothing can harm",
+      "بِسْمِ اللّٰهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ",
+    en: "In the name of Allah, with whose name nothing in the earth or the heavens can cause harm, and He is the All-Hearing, the All-Knowing",
     target: 3,
     tags: ["morning", "evening", "protection"]
   },
 
   {
     id: "subhan_adada",
-    tr: "SubhanAllahi wa bihamdihi adada khalqihi...",
+    tr: "SubhanAllahi wa bihamdihi 'adada khalqihi, wa rida nafsihi, wa zinata 'arshihi, wa midada kalimatih",
     arabic:
-      "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ وَرِضَا نَفْسِهِ...",
-    en: "Glory and praise be to Allah equal to His creation...",
+      "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ، عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ",
+    en: "Glory and praise be to Allah, equal to the number of His creation, the pleasure of Himself, the weight of His Throne, and the ink of His words",
     target: 3,
     tags: ["morning", "high-reward"]
   },
@@ -209,7 +209,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "hammi_wal_hazan",
-    tr: "Allahumma inni a'udhu bika minal hammi wal hazan...",
+    tr: "Allahumma inni a'udhu bika minal hammi wal hazan, wal 'ajzi wal kasal, wal bukhli wal jubn, wa dala'id-dayn wa ghalabatir-rijal",
     arabic:
       "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ، وَغَلَبَةِ الرِّجَالِ",
     en: "O Allah, I seek refuge in You from anxiety and grief, weakness and laziness, miserliness and cowardice, the burden of debt and being overpowered by men",
@@ -228,7 +228,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbana_atina",
-    tr: "Rabbana atina fid-dunya hasanah...",
+    tr: "Rabbana atina fid-dunya hasanah, wa fil-akhirati hasanah, wa qina 'adhaban-nar",
     arabic:
       "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
     en: "Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire",
@@ -238,7 +238,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbana_zalamna",
-    tr: "Rabbana zalamna anfusana...",
+    tr: "Rabbana zalamna anfusana, wa in lam taghfir lana wa tarhamna lanakoonanna minal-khasireen",
     arabic:
       "رَبَّنَا ظَلَمْنَا أَنْفُسَنَا وَإِنْ لَمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ",
     en: "Our Lord, we have wronged ourselves; if You do not forgive us and have mercy on us, we will surely be among the losers (Du'a of Adam AS)",
@@ -266,7 +266,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbi_shrah",
-    tr: "Rabbi-shrah li sadri wa yassir li amri...",
+    tr: "Rabbi-shrah li sadri wa yassir li amri, wahlul 'uqdatam mil-lisani yafqahu qawli",
     arabic:
       "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي وَاحْلُلْ عُقْدَةً مِنْ لِسَانِي يَفْقَهُوا قَوْلِي",
     en: "My Lord, expand for me my chest, ease my task, and untie the knot from my tongue so they may understand my speech (Du'a of Musa AS)",
@@ -276,7 +276,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "ainni_ala_dhikrika",
-    tr: "Allahumma a'inni ala dhikrika wa shukrika...",
+    tr: "Allahumma a'inni ala dhikrika wa shukrika wa husni 'ibadatik",
     arabic:
       "اللَّهُمَّ أَعِنِّي عَلَىٰ ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
     en: "O Allah, help me to remember You, thank You, and worship You in the best manner",
@@ -304,7 +304,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_aslih",
-    tr: "Allahumma aslih li deeni... wa dunyaya... wa akhirati",
+    tr: "Allahumma aslih li deeniyalladhi huwa 'ismatu amri, wa aslih li dunyayallati feeha ma'ashi, wa aslih li akhiratillati feeha ma'adi",
     arabic:
       "اللَّهُمَّ أَصْلِحْ لِي دِينِي الَّذِي هُوَ عِصْمَةُ أَمْرِي، وَأَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي، وَأَصْلِحْ لِي آخِرَتِي الَّتِي فِيهَا مَعَادِي",
     en: "O Allah, set right for me my religion which is the safeguard of my affairs; my worldly life in which is my livelihood; and my Hereafter to which is my return",
@@ -314,7 +314,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_afiyah",
-    tr: "Allahumma inni as'aluka al-'afwa wal-'afiyah...",
+    tr: "Allahumma inni as'aluka al-'afwa wal-'afiyah fid-dunya wal-akhirah",
     arabic:
       "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ",
     en: "O Allah, I ask You for pardon and well-being in this life and the next",
@@ -334,7 +334,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_husnul_khatimah",
-    tr: "Allahumma ahsin aqibatana fil umoori kulliha...",
+    tr: "Allahumma ahsin 'aqibatana fil-umoori kulliha, wa ajirna min khizyid-dunya wa 'adhabil-akhirah",
     arabic:
       "اللَّهُمَّ أَحْسِنْ عَاقِبَتَنَا فِي الْأُمُورِ كُلِّهَا، وَأَجِرْنَا مِنْ خِزْيِ الدُّنْيَا وَعَذَابِ الْآخِرَةِ",
     en: "O Allah, make our end good in all matters, and protect us from disgrace in this world and the punishment of the Hereafter",
@@ -344,7 +344,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_kufr_faqr",
-    tr: "Allahumma inni a'udhu bika minal kufri wal faqr...",
+    tr: "Allahumma inni a'udhu bika minal kufri wal faqr, wa a'udhu bika min 'adhabil-qabr",
     arabic:
       "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ",
     en: "O Allah, I seek refuge in You from disbelief and poverty, and from the punishment of the grave",
@@ -401,7 +401,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "subhanaka_bihamdika",
-    tr: "Subhanaka Allahumma wa bihamdika...",
+    tr: "Subhanakallahumma wa bihamdika, ash-hadu an la ilaha illa Anta, astaghfiruka wa atoobu ilayk",
     arabic:
       "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا أَنْتَ، أَسْتَغْفِرُكَ وَأَتُوبُ إِلَيْكَ",
     en: "Glory and praise be to You, O Allah. I bear witness that none is worthy of worship but You. I seek Your forgiveness and turn to You in repentance (Du'a Kaffarat al-Majlis)",
@@ -429,10 +429,10 @@ export const SEED_DHIKRS = [
 
   {
     id: "salawat_ibrahimiyyah",
-    tr: "Allahumma salli ala Muhammad wa ala aali Muhammad...",
+    tr: "Allahumma salli ala Muhammadin wa ala aali Muhammad, kama sallayta ala Ibrahima wa ala aali Ibrahim, innaka Hameedun Majeed. Allahumma barik ala Muhammadin wa ala aali Muhammad, kama barakta ala Ibrahima wa ala aali Ibrahim, innaka Hameedun Majeed",
     arabic:
-      "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَىٰ إِبْرَاهِيمَ وَعَلَىٰ آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ",
-    en: "The complete Ibrahimi salawat sent upon the Prophet ﷺ",
+      "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ، كَمَا صَلَّيْتَ عَلَىٰ إِبْرَاهِيمَ وَعَلَىٰ آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ. اللَّهُمَّ بَارِكْ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ، كَمَا بَارَكْتَ عَلَىٰ إِبْرَاهِيمَ وَعَلَىٰ آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ",
+    en: "O Allah, send prayers upon Muhammad and the family of Muhammad as You sent prayers upon Ibrahim and the family of Ibrahim; indeed You are Praiseworthy, Most Glorious. O Allah, send blessings upon Muhammad and the family of Muhammad as You blessed Ibrahim and the family of Ibrahim; indeed You are Praiseworthy, Most Glorious — the complete Ibrahimi Salawat",
     target: 10,
     tags: ["friday", "salah"]
   },
@@ -484,7 +484,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "la_ilaha_halim",
-    tr: "La ilaha illallahul Halimul Kareem...",
+    tr: "La ilaha illallahul Halimul Kareem, SubhanAllahi Rabbil 'Arshil 'Azeem, Alhamdulillahi Rabbil 'aalameen",
     arabic:
       "لَا إِلَٰهَ إِلَّا اللّٰهُ الْحَلِيمُ الْكَرِيمُ، سُبْحَانَ اللّٰهِ رَبِّ الْعَرْشِ الْعَظِيمِ، الْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِينَ",
     en: "Du'a of distress — taught by the Prophet ﷺ for moments of grief",
@@ -494,7 +494,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_anta_salam",
-    tr: "Allahumma antas-Salam wa minkas-salam...",
+    tr: "Allahumma antas-Salam wa minkas-salam, tabarakta ya Dhal-Jalali wal-Ikram",
     arabic:
       "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ",
     en: "O Allah, You are Peace and from You is peace. Blessed are You, O Possessor of majesty and honor (after salah)",
@@ -504,10 +504,10 @@ export const SEED_DHIKRS = [
 
   {
     id: "ayat_kursi",
-    tr: "Ayat al-Kursi (after salah & before sleep)",
+    tr: "Allahu la ilaha illa Huwal-Hayyul-Qayyoom, la ta'khudhuhu sinatun wa la nawm, lahu ma fis-samawati wa ma fil-ard, man dhalladhi yashfa'u 'indahu illa bi-idhnih, ya'lamu ma bayna aydeehim wa ma khalfahum, wa la yuheetoona bi shay'in min 'ilmihi illa bima sha'a, wasi'a kursiyyuhus-samawati wal-ard, wa la ya'ooduhu hifzuhuma, wa Huwal-'Aliyyul-'Azeem",
     arabic:
-      "اللّٰهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...",
-    en: "Whoever recites Ayat al-Kursi after every salah, nothing keeps him from Paradise but death",
+      "اللّٰهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ، لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلَّا بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلَا يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ",
+    en: "Allah — there is no deity except Him, the Ever-Living, the Sustainer. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass nothing of His knowledge except for what He wills. His Throne extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great (Al-Baqarah 2:255) — whoever recites it after every salah, nothing keeps him from Paradise but death",
     target: 1,
     tags: ["after-salah", "sleep", "protection"]
   },
@@ -559,7 +559,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "allahumma_habbib",
-    tr: "Allahumma habbib ilayna al-iman wa zayyinhu fi quloobina...",
+    tr: "Allahumma habbib ilayna al-iman wa zayyinhu fi quloobina, wa karrih ilayna al-kufra wal-fusooqa wal-'isyan",
     arabic:
       "اللَّهُمَّ حَبِّبْ إِلَيْنَا الْإِيمَانَ وَزَيِّنْهُ فِي قُلُوبِنَا، وَكَرِّهْ إِلَيْنَا الْكُفْرَ وَالْفُسُوقَ وَالْعِصْيَانَ",
     en: "O Allah, make faith beloved to us and beautify it in our hearts, and make disbelief, wickedness, and disobedience hateful to us",
@@ -578,7 +578,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbana_la_tuzigh",
-    tr: "Rabbana la tuzigh quloobana ba'da idh hadaytana...",
+    tr: "Rabbana la tuzigh quloobana ba'da idh hadaytana, wa hab lana min ladunka rahmatan, innaka Antal-Wahhab",
     arabic:
       "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً، إِنَّكَ أَنْتَ الْوَهَّابُ",
     en: "Our Lord, let not our hearts deviate after You have guided us, and grant us mercy from Yourself. Indeed, You are the Bestower",
@@ -588,7 +588,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbij_alni",
-    tr: "Rabbij'alni muqeemas-salati wa min dhurriyyati...",
+    tr: "Rabbij'alni muqeemas-salati wa min dhurriyyati, Rabbana wa taqabbal du'a",
     arabic:
       "رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِنْ ذُرِّيَّتِي، رَبَّنَا وَتَقَبَّلْ دُعَاءِ",
     en: "My Lord, make me an establisher of prayer, and from my descendants. Our Lord, accept my supplication (Du'a of Ibrahim AS)",
@@ -598,7 +598,7 @@ export const SEED_DHIKRS = [
 
   {
     id: "rabbana_hab_lana",
-    tr: "Rabbana hab lana min azwajina wa dhurriyyatina qurrata a'yun...",
+    tr: "Rabbana hab lana min azwajina wa dhurriyyatina qurrata a'yunin, waj'alna lil-muttaqeena imama",
     arabic:
       "رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا",
     en: "Our Lord, grant us from our spouses and offspring comfort to our eyes, and make us a leader for the righteous",
@@ -908,6 +908,32 @@ export const OCCASIONS = {
 
 export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
 
+// Default icon per occasion — used by Quick Collections on Home
+export const OCCASION_ICONS = {
+  "after-salah": Sun,
+  morning: Sunrise,
+  evening: Moon,
+  friday: Star,
+  repentance: Heart,
+  distress: Shield,
+  general: Sparkles,
+  custom: Sparkles,
+  sleep: Moon,
+  forgiveness: Heart,
+  tawheed: Star,
+  gratitude: Heart,
+  anxiety: Shield,
+  protection: Shield,
+  ramadan: Sparkles,
+  family: Heart,
+  knowledge: BookOpen,
+  salah: Sun,
+  "high-reward": Trophy,
+  gathering: Sparkles,
+};
+
+export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "friday"];
+
 export const DHIKR_FIELDS = {
   arabic: { label: "Arabic" },
   translit: { label: "Transliteration" },
@@ -924,6 +950,7 @@ export const DEFAULT_SETTINGS = {
   translit: true,
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
   dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
+  quickCollections: DEFAULT_QUICK_COLLECTIONS,
   haptics: true,
   sound: false,
   autoAdvance: true,
@@ -990,4 +1017,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 5;
+export const STORAGE_VERSION = 6;
