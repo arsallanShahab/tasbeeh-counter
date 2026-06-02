@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate } from "react-router-dom";
 import {
@@ -106,14 +106,22 @@ export const CounterView = () => {
     resetSession,
     goStep,
     applyTarget,
-    vibe
+    vibe,
+    modal,
+    setModal
   } = useApp();
 
-  const [readerOpen, setReaderOpen] = useState(false);
+  const readerOpen = modal === "reader";
+  const setReaderOpen = useCallback((open) => {
+    setModal(open ? "reader" : null);
+  }, [setModal]);
 
   // Close reader on dhikr change
   useEffect(() => {
-    setReaderOpen(false);
+    if (readerOpen) {
+      setReaderOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.stepIndex]);
 
 
@@ -219,7 +227,7 @@ export const CounterView = () => {
   );
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col">
       {/* Soft floating header pill */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}

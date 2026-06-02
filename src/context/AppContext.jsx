@@ -62,7 +62,7 @@ export const AppProvider = ({ children }) => {
           else next.delete("modal");
           return next;
         },
-        { replace: false }
+        { replace: !newModal }
       );
     },
     [setSearchParams]
