@@ -178,6 +178,450 @@ export const SEED_DHIKRS = [
     en: "Tasbeeh before sleep",
     target: 100,
     tags: ["sleep"]
+  },
+
+  {
+    id: "dua_yunus",
+    tr: "La ilaha illa Anta, Subhanaka, inni kuntu minaz-zalimin",
+    arabic: "لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ",
+    en: "There is no god but You, glory be to You! Indeed, I have been among the wrongdoers (Du'a of Yunus AS)",
+    target: 40,
+    tags: ["distress", "repentance", "anxiety", "forgiveness"]
+  },
+
+  {
+    id: "ya_hayyu_ya_qayyum",
+    tr: "Ya Hayyu Ya Qayyum, bi rahmatika astagheeth",
+    arabic: "يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَىٰ نَفْسِي طَرْفَةَ عَيْنٍ",
+    en: "O Ever-Living, O Sustainer, in Your mercy I seek relief; rectify all my affairs and do not leave me to myself even for the blink of an eye",
+    target: 3,
+    tags: ["morning", "evening", "distress"]
+  },
+
+  {
+    id: "hasbiyallah_tawakkaltu",
+    tr: "Hasbiyallahu la ilaha illa Huwa, alayhi tawakkaltu",
+    arabic: "حَسْبِيَ اللّٰهُ لَا إِلَٰهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
+    en: "Allah is sufficient for me; there is no god but Him. On Him I rely, and He is the Lord of the Magnificent Throne",
+    target: 7,
+    tags: ["morning", "evening", "anxiety", "distress"]
+  },
+
+  {
+    id: "hammi_wal_hazan",
+    tr: "Allahumma inni a'udhu bika minal hammi wal hazan...",
+    arabic:
+      "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ، وَغَلَبَةِ الرِّجَالِ",
+    en: "O Allah, I seek refuge in You from anxiety and grief, weakness and laziness, miserliness and cowardice, the burden of debt and being overpowered by men",
+    target: 3,
+    tags: ["distress", "anxiety", "morning", "evening"]
+  },
+
+  {
+    id: "tasbih_fatimah",
+    tr: "Tasbih of Fatimah (33 • 33 • 34)",
+    arabic: "سُبْحَانَ اللّٰهِ ٣٣ • الْحَمْدُ لِلّٰهِ ٣٣ • اللّٰهُ أَكْبَرُ ٣٤",
+    en: "The tasbeeh taught by the Prophet ﷺ to Fatimah RA — recited before sleep",
+    target: 100,
+    tags: ["sleep", "after-salah"]
+  },
+
+  {
+    id: "rabbana_atina",
+    tr: "Rabbana atina fid-dunya hasanah...",
+    arabic:
+      "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
+    en: "Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire",
+    target: 7,
+    tags: ["general", "gratitude"]
+  },
+
+  {
+    id: "rabbana_zalamna",
+    tr: "Rabbana zalamna anfusana...",
+    arabic:
+      "رَبَّنَا ظَلَمْنَا أَنْفُسَنَا وَإِنْ لَمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ",
+    en: "Our Lord, we have wronged ourselves; if You do not forgive us and have mercy on us, we will surely be among the losers (Du'a of Adam AS)",
+    target: 7,
+    tags: ["repentance", "forgiveness"]
+  },
+
+  {
+    id: "rabbi_inni_lima",
+    tr: "Rabbi inni lima anzalta ilayya min khayrin faqeer",
+    arabic: "رَبِّ إِنِّي لِمَا أَنْزَلْتَ إِلَيَّ مِنْ خَيْرٍ فَقِيرٌ",
+    en: "My Lord, I am truly in need of whatever good You may have in store for me (Du'a of Musa AS)",
+    target: 7,
+    tags: ["distress", "general"]
+  },
+
+  {
+    id: "rabbi_zidni_ilma",
+    tr: "Rabbi zidni ilma",
+    arabic: "رَبِّ زِدْنِي عِلْمًا",
+    en: "My Lord, increase me in knowledge",
+    target: 7,
+    tags: ["knowledge", "general"]
+  },
+
+  {
+    id: "rabbi_shrah",
+    tr: "Rabbi-shrah li sadri wa yassir li amri...",
+    arabic:
+      "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي وَاحْلُلْ عُقْدَةً مِنْ لِسَانِي يَفْقَهُوا قَوْلِي",
+    en: "My Lord, expand for me my chest, ease my task, and untie the knot from my tongue so they may understand my speech (Du'a of Musa AS)",
+    target: 3,
+    tags: ["distress", "general"]
+  },
+
+  {
+    id: "ainni_ala_dhikrika",
+    tr: "Allahumma a'inni ala dhikrika wa shukrika...",
+    arabic:
+      "اللَّهُمَّ أَعِنِّي عَلَىٰ ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
+    en: "O Allah, help me to remember You, thank You, and worship You in the best manner",
+    target: 1,
+    tags: ["after-salah", "general"]
+  },
+
+  {
+    id: "allahumma_ajirni",
+    tr: "Allahumma ajirni minan-nar",
+    arabic: "اللَّهُمَّ أَجِرْنِي مِنَ النَّارِ",
+    en: "O Allah, save me from the Fire",
+    target: 7,
+    tags: ["morning", "evening"]
+  },
+
+  {
+    id: "allahumma_innaka_afuw",
+    tr: "Allahumma innaka 'Afuwwun tuhibbul afwa fa'fu anni",
+    arabic: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي",
+    en: "O Allah, You are Most Forgiving, You love forgiveness, so forgive me (Laylat al-Qadr du'a)",
+    target: 100,
+    tags: ["ramadan", "forgiveness", "repentance"]
+  },
+
+  {
+    id: "allahumma_aslih",
+    tr: "Allahumma aslih li deeni... wa dunyaya... wa akhirati",
+    arabic:
+      "اللَّهُمَّ أَصْلِحْ لِي دِينِي الَّذِي هُوَ عِصْمَةُ أَمْرِي، وَأَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي، وَأَصْلِحْ لِي آخِرَتِي الَّتِي فِيهَا مَعَادِي",
+    en: "O Allah, set right for me my religion which is the safeguard of my affairs; my worldly life in which is my livelihood; and my Hereafter to which is my return",
+    target: 3,
+    tags: ["morning", "evening", "general"]
+  },
+
+  {
+    id: "allahumma_afiyah",
+    tr: "Allahumma inni as'aluka al-'afwa wal-'afiyah...",
+    arabic:
+      "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ",
+    en: "O Allah, I ask You for pardon and well-being in this life and the next",
+    target: 3,
+    tags: ["morning", "evening", "general"]
+  },
+
+  {
+    id: "allahumma_jannah",
+    tr: "Allahumma inni as'alukal jannah wa a'udhu bika minan-nar",
+    arabic:
+      "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْجَنَّةَ وَأَعُوذُ بِكَ مِنَ النَّارِ",
+    en: "O Allah, I ask You for Paradise and seek refuge in You from the Fire",
+    target: 7,
+    tags: ["general"]
+  },
+
+  {
+    id: "allahumma_husnul_khatimah",
+    tr: "Allahumma ahsin aqibatana fil umoori kulliha...",
+    arabic:
+      "اللَّهُمَّ أَحْسِنْ عَاقِبَتَنَا فِي الْأُمُورِ كُلِّهَا، وَأَجِرْنَا مِنْ خِزْيِ الدُّنْيَا وَعَذَابِ الْآخِرَةِ",
+    en: "O Allah, make our end good in all matters, and protect us from disgrace in this world and the punishment of the Hereafter",
+    target: 3,
+    tags: ["general"]
+  },
+
+  {
+    id: "allahumma_kufr_faqr",
+    tr: "Allahumma inni a'udhu bika minal kufri wal faqr...",
+    arabic:
+      "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ",
+    en: "O Allah, I seek refuge in You from disbelief and poverty, and from the punishment of the grave",
+    target: 3,
+    tags: ["morning", "evening", "protection"]
+  },
+
+  {
+    id: "allahumma_thabbit",
+    tr: "Allahumma ya muqallibal quloob, thabbit qalbi ala deenik",
+    arabic: "اللَّهُمَّ يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَىٰ دِينِكَ",
+    en: "O Allah, Turner of the hearts, keep my heart firm upon Your religion",
+    target: 7,
+    tags: ["general", "protection"]
+  },
+
+  {
+    id: "allahumma_barik",
+    tr: "Allahumma barik lana fima razaqtana",
+    arabic: "اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا وَقِنَا عَذَابَ النَّارِ",
+    en: "O Allah, bless us in what You have provided us, and protect us from the punishment of the Fire",
+    target: 3,
+    tags: ["gratitude", "general"]
+  },
+
+  {
+    id: "allahumma_la_sahla",
+    tr: "Allahumma la sahla illa ma ja'altahu sahla",
+    arabic:
+      "اللَّهُمَّ لَا سَهْلَ إِلَّا مَا جَعَلْتَهُ سَهْلًا، وَأَنْتَ تَجْعَلُ الْحَزْنَ إِذَا شِئْتَ سَهْلًا",
+    en: "O Allah, there is no ease except in what You make easy, and You make hardship easy when You will",
+    target: 3,
+    tags: ["distress", "anxiety"]
+  },
+
+  {
+    id: "rabbana_taqabbal",
+    tr: "Rabbana taqabbal minna innaka antas-Sami'ul-'Aleem",
+    arabic: "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ",
+    en: "Our Lord, accept this from us. Indeed, You are the All-Hearing, the All-Knowing (Du'a of Ibrahim AS)",
+    target: 3,
+    tags: ["general", "gratitude"]
+  },
+
+  {
+    id: "rabbighfirli",
+    tr: "Rabbighfir li wa tub alayya, innaka antat-Tawwabur-Raheem",
+    arabic:
+      "رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ، إِنَّكَ أَنْتَ التَّوَّابُ الرَّحِيمُ",
+    en: "My Lord, forgive me and accept my repentance. Indeed, You are the Accepter of repentance, the Most Merciful",
+    target: 100,
+    tags: ["repentance", "forgiveness"]
+  },
+
+  {
+    id: "subhanaka_bihamdika",
+    tr: "Subhanaka Allahumma wa bihamdika...",
+    arabic:
+      "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا أَنْتَ، أَسْتَغْفِرُكَ وَأَتُوبُ إِلَيْكَ",
+    en: "Glory and praise be to You, O Allah. I bear witness that none is worthy of worship but You. I seek Your forgiveness and turn to You in repentance (Du'a Kaffarat al-Majlis)",
+    target: 3,
+    tags: ["repentance", "gathering"]
+  },
+
+  {
+    id: "subhana_rabbiyal_azeem",
+    tr: "SubhanaRabbiyal Azeem",
+    arabic: "سُبْحَانَ رَبِّيَ الْعَظِيمِ",
+    en: "Glory be to my Lord, the Magnificent (recited in ruku')",
+    target: 3,
+    tags: ["salah"]
+  },
+
+  {
+    id: "subhana_rabbiyal_ala",
+    tr: "SubhanaRabbiyal A'la",
+    arabic: "سُبْحَانَ رَبِّيَ الْأَعْلَىٰ",
+    en: "Glory be to my Lord, the Most High (recited in sujood)",
+    target: 3,
+    tags: ["salah"]
+  },
+
+  {
+    id: "salawat_ibrahimiyyah",
+    tr: "Allahumma salli ala Muhammad wa ala aali Muhammad...",
+    arabic:
+      "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَىٰ إِبْرَاهِيمَ وَعَلَىٰ آلِ إِبْرَاهِيمَ، إِنَّكَ حَمِيدٌ مَجِيدٌ",
+    en: "The complete Ibrahimi salawat sent upon the Prophet ﷺ",
+    target: 10,
+    tags: ["friday", "salah"]
+  },
+
+  {
+    id: "ya_rabb",
+    tr: "Ya Rabb",
+    arabic: "يَا رَبِّ",
+    en: "O my Lord — a simple, sincere call",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "ya_allah",
+    tr: "Ya Allah",
+    arabic: "يَا اللّٰهُ",
+    en: "O Allah",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "ya_rahman_ya_raheem",
+    tr: "Ya Rahman Ya Raheem",
+    arabic: "يَا رَحْمَٰنُ يَا رَحِيمُ",
+    en: "O Most Gracious, O Most Merciful",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "ya_lateef",
+    tr: "Ya Lateef",
+    arabic: "يَا لَطِيفُ",
+    en: "O Subtle, Kind One — invoked in difficulty",
+    target: 129,
+    tags: ["distress", "anxiety"]
+  },
+
+  {
+    id: "ya_wadood",
+    tr: "Ya Wadood",
+    arabic: "يَا وَدُودُ",
+    en: "O Most Loving",
+    target: 100,
+    tags: ["general"]
+  },
+
+  {
+    id: "la_ilaha_halim",
+    tr: "La ilaha illallahul Halimul Kareem...",
+    arabic:
+      "لَا إِلَٰهَ إِلَّا اللّٰهُ الْحَلِيمُ الْكَرِيمُ، سُبْحَانَ اللّٰهِ رَبِّ الْعَرْشِ الْعَظِيمِ، الْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِينَ",
+    en: "Du'a of distress — taught by the Prophet ﷺ for moments of grief",
+    target: 1,
+    tags: ["distress", "anxiety"]
+  },
+
+  {
+    id: "allahumma_anta_salam",
+    tr: "Allahumma antas-Salam wa minkas-salam...",
+    arabic:
+      "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ",
+    en: "O Allah, You are Peace and from You is peace. Blessed are You, O Possessor of majesty and honor (after salah)",
+    target: 1,
+    tags: ["after-salah"]
+  },
+
+  {
+    id: "ayat_kursi",
+    tr: "Ayat al-Kursi (after salah & before sleep)",
+    arabic:
+      "اللّٰهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...",
+    en: "Whoever recites Ayat al-Kursi after every salah, nothing keeps him from Paradise but death",
+    target: 1,
+    tags: ["after-salah", "sleep", "protection"]
+  },
+
+  {
+    id: "three_quls",
+    tr: "Al-Ikhlas • Al-Falaq • An-Nas",
+    arabic: "قُلْ هُوَ اللّٰهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ",
+    en: "The three Quls — recited morning, evening and before sleep (×3)",
+    target: 3,
+    tags: ["morning", "evening", "sleep", "protection"]
+  },
+
+  {
+    id: "lahawla_high_reward",
+    tr: "La hawla wa la quwwata illa billah (×100)",
+    arabic: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ",
+    en: "A treasure from the treasures of Paradise",
+    target: 100,
+    tags: ["high-reward", "distress"]
+  },
+
+  {
+    id: "istighfar_70",
+    tr: "Astaghfirullah (×70 — daily of the Prophet ﷺ)",
+    arabic: "أَسْتَغْفِرُ اللّٰهَ",
+    en: "The Prophet ﷺ said he sought forgiveness more than 70 times a day",
+    target: 70,
+    tags: ["repentance", "forgiveness"]
+  },
+
+  {
+    id: "ya_arhamar_rahimeen",
+    tr: "Ya Arhamar-Rahimeen",
+    arabic: "يَا أَرْحَمَ الرَّاحِمِينَ",
+    en: "O Most Merciful of those who show mercy",
+    target: 100,
+    tags: ["general", "distress"]
+  },
+
+  {
+    id: "rabbi_inni_maghloob",
+    tr: "Rabbi inni maghloobun fantasir",
+    arabic: "رَبِّ إِنِّي مَغْلُوبٌ فَانْتَصِرْ",
+    en: "My Lord, I am overcome, so help me (Du'a of Nuh AS)",
+    target: 7,
+    tags: ["distress"]
+  },
+
+  {
+    id: "allahumma_habbib",
+    tr: "Allahumma habbib ilayna al-iman wa zayyinhu fi quloobina...",
+    arabic:
+      "اللَّهُمَّ حَبِّبْ إِلَيْنَا الْإِيمَانَ وَزَيِّنْهُ فِي قُلُوبِنَا، وَكَرِّهْ إِلَيْنَا الْكُفْرَ وَالْفُسُوقَ وَالْعِصْيَانَ",
+    en: "O Allah, make faith beloved to us and beautify it in our hearts, and make disbelief, wickedness, and disobedience hateful to us",
+    target: 3,
+    tags: ["general", "morning"]
+  },
+
+  {
+    id: "allahumma_qini_shuhha",
+    tr: "Allahumma qini shuhha nafsi",
+    arabic: "اللَّهُمَّ قِنِي شُحَّ نَفْسِي",
+    en: "O Allah, protect me from the stinginess of my own soul",
+    target: 7,
+    tags: ["general"]
+  },
+
+  {
+    id: "rabbana_la_tuzigh",
+    tr: "Rabbana la tuzigh quloobana ba'da idh hadaytana...",
+    arabic:
+      "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً، إِنَّكَ أَنْتَ الْوَهَّابُ",
+    en: "Our Lord, let not our hearts deviate after You have guided us, and grant us mercy from Yourself. Indeed, You are the Bestower",
+    target: 3,
+    tags: ["general", "protection"]
+  },
+
+  {
+    id: "rabbij_alni",
+    tr: "Rabbij'alni muqeemas-salati wa min dhurriyyati...",
+    arabic:
+      "رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِنْ ذُرِّيَّتِي، رَبَّنَا وَتَقَبَّلْ دُعَاءِ",
+    en: "My Lord, make me an establisher of prayer, and from my descendants. Our Lord, accept my supplication (Du'a of Ibrahim AS)",
+    target: 3,
+    tags: ["family", "general"]
+  },
+
+  {
+    id: "rabbana_hab_lana",
+    tr: "Rabbana hab lana min azwajina wa dhurriyyatina qurrata a'yun...",
+    arabic:
+      "رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا",
+    en: "Our Lord, grant us from our spouses and offspring comfort to our eyes, and make us a leader for the righteous",
+    target: 3,
+    tags: ["family", "general"]
+  },
+
+  {
+    id: "wa_ufawwidu",
+    tr: "Wa ufawwidu amri ilallah, innallaha baseerum bil 'ibaad",
+    arabic: "وَأُفَوِّضُ أَمْرِي إِلَى اللّٰهِ، إِنَّ اللّٰهَ بَصِيرٌ بِالْعِبَادِ",
+    en: "I entrust my affair to Allah. Indeed, Allah is All-Seeing of His servants",
+    target: 7,
+    tags: ["distress", "general"]
+  },
+
+  {
+    id: "innaa_lillah",
+    tr: "Inna lillahi wa inna ilayhi raji'oon",
+    arabic: "إِنَّا لِلّٰهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ",
+    en: "Indeed, to Allah we belong and to Him we shall return (upon hardship)",
+    target: 7,
+    tags: ["distress"]
   }
 ];
 
@@ -206,15 +650,15 @@ export const SEED_LISTS = [
     ]
   },
 
-  {
-    id: "istighfar-100",
-    name: "Forgiveness ×100",
-    occasion: "forgiveness",
-    icon: "heart",
-    steps: [
-      { dhikr: "astaghfirullah_wa_atubu", target: 100 }
-    ]
-  },
+  // {
+  //   id: "istighfar-100",
+  //   name: "Forgiveness ×100",
+  //   occasion: "forgiveness",
+  //   icon: "heart",
+  //   steps: [
+  //     { dhikr: "astaghfirullah_wa_atubu", target: 100 }
+  //   ]
+  // },
 
   {
     id: "sayyidul-istighfar",
@@ -315,13 +759,151 @@ export const SEED_LISTS = [
       { dhikr: "alhamdulillah", target: 100 },
       { dhikr: "subhanallah", target: 100 }
     ]
+  },
+
+  {
+    id: "dua-yunus-40",
+    name: "Du'a of Yunus ×40",
+    occasion: "distress",
+    icon: "shield",
+    steps: [
+      { dhikr: "dua_yunus", target: 40 }
+    ]
+  },
+
+  {
+    id: "anxiety-deep",
+    name: "Deep Anxiety Relief",
+    occasion: "distress",
+    icon: "heart",
+    steps: [
+      { dhikr: "dua_yunus", target: 40 },
+      { dhikr: "hasbiyallah_tawakkaltu", target: 7 },
+      { dhikr: "ya_hayyu_ya_qayyum", target: 3 },
+      { dhikr: "allahumma_la_sahla", target: 3 },
+      { dhikr: "hammi_wal_hazan", target: 3 }
+    ]
+  },
+
+  {
+    id: "after-salah-full",
+    name: "After Salah (Full Sunnah)",
+    occasion: "after-salah",
+    icon: "mosque",
+    steps: [
+      { dhikr: "allahumma_anta_salam", target: 1 },
+      { dhikr: "ayat_kursi", target: 1 },
+      { dhikr: "subhanallah", target: 33 },
+      { dhikr: "alhamdulillah", target: 33 },
+      { dhikr: "allahuakbar", target: 34 },
+      { dhikr: "tahleel", target: 1 },
+      { dhikr: "ainni_ala_dhikrika", target: 1 }
+    ]
+  },
+
+  {
+    id: "laylatul-qadr",
+    name: "Laylat al-Qadr",
+    occasion: "ramadan",
+    icon: "star",
+    steps: [
+      { dhikr: "allahumma_innaka_afuw", target: 100 }
+    ]
+  },
+
+  {
+    id: "friday-salawat",
+    name: "Friday Salawat ×100",
+    occasion: "friday",
+    icon: "star",
+    steps: [
+      { dhikr: "salawat_ibrahimiyyah", target: 100 }
+    ]
+  },
+
+  {
+    id: "before-sleep-full",
+    name: "Before Sleep (Full)",
+    occasion: "sleep",
+    icon: "moon",
+    steps: [
+      { dhikr: "ayat_kursi", target: 1 },
+      { dhikr: "three_quls", target: 3 },
+      { dhikr: "tasbih_fatimah", target: 100 }
+    ]
+  },
+
+  {
+    id: "names-of-allah",
+    name: "Calling on Allah's Names",
+    occasion: "general",
+    icon: "sparkles",
+    steps: [
+      { dhikr: "ya_rahman_ya_raheem", target: 100 },
+      { dhikr: "ya_lateef", target: 129 },
+      { dhikr: "ya_wadood", target: 100 },
+      { dhikr: "ya_arhamar_rahimeen", target: 100 }
+    ]
+  },
+
+  {
+    id: "family-dua",
+    name: "Du'as for Family",
+    occasion: "family",
+    icon: "heart",
+    steps: [
+      { dhikr: "rabbij_alni", target: 3 },
+      { dhikr: "rabbana_hab_lana", target: 3 },
+      { dhikr: "allahumma_habbib", target: 3 }
+    ]
+  },
+
+  {
+    id: "three-pillars-tawbah",
+    name: "Three Pillars of Tawbah",
+    occasion: "repentance",
+    icon: "heart",
+    steps: [
+      { dhikr: "astaghfirullah", target: 100 },
+      { dhikr: "subhanwabihamdihi", target: 100 },
+      { dhikr: "dua_yunus", target: 40 }
+    ]
+  },
+
+  {
+    id: "repentance-full",
+    name: "Deep Repentance",
+    occasion: "repentance",
+    icon: "shield",
+    steps: [
+      { dhikr: "sayyidul_istighfar", target: 1 },
+      { dhikr: "istighfar_70", target: 70 },
+      { dhikr: "dua_yunus", target: 40 },
+      { dhikr: "rabbana_zalamna", target: 7 },
+      { dhikr: "rabbighfirli", target: 100 },
+      { dhikr: "subhanaka_bihamdika", target: 3 }
+    ]
+  },
+
+  {
+    id: "knowledge-seekers",
+    name: "Seekers of Knowledge",
+    occasion: "knowledge",
+    icon: "star",
+    steps: [
+      { dhikr: "rabbi_zidni_ilma", target: 33 },
+      { dhikr: "rabbi_shrah", target: 3 },
+      { dhikr: "ainni_ala_dhikrika", target: 1 }
+    ]
   }
 ];
 
 export const OCCASIONS = {
   "after-salah": "After Salah", morning: "Morning", evening: "Evening",
   friday: "Friday", repentance: "Repentance", distress: "In Distress", general: "General", custom: "Custom",
-  sleep: "Sleep", forgiveness: "Forgiveness", tawheed: "Tawheed", gratitude: "Gratitude"
+  sleep: "Sleep", forgiveness: "Forgiveness", tawheed: "Tawheed", gratitude: "Gratitude",
+  anxiety: "Anxiety", protection: "Protection", ramadan: "Ramadan", family: "Family",
+  knowledge: "Knowledge", salah: "In Salah", "high-reward": "High Reward", gathering: "Gathering"
 };
 
 export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
@@ -397,4 +979,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 3;
+export const STORAGE_VERSION = 4;
