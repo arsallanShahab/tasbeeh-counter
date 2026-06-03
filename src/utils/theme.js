@@ -1,4 +1,25 @@
+import { useEffect, useState } from "react";
 import { BEAD_THEMES } from "../constants/dhikrData";
+
+export function getSystemAppearance() {
+  if (typeof window === "undefined" || !window.matchMedia) return "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+export function useEffectiveAppearance(appearance) {
+  const [system, setSystem] = useState(getSystemAppearance);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = (e) => setSystem(e.matches ? "light" : "dark");
+    mql.addEventListener?.("change", onChange);
+    return () => mql.removeEventListener?.("change", onChange);
+  }, []);
+
+  if (appearance === "light" || appearance === "dark") return appearance;
+  return system;
+}
 
 export function shade(hex, pct) {
   const h = hex.replace("#", "");

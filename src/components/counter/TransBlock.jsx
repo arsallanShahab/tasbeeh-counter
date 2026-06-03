@@ -9,25 +9,25 @@ import {
 const FIELD_RENDERERS = {
   arabic: (d) => (
     <p
-      className="font-arabic text-3xl leading-relaxed text-[var(--text)]"
+      className="font-arabic text-3xl leading-relaxed text-[var(--text)] text-right"
       dir="rtl"
     >
       {d.arabic}
     </p>
   ),
   translit: (d) => (
-    <p className="text-base font-medium text-[var(--gold)] leading-snug">
+    <p className="text-base font-medium text-[var(--gold)] leading-snug text-left">
       {d.tr}
     </p>
   ),
   translation: (d, { lang }) => (
     <div className="space-y-1">
       {(lang === "en" || lang === "both") && d.en && (
-        <p className="text-sm text-[var(--muted)] leading-snug">{d.en}</p>
+        <p className="text-sm text-[var(--muted)] leading-snug text-left">{d.en}</p>
       )}
       {(lang === "ur" || lang === "both") && d.ur && (
         <p
-          className="font-urdu text-base text-[var(--muted)] leading-snug"
+          className="font-urdu text-base text-[var(--muted)] leading-snug text-right"
           dir="rtl"
         >
           {d.ur}
@@ -73,7 +73,7 @@ export const TransBlock = ({
       onClick={onOpenReader}
       whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 500, damping: 28 }}
-      className="relative flex w-full flex-col items-center select-none rounded-3xl px-3 pt-3 pb-2 text-left cursor-pointer"
+      className="relative flex w-full flex-col items-stretch select-none rounded-3xl px-3 pt-3 pb-2 text-left cursor-pointer"
       style={{
         background: "transparent",
       }}
@@ -87,7 +87,7 @@ export const TransBlock = ({
         <motion.div
           ref={innerRef}
           layout
-          className="flex flex-col items-center gap-2 text-center px-1"
+          className="flex flex-col items-stretch gap-2 px-1"
         >
           <AnimatePresence initial={false} mode="popLayout">
             {visibleFields.map((key) => (
@@ -129,7 +129,7 @@ export const TransBlock = ({
         initial={{ opacity: 0, y: -2 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.35 }}
-        className="pointer-events-none mt-3 flex items-center gap-1.5 rounded-full px-3 py-1"
+        className="pointer-events-none mt-3 flex self-center items-center gap-1.5 rounded-full px-3 py-1"
         style={{
           background: "color-mix(in srgb, var(--surface) 90%, transparent)",
           border: "1px solid color-mix(in srgb, var(--gold) 30%, transparent)",

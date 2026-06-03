@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  Globe, Moon, Sun, Disc, Palette, Vibrate, Volume2,
+  Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
   RefreshCw, Download, Smartphone
@@ -11,7 +11,7 @@ import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
 import { BEAD_THEMES, THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS } from "../../constants/dhikrData";
-import { buildCustom } from "../../utils/theme";
+import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
 
 const QuickCollectionsEditor = ({ value, onChange }) => {
   const [picking, setPicking] = useState(false);
@@ -288,6 +288,8 @@ export const SettingsView = () => {
     isInstalled,
   } = useApp();
 
+  const effectiveAppearance = useEffectiveAppearance(settings.appearance);
+
   const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", targetType: "none", targetId: "" });
   const [syncState, setSyncState] = useState("idle"); // idle | syncing | done
   const [updateState, setUpdateState] = useState("idle"); // idle | checking | upToDate
@@ -375,20 +377,26 @@ export const SettingsView = () => {
       </Card>
 
       <Card className="px-5 py-4">
-        <div className="mb-3 flex items-center justify-between font-semibold text-sm">
+        <div className="mb-3 flex items-center justify-between gap-3 font-semibold text-sm">
           <div className="flex items-center gap-3">
-            {settings.appearance === "light" ? (
+            {settings.appearance === "system" ? (
+              <Monitor size={19} className="text-[var(--gold)]" />
+            ) : effectiveAppearance === "light" ? (
               <Sun size={19} className="text-[var(--gold)]" />
             ) : (
               <Moon size={19} className="text-[var(--gold)]" />
             )}
             <span className="text-[var(--text)]">Appearance</span>
           </div>
-          <div className="w-36">
-            <Seg 
-              value={settings.appearance || "dark"} 
-              onChange={(v) => set("appearance", v)} 
-              options={[{ v: "dark", l: "Dark" }, { v: "light", l: "Light" }]} 
+          <div className="w-48">
+            <Seg
+              value={settings.appearance || "dark"}
+              onChange={(v) => set("appearance", v)}
+              options={[
+                { v: "dark", l: "Dark" },
+                { v: "light", l: "Light" },
+                { v: "system", l: "System" },
+              ]}
             />
           </div>
         </div>
@@ -403,7 +411,7 @@ export const SettingsView = () => {
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(THEMES).map(([key, value]) => {
             const isSel = settings.theme === key;
-            const previewVars = value[settings.appearance || "dark"];
+            const previewVars = value[effectiveAppearance];
             return (
               <button
                 key={key}

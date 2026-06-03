@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES } from "./constants/dhikrData";
+import { useEffectiveAppearance } from "./utils/theme";
 import HomeView from "./components/home/HomeView";
 import LibraryView from "./components/library/LibraryView";
 import CounterView from "./components/counter/CounterView";
@@ -17,6 +18,7 @@ import UpdateBanner from "./components/common/UpdateBanner";
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
   const location = useLocation();
+  const effectiveAppearance = useEffectiveAppearance(settings.appearance);
 
   if (!loaded) {
     return (
@@ -36,7 +38,7 @@ const AppContent = () => {
   }
 
   const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
-  const themeVars = activeThemeGroup[settings.appearance || "dark"];
+  const themeVars = activeThemeGroup[effectiveAppearance];
 
   return (
     <div

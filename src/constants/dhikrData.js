@@ -951,6 +951,7 @@ export const DEFAULT_SETTINGS = {
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
   dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
   quickCollections: DEFAULT_QUICK_COLLECTIONS,
+  dailyGoal: 100,
   haptics: true,
   sound: false,
   autoAdvance: true,

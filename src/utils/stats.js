@@ -47,7 +47,7 @@ export function bestStreak(byDate) {
 export function last7(byDate) {
   const out = [];
   const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
-  
+
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -58,4 +58,54 @@ export function last7(byDate) {
     });
   }
   return out;
+}
+
+export function lastN(byDate, n) {
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = dateKey(d);
+    out.push({ key: k, date: new Date(d), count: (byDate && byDate[k]) || 0 });
+  }
+  return out;
+}
+
+export function activeDayCount(byDate) {
+  if (!byDate) return 0;
+  return Object.values(byDate).filter((n) => n > 0).length;
+}
+
+export function avgPerActiveDay(total, byDate) {
+  const days = activeDayCount(byDate);
+  if (!days) return 0;
+  return Math.round(total / days);
+}
+
+export function yesterdayCount(byDate) {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return (byDate && byDate[dateKey(d)]) || 0;
+}
+
+export function weekTotal(byDate) {
+  return last7(byDate).reduce((s, w) => s + w.count, 0);
+}
+
+const MILESTONES = [100, 1000, 10000, 100000, 1000000];
+
+export function nextMilestone(total) {
+  for (const m of MILESTONES) {
+    if (total < m) return m;
+  }
+  return MILESTONES[MILESTONES.length - 1];
+}
+
+export function prevMilestone(total) {
+  let prev = 0;
+  for (const m of MILESTONES) {
+    if (total < m) return prev;
+    prev = m;
+  }
+  return MILESTONES[MILESTONES.length - 1];
 }

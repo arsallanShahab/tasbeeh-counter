@@ -23,7 +23,7 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           onClick={onClose}
           style={{
             background:
@@ -34,10 +34,10 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
         >
           <motion.div
             onClick={(e) => e.stopPropagation()}
-            initial={{ y: 24, opacity: 0, scale: 0.98 }}
+            initial={{ y: 28, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 24, opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 280, damping: 30 }}
+            exit={{ y: 28, opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
             className="relative mx-auto flex h-full w-full max-w-md flex-col px-5 pt-5 pb-6"
           >
             {/* Header pill */}
@@ -78,7 +78,7 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  className="rounded-3xl px-5 py-7 text-center"
+                  className="rounded-3xl px-5 py-7 text-right"
                   style={{
                     background: "color-mix(in srgb, var(--surface) 50%, transparent)",
                     border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
