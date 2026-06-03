@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Plus, Trash2, Pin, PinOff, Sparkles, Search, X,
-  BookOpen, FolderHeart, ChevronDown, ChevronRight,
+  Plus, Trash2, Pin, Sparkles, Search, X, Check,
+  BookOpen, FolderHeart, ChevronRight,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
@@ -11,14 +11,50 @@ import { OCCASIONS, ICONS } from "../../constants/dhikrData";
 const spring = { type: "spring", stiffness: 320, damping: 28 };
 
 // ────────────────────────────────────────────────────────────────────────
+// Pin toggle button — single icon with clear filled/outline states
+// ────────────────────────────────────────────────────────────────────────
+const PinButton = ({ isPinned, onClick }) => (
+  <motion.button
+    whileTap={{ scale: 0.85 }}
+    onClick={onClick}
+    className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer transition-colors"
+    style={{
+      color: isPinned ? "var(--gold)" : "var(--muted)",
+      background: isPinned
+        ? "color-mix(in srgb, var(--gold) 16%, transparent)"
+        : "transparent",
+    }}
+    aria-label={isPinned ? "Unpin" : "Pin"}
+    title={isPinned ? "Unpin" : "Pin"}
+  >
+    <motion.span
+      key={isPinned ? "on" : "off"}
+      initial={{ scale: 0.7, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 500, damping: 24 }}
+      style={{ display: "inline-flex" }}
+    >
+      <Pin size={14} fill={isPinned ? "var(--gold)" : "none"} strokeWidth={isPinned ? 2 : 1.75} />
+    </motion.span>
+  </motion.button>
+);
+
+// ────────────────────────────────────────────────────────────────────────
 // List card
 // ────────────────────────────────────────────────────────────────────────
-const ListRow = ({ l, dById, pinned, togglePin, startList, removeList }) => {
+const ListRow = ({ l, dById, pinned, togglePin, startList, removeList, inPinnedSection }) => {
   const Ico = ICONS[l.icon] || Sparkles;
   const isPinned = pinned.includes(l.id);
   return (
-    <Card animated className="flex items-center gap-3 p-3.5">
-      <div
+    <Card
+      animated
+      className="flex items-center gap-3 p-3.5"
+      style={isPinned ? {
+        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
+        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
+      } : undefined}
+    >
+<div
         className="flex h-10 w-10 items-center justify-center rounded-2xl shrink-0"
         style={{
           background: "color-mix(in srgb, var(--primary) 12%, transparent)",
@@ -28,23 +64,17 @@ const ListRow = ({ l, dById, pinned, togglePin, startList, removeList }) => {
         <Ico size={18} />
       </div>
       <button onClick={() => startList(l)} className="min-w-0 flex-1 text-left cursor-pointer">
-        <p className="font-semibold text-[var(--text)] text-sm truncate">{l.name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-semibold text-[var(--text)] text-sm truncate">{l.name}</p>
+          {isPinned && !inPinnedSection && (
+            <Pin size={10} fill="var(--gold)" className="text-[var(--gold)] shrink-0" strokeWidth={2} />
+          )}
+        </div>
         <p className="truncate text-[11px] text-[var(--muted)] mt-0.5">
           {l.steps.length} step{l.steps.length !== 1 ? "s" : ""} · {l.steps.map((s) => `${dById(s.dhikr)?.tr ?? "?"} ×${s.target}`).join(" · ")}
         </p>
       </button>
-      <motion.button
-        whileTap={{ scale: 0.85 }}
-        onClick={() => togglePin(l.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-        style={{
-          color: isPinned ? "var(--gold)" : "var(--muted)",
-          background: isPinned ? "color-mix(in srgb, var(--gold) 14%, transparent)" : "transparent",
-        }}
-        aria-label={isPinned ? "Unpin" : "Pin"}
-      >
-        {isPinned ? <Pin size={15} /> : <PinOff size={15} />}
-      </motion.button>
+      <PinButton isPinned={isPinned} onClick={() => togglePin(l.id)} />
       {l.id.startsWith("c_") && (
         <motion.button
           whileTap={{ scale: 0.85 }}
@@ -66,14 +96,26 @@ const ListRow = ({ l, dById, pinned, togglePin, startList, removeList }) => {
 // ────────────────────────────────────────────────────────────────────────
 // Dhikr card
 // ────────────────────────────────────────────────────────────────────────
-const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang }) => {
+const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang, inPinnedSection }) => {
   const isPinned = pinned.includes(d.id);
   return (
-    <Card animated className="flex items-center gap-3 p-3.5">
-      <button onClick={() => startDhikr(d)} className="min-w-0 flex-1 text-left cursor-pointer">
-        <p className="font-arabic text-lg text-[var(--text)] truncate" dir="rtl">
-          {d.arabic}
-        </p>
+    <Card
+      animated
+      className="flex items-center gap-3 p-3.5"
+      style={isPinned ? {
+        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
+        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
+      } : undefined}
+    >
+<button onClick={() => startDhikr(d)} className="min-w-0 flex-1 text-left cursor-pointer">
+        <div className="flex items-center gap-1.5">
+          <p className="font-arabic text-lg text-[var(--text)] truncate" dir="rtl">
+            {d.arabic}
+          </p>
+          {isPinned && !inPinnedSection && (
+            <Pin size={10} fill="var(--gold)" className="text-[var(--gold)] shrink-0" strokeWidth={2} />
+          )}
+        </div>
         <p className="text-[11px] text-[var(--gold)] font-semibold mt-0.5 truncate">
           {d.tr} · ×{d.target}
         </p>
@@ -81,18 +123,7 @@ const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang }) => {
           {lang === "ur" ? d.ur : d.en}
         </p>
       </button>
-      <motion.button
-        whileTap={{ scale: 0.85 }}
-        onClick={() => togglePin(d.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-        style={{
-          color: isPinned ? "var(--gold)" : "var(--muted)",
-          background: isPinned ? "color-mix(in srgb, var(--gold) 14%, transparent)" : "transparent",
-        }}
-        aria-label={isPinned ? "Unpin" : "Pin"}
-      >
-        {isPinned ? <Pin size={15} /> : <PinOff size={15} />}
-      </motion.button>
+      <PinButton isPinned={isPinned} onClick={() => togglePin(d.id)} />
       {d.tags?.includes("custom") && (
         <motion.button
           whileTap={{ scale: 0.85 }}
@@ -169,11 +200,25 @@ const OccasionGroup = ({ occKey, label, items, defaultOpen, renderItem }) => {
 export const LibraryView = () => {
   const {
     dhikrs, setDhikrs, lists, setLists, pinned, setPinned,
-    setModal, dById, togglePin, startList, startDhikr,
+    setModal, dById, togglePin: rawTogglePin, startList, startDhikr,
     settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion,
   } = useApp();
 
   const [tab, setTab] = useState("sets"); // "sets" | "dhikrs"
+  const [toast, setToast] = useState(null); // { action, label } | null
+  const toastTimer = useRef(null);
+
+  const togglePin = (id) => {
+    const wasPinned = pinned.includes(id);
+    const item = lists.find((x) => x.id === id) || dhikrs.find((x) => x.id === id);
+    const label = item ? (item.name || item.tr || "Item") : "Item";
+    rawTogglePin(id);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ action: wasPinned ? "unpinned" : "pinned", label });
+    toastTimer.current = setTimeout(() => setToast(null), 1800);
+  };
+
+  useEffect(() => () => toastTimer.current && clearTimeout(toastTimer.current), []);
 
   const q = searchQuery.toLowerCase();
   const filtersActive = q.length > 0 || activeOccasion !== "all";
@@ -202,11 +247,22 @@ export const LibraryView = () => {
     [dhikrs, q, activeOccasion, searchQuery]
   );
 
+  // When not filtering, hide pinned items from the main list to avoid duplication
+  // with the dedicated Pinned section above.
+  const unpinnedLists = useMemo(
+    () => filtersActive ? filteredLists : filteredLists.filter((l) => !pinned.includes(l.id)),
+    [filteredLists, pinned, filtersActive]
+  );
+  const unpinnedDhikrs = useMemo(
+    () => filtersActive ? filteredDhikrs : filteredDhikrs.filter((d) => !pinned.includes(d.id)),
+    [filteredDhikrs, pinned, filtersActive]
+  );
+
   // Group dhikrs by primary occasion tag when unfiltered for browsability
   const groupedDhikrs = useMemo(() => {
     if (filtersActive) return null;
     const groups = {};
-    filteredDhikrs.forEach((d) => {
+    unpinnedDhikrs.forEach((d) => {
       const tag = (d.tags && d.tags.find((t) => OCCASIONS[t])) || "general";
       if (!groups[tag]) groups[tag] = [];
       groups[tag].push(d);
@@ -218,7 +274,7 @@ export const LibraryView = () => {
       const bi = order.indexOf(b);
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
-  }, [filteredDhikrs, filtersActive]);
+  }, [unpinnedDhikrs, filtersActive]);
 
   // Pinned items (only relevant when not filtering)
   const pinnedItems = useMemo(() => {
@@ -436,6 +492,7 @@ export const LibraryView = () => {
                       togglePin={togglePin}
                       startList={startList}
                       removeList={removeList}
+                      inPinnedSection
                     />
                   ) : (
                     <DhikrRow
@@ -446,6 +503,7 @@ export const LibraryView = () => {
                       startDhikr={startDhikr}
                       removeDhikr={removeDhikr}
                       lang={settings.lang}
+                      inPinnedSection
                     />
                   )
                 )}
@@ -466,56 +524,65 @@ export const LibraryView = () => {
         >
           {tab === "sets" ? (
             <>
-              {filteredLists.length === 0 ? (
-                <EmptyState
-                  icon={FolderHeart}
-                  title={filtersActive ? "No sets match" : "No tasbeeh sets yet"}
-                  subtitle={
-                    filtersActive
-                      ? "Try a different category or clear the search."
-                      : "Create a set to chain multiple dhikrs into one session."
-                  }
-                  cta={
-                    filtersActive
-                      ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
-                      : { label: "+ Create Set", onClick: () => setModal("list") }
-                  }
-                />
+              {unpinnedLists.length === 0 ? (
+                filteredLists.length === 0 ? (
+                  <EmptyState
+                    icon={FolderHeart}
+                    title={filtersActive ? "No sets match" : "No tasbeeh sets yet"}
+                    subtitle={
+                      filtersActive
+                        ? "Try a different category or clear the search."
+                        : "Create a set to chain multiple dhikrs into one session."
+                    }
+                    cta={
+                      filtersActive
+                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
+                        : { label: "+ Create Set", onClick: () => setModal("list") }
+                    }
+                  />
+                ) : null
               ) : (
-                <motion.div layout className="space-y-2">
-                  <AnimatePresence initial={false}>
-                    {filteredLists.map((l) => (
-                      <ListRow
-                        key={l.id}
-                        l={l}
-                        dById={dById}
-                        pinned={pinned}
-                        togglePin={togglePin}
-                        startList={startList}
-                        removeList={removeList}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
+                <div className="space-y-2">
+                  {pinnedItems.some((p) => p.type === "list") && (
+                    <SectionHeading label="All Sets" count={unpinnedLists.length} />
+                  )}
+                  <motion.div layout className="space-y-2">
+                    <AnimatePresence initial={false}>
+                      {unpinnedLists.map((l) => (
+                        <ListRow
+                          key={l.id}
+                          l={l}
+                          dById={dById}
+                          pinned={pinned}
+                          togglePin={togglePin}
+                          startList={startList}
+                          removeList={removeList}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
               )}
             </>
           ) : (
             <>
-              {filteredDhikrs.length === 0 ? (
-                <EmptyState
-                  icon={BookOpen}
-                  title={filtersActive ? "No dhikrs match" : "No dhikrs available"}
-                  subtitle={
-                    filtersActive
-                      ? "Try a different category or clear the search."
-                      : "Add a custom dhikr to expand your library."
-                  }
-                  cta={
-                    filtersActive
-                      ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
-                      : { label: "+ Add Dhikr", onClick: () => setModal("dhikr") }
-                  }
-                />
+              {unpinnedDhikrs.length === 0 ? (
+                filteredDhikrs.length === 0 ? (
+                  <EmptyState
+                    icon={BookOpen}
+                    title={filtersActive ? "No dhikrs match" : "No dhikrs available"}
+                    subtitle={
+                      filtersActive
+                        ? "Try a different category or clear the search."
+                        : "Add a custom dhikr to expand your library."
+                    }
+                    cta={
+                      filtersActive
+                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
+                        : { label: "+ Add Dhikr", onClick: () => setModal("dhikr") }
+                    }
+                  />
+                ) : null
               ) : groupedDhikrs ? (
                 <div className="space-y-3">
                   {groupedDhikrs.map(([occ, items], idx) => (
@@ -542,7 +609,7 @@ export const LibraryView = () => {
               ) : (
                 <motion.div layout className="space-y-2">
                   <AnimatePresence initial={false}>
-                    {filteredDhikrs.map((d) => (
+                    {unpinnedDhikrs.map((d) => (
                       <DhikrRow
                         key={d.id}
                         d={d}
@@ -560,9 +627,58 @@ export const LibraryView = () => {
           )}
         </motion.section>
       </AnimatePresence>
+
+      {/* Pin / Unpin feedback toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key={toast.label + toast.action}
+            initial={{ opacity: 0, y: 20, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            className="fixed left-1/2 bottom-24 z-50 -translate-x-1/2 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-lg pointer-events-none"
+            style={{
+              background: toast.action === "pinned"
+                ? "var(--gold)"
+                : "color-mix(in srgb, var(--surface2) 90%, var(--bg))",
+              color: toast.action === "pinned" ? "#fff" : "var(--text)",
+              border: toast.action === "pinned"
+                ? "none"
+                : "1px solid var(--line)",
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            {toast.action === "pinned"
+              ? <Pin size={12} fill="#fff" strokeWidth={2.5} />
+              : <Check size={13} strokeWidth={2.5} />}
+            <span className="max-w-[180px] truncate">
+              {toast.action === "pinned" ? "Pinned" : "Unpinned"} · {toast.label}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
+
+const SectionHeading = ({ label, count }) => (
+  <div className="flex items-center gap-2 pl-1 pt-1">
+    <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+      {label}
+    </h2>
+    <span
+      className="rounded-full px-1.5 py-px text-[10px] font-bold"
+      style={{
+        background: "color-mix(in srgb, var(--surface2) 80%, transparent)",
+        color: "var(--muted)",
+      }}
+    >
+      {count}
+    </span>
+  </div>
+);
 
 const PillButton = ({ active, onClick, children }) => (
   <motion.button

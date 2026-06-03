@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import {
   Globe, Moon, Sun, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles,
-  Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid
+  Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
+  RefreshCw, Download, Smartphone
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
@@ -277,10 +278,41 @@ export const SettingsView = () => {
     notifyPermission,
     requestNotificationPermission,
     dhikrs,
-    lists
+    lists,
+    resyncLibrary,
+    updateAvailable,
+    applyUpdate,
+    checkForUpdates,
+    installPrompt,
+    promptInstall,
+    isInstalled,
   } = useApp();
 
   const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", targetType: "none", targetId: "" });
+  const [syncState, setSyncState] = useState("idle"); // idle | syncing | done
+  const [updateState, setUpdateState] = useState("idle"); // idle | checking | upToDate
+
+  const handleResync = async () => {
+    if (syncState === "syncing") return;
+    setSyncState("syncing");
+    const res = resyncLibrary();
+    setTimeout(() => setSyncState("done"), 400);
+    setTimeout(() => setSyncState("idle"), 2200);
+    return res;
+  };
+
+  const handleCheckUpdates = async () => {
+    if (updateState === "checking") return;
+    setUpdateState("checking");
+    const hasWaiting = await checkForUpdates();
+    if (hasWaiting || updateAvailable) {
+      // The banner / applyUpdate path will handle reload
+      setUpdateState("idle");
+    } else {
+      setUpdateState("upToDate");
+      setTimeout(() => setUpdateState("idle"), 2200);
+    }
+  };
 
   const Row = ({ icon: Ico, label, children }) => (
     <div className="flex items-center gap-3 py-3.5">
@@ -772,8 +804,179 @@ export const SettingsView = () => {
         </p>
       </Card>
 
-      <button 
-        onClick={() => { 
+      {/* App & library maintenance */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <Smartphone size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">App</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Resync to pull the latest built-in dhikrs and sets — your custom ones are kept. Install Tasbeeh on your phone for an app-like experience.
+        </p>
+
+        <div className="flex flex-col gap-2">
+          {/* Resync library */}
+          <button
+            onClick={handleResync}
+            disabled={syncState === "syncing"}
+            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
+            style={{
+              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
+            }}
+          >
+            <motion.div
+              animate={syncState === "syncing" ? { rotate: 360 } : { rotate: 0 }}
+              transition={syncState === "syncing"
+                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
+                : { duration: 0.2 }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{
+                background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                color: "var(--primary)",
+              }}
+            >
+              {syncState === "done" ? <Check size={17} /> : <RefreshCw size={16} />}
+            </motion.div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--text)]">
+                {syncState === "done" ? "Library resynced" : "Resync library"}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {syncState === "done"
+                  ? `${dhikrs.length} dhikrs · ${lists.length} sets`
+                  : "Refresh built-in dhikrs & sets, keep your customs"}
+              </p>
+            </div>
+          </button>
+
+          {/* Check for updates */}
+          <button
+            onClick={updateAvailable ? applyUpdate : handleCheckUpdates}
+            disabled={updateState === "checking"}
+            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
+            style={{
+              borderColor: updateAvailable
+                ? "color-mix(in srgb, var(--gold) 50%, var(--line))"
+                : "color-mix(in srgb, var(--line) 70%, transparent)",
+              background: updateAvailable
+                ? "color-mix(in srgb, var(--gold) 8%, var(--surface))"
+                : "color-mix(in srgb, var(--surface2) 50%, transparent)",
+            }}
+          >
+            <motion.div
+              animate={updateState === "checking" ? { rotate: 360 } : { rotate: 0 }}
+              transition={updateState === "checking"
+                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
+                : { duration: 0.2 }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{
+                background: updateAvailable
+                  ? "color-mix(in srgb, var(--gold) 18%, transparent)"
+                  : "color-mix(in srgb, var(--primary) 14%, transparent)",
+                color: updateAvailable ? "var(--gold)" : "var(--primary)",
+              }}
+            >
+              {updateState === "upToDate" ? <Check size={17} /> : <RefreshCw size={16} />}
+            </motion.div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--text)]">
+                {updateAvailable
+                  ? "Update available — reload"
+                  : updateState === "checking"
+                  ? "Checking for updates…"
+                  : updateState === "upToDate"
+                  ? "You're up to date"
+                  : "Check for updates"}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {updateAvailable
+                  ? "A newer version of Tasbeeh is ready"
+                  : "Reload the app to fetch the newest version"}
+              </p>
+            </div>
+          </button>
+
+          {/* Install PWA */}
+          {installPrompt ? (
+            <button
+              onClick={promptInstall}
+              className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
+              style={{
+                borderColor: "color-mix(in srgb, var(--primary) 45%, var(--line))",
+                background: "color-mix(in srgb, var(--primary) 8%, var(--surface))",
+              }}
+            >
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+                style={{
+                  background: "color-mix(in srgb, var(--primary) 18%, transparent)",
+                  color: "var(--primary)",
+                }}
+              >
+                <Download size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--text)]">Install Tasbeeh</p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                  Add to your home screen for a full-screen, offline-ready experience
+                </p>
+              </div>
+            </button>
+          ) : isInstalled ? (
+            <div
+              className="flex items-center gap-3 rounded-2xl border px-3 py-3"
+              style={{
+                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                background: "color-mix(in srgb, var(--surface2) 40%, transparent)",
+              }}
+            >
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+                style={{
+                  background: "color-mix(in srgb, var(--gold) 16%, transparent)",
+                  color: "var(--gold)",
+                }}
+              >
+                <Check size={17} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--text)]">Installed</p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                  Tasbeeh is running as an installed app
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="flex items-start gap-3 rounded-2xl border px-3 py-3"
+              style={{
+                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                background: "color-mix(in srgb, var(--surface2) 40%, transparent)",
+              }}
+            >
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+                style={{
+                  background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                  color: "var(--primary)",
+                }}
+              >
+                <Smartphone size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--text)]">Install on your device</p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 leading-relaxed">
+                  On iOS Safari, tap <span className="font-semibold">Share → Add to Home Screen</span>. On Android Chrome, tap the menu and choose <span className="font-semibold">Install app</span>.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <button
+        onClick={() => {
           if (window.confirm("Reset all statistics? This cannot be undone.")) {
             setStats({ total: 0, byDate: {}, perDhikr: {} }); 
           }

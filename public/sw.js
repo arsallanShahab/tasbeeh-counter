@@ -1,4 +1,4 @@
-const CACHE_NAME = "sabha-v3";
+const CACHE_NAME = "sabha-v4";
 const ALERT_CACHE = "sabha-alerts";
 const ASSETS = [
   "/",
@@ -62,6 +62,10 @@ self.addEventListener("fetch", (e) => {
 
 // ─── Message handler — receive alert configs from the app ────────────
 self.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
   if (e.data && e.data.type === "SYNC_ALERTS") {
     const { alerts, enabled } = e.data;
     // Store alert config in a dedicated cache so the SW can access it independently

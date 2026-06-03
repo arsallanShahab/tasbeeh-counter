@@ -12,6 +12,7 @@ import Navbar from "./components/layout/Navbar";
 import AppHeader from "./components/layout/AppHeader";
 import NewDhikrModal from "./components/library/NewDhikrModal";
 import NewListModal from "./components/library/NewListModal";
+import UpdateBanner from "./components/common/UpdateBanner";
 
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
@@ -92,6 +93,8 @@ const AppContent = () => {
       {/* Top-level modals — open state lives in URL search params (?modal=dhikr|list) */}
       <NewDhikrModal isOpen={modal === "dhikr"} onClose={() => setModal(null)} />
       <NewListModal isOpen={modal === "list"} onClose={() => setModal(null)} />
+
+      <UpdateBanner />
     </div>
   );
 };

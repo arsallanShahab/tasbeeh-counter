@@ -45,6 +45,18 @@ export const AppProvider = ({ children }) => {
     return "default";
   });
 
+  // PWA install + app-update state
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const swRegistrationRef = useRef(null);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    );
+  });
+
   // Router-based navigation helpers (replace legacy hash-routing)
   const setView = useCallback(
     (newView) => {
@@ -438,6 +450,103 @@ export const AppProvider = ({ children }) => {
     vibe(8);
   }, [vibe]);
 
+  /* ─── PWA: install prompt + update lifecycle ───────────────────────── */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    const onInstalled = () => {
+      setInstallPrompt(null);
+      setIsInstalled(true);
+    };
+    const onUpdate = (e) => {
+      swRegistrationRef.current = e.detail?.registration || null;
+      setUpdateAvailable(true);
+    };
+    const onDisplayModeChange = (e) => setIsInstalled(e.matches);
+    const standaloneMql = window.matchMedia?.("(display-mode: standalone)");
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener("sw-update-available", onUpdate);
+    standaloneMql?.addEventListener?.("change", onDisplayModeChange);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener("sw-update-available", onUpdate);
+      standaloneMql?.removeEventListener?.("change", onDisplayModeChange);
+    };
+  }, []);
+
+  const promptInstall = useCallback(async () => {
+    if (!installPrompt) return false;
+    try {
+      installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      setInstallPrompt(null);
+      return choice?.outcome === "accepted";
+    } catch (e) {
+      console.warn("Install prompt failed:", e);
+      return false;
+    }
+  }, [installPrompt]);
+
+  const applyUpdate = useCallback(() => {
+    const reg = swRegistrationRef.current;
+    if (reg?.waiting) {
+      reg.waiting.postMessage({ type: "SKIP_WAITING" });
+      // controllerchange handler in main.jsx will reload the page
+    } else {
+      window.location.reload();
+    }
+  }, []);
+
+  const checkForUpdates = useCallback(async () => {
+    if (!("serviceWorker" in navigator)) {
+      window.location.reload();
+      return false;
+    }
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        window.location.reload();
+        return false;
+      }
+      await reg.update();
+      return !!reg.waiting;
+    } catch (e) {
+      console.warn("Update check failed:", e);
+      return false;
+    }
+  }, []);
+
+  /* Merge fresh SEED data with user-created customs — same logic as the
+     load-time migration in this file. Resets storage_version so caches/SW
+     stay coherent. */
+  const resyncLibrary = useCallback(() => {
+    const customDhikrs = dhikrs.filter(
+      (d) => d.id.startsWith("c_") || d.tags?.includes("custom")
+    );
+    const customLists = lists.filter((l) => l.id.startsWith("c_"));
+
+    const nextDhikrs = [...SEED_DHIKRS, ...customDhikrs];
+    const nextLists = [...SEED_LISTS, ...customLists];
+
+    setDhikrs(nextDhikrs);
+    setLists(nextLists);
+    setPinned((p) => p.filter((id) =>
+      nextDhikrs.some((d) => d.id === id) || nextLists.some((l) => l.id === id)
+    ));
+    store.set("dhikrs", nextDhikrs);
+    store.set("lists", nextLists);
+    store.set("storage_version", STORAGE_VERSION);
+    return { dhikrs: nextDhikrs.length, lists: nextLists.length };
+  }, [dhikrs, lists]);
+
   const saveDhikr = useCallback((nd, setNd) => {
     if (!nd.tr.trim() || !nd.arabic.trim()) return;
     const id = "c_" + Date.now();
@@ -645,7 +754,14 @@ export const AppProvider = ({ children }) => {
         saveDhikr,
         saveList,
         notifyPermission,
-        requestNotificationPermission
+        requestNotificationPermission,
+        updateAvailable,
+        applyUpdate,
+        checkForUpdates,
+        installPrompt,
+        promptInstall,
+        isInstalled,
+        resyncLibrary,
       }}
     >
       {children}
