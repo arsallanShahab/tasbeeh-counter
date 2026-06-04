@@ -23,7 +23,7 @@ const AppContent = () => {
   if (!loaded) {
     return (
       <div
-        className="font-body flex min-h-dvh items-center justify-center bg-[#030806]"
+        className="font-body flex min-h-svh items-center justify-center bg-[#030806]"
         style={{ ...THEMES.classic.dark, background: "var(--bg)" }}
       >
         <p
@@ -42,7 +42,7 @@ const AppContent = () => {
 
   return (
     <div
-      className="font-body min-h-dvh transition-colors duration-300 relative overflow-x-hidden"
+      className="font-body min-h-svh transition-colors duration-300 relative overflow-x-hidden"
       style={{
         ...themeVars,
         background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))",

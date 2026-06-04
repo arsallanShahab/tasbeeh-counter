@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Undo2, RotateCcw,
-  Pencil, Sparkles, Check, X
+  Pencil, Sparkles, Check, X, MousePointerClick
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { resolveBeadTheme } from "../../utils/theme";
@@ -16,11 +16,18 @@ const softSpring = { type: "spring", stiffness: 220, damping: 26 };
 
 const SoftPill = ({ children, label, hint, tone = "default", disabled, ...props }) => {
   const [hovered, setHovered] = useState(false);
-  const color = tone === "danger" ? "var(--danger)" : "var(--text)";
+  const color =
+    tone === "danger" ? "var(--danger)" :
+    tone === "active" ? "var(--primary)" :
+    "var(--text)";
   const hoverBg =
     tone === "danger"
       ? "color-mix(in srgb, var(--danger) 14%, transparent)"
       : "color-mix(in srgb, var(--primary) 14%, transparent)";
+  const activeBg =
+    tone === "active"
+      ? "color-mix(in srgb, var(--primary) 18%, transparent)"
+      : "transparent";
 
   return (
     <div className="relative">
@@ -77,7 +84,7 @@ const SoftPill = ({ children, label, hint, tone = "default", disabled, ...props 
         onBlur={() => setHovered(false)}
         onPointerDown={() => setHovered(false)}
         className="flex items-center justify-center rounded-full px-4 py-2.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-        style={{ color, background: "transparent" }}
+        style={{ color, background: activeBg }}
         {...props}
       >
         {children}
@@ -93,6 +100,7 @@ export const CounterView = () => {
     session,
     setSession,
     settings,
+    setSettings,
     bump,
     complete,
     setComplete,
@@ -161,16 +169,30 @@ export const CounterView = () => {
   const C = 2 * Math.PI * 86;
   const done = count >= target;
 
-  let down = null;
-  const onDown = (e) => { down = { x: e.clientX, y: e.clientY, t: Date.now() }; };
+  // Full-screen tap-to-count: any tap on the counter view increments unless
+  // it lands inside an opt-out zone. Only the top header bar, bottom control
+  // bar, BeadRing (own drag logic), modals, and the inline target-edit button
+  // are marked with [data-tap-skip]. Everything else — including the dhikr
+  // text block — becomes a tap target. Inputs are always skipped so typing
+  // (e.g. custom target) keeps working.
+  const tapStart = useRef(null);
+  const isTapSkip = (el) =>
+    !!(el && el.closest && el.closest('input, textarea, [data-tap-skip]'));
+
+  const onDown = (e) => {
+    if (isTapSkip(e.target)) { tapStart.current = null; return; }
+    tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  };
   const onUp = (e) => {
-    if (!down) return;
-    const dx = e.clientX - down.x;
-    const dy = e.clientY - down.y;
-    const dt = Date.now() - down.t;
+    const start = tapStart.current;
+    tapStart.current = null;
+    if (!start) return;
+    if (isTapSkip(e.target)) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    const dt = Date.now() - start.t;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) goStep(dx < 0 ? 1 : -1);
     else if (Math.abs(dx) < 16 && Math.abs(dy) < 16 && dt < 600) increment();
-    down = null;
   };
 
   const beads = settings.counterStyle !== "ring";
@@ -192,6 +214,7 @@ export const CounterView = () => {
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); setCustomT(""); setTargetEdit(true); }}
+        data-tap-skip="true"
         className="pointer-events-auto mt-2 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-base font-medium text-[var(--muted)] active:bg-[var(--surface2)] cursor-pointer"
       >
         / {target} <Pencil size={14} />
@@ -227,12 +250,19 @@ export const CounterView = () => {
   );
 
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col">
+    <div
+      className="flex h-[calc(100svh-2.5rem)] flex-col"
+      onPointerDown={settings.fullScreenTap ? onDown : undefined}
+      onPointerUp={settings.fullScreenTap ? onUp : undefined}
+      onPointerCancel={settings.fullScreenTap ? () => { tapStart.current = null; } : undefined}
+      style={{ touchAction: "manipulation" }}
+    >
       {/* Soft floating header pill */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 280, damping: 26 }}
+        data-tap-skip="true"
         className="flex items-center justify-between rounded-full px-2 py-1.5 backdrop-blur-2xl"
         style={{
           background: "color-mix(in srgb, var(--surface) 70%, transparent)",
@@ -312,7 +342,7 @@ export const CounterView = () => {
       )}
 
       {/* Absolutely positioned dhikr text — anchored near top, can expand over background */}
-      <div className="relative mt-7 px-2" style={{ minHeight: "13rem" }}>
+      <div className="relative mt-7 px-2" style={{ minHeight: "10rem" }}>
         <div className="absolute inset-x-2 top-0 z-10">
           <AnimatePresence mode="wait">
             <motion.div
@@ -327,7 +357,7 @@ export const CounterView = () => {
                 lang={settings.lang}
                 fieldOrder={settings.dhikrFieldOrder}
                 fieldVisible={settings.dhikrFieldVisible}
-                onOpenReader={() => setReaderOpen(true)}
+                onOpenReader={settings.fullScreenTap ? undefined : () => setReaderOpen(true)}
               />
             </motion.div>
           </AnimatePresence>
@@ -335,9 +365,10 @@ export const CounterView = () => {
       </div>
 
       {/* Ring placed below optical center for natural mobile balance */}
-      <div className="flex flex-1 items-end justify-center pb-4 md:items-center md:pb-0">
+      <div className="flex flex-1 min-h-0 items-end justify-center pb-2 md:items-center md:pb-0">
         {beads ? (
           <BeadRing
+            key={d?.id}
             count={count}
             target={target}
             theme={bt}
@@ -353,6 +384,7 @@ export const CounterView = () => {
             onPointerUp={onUp}
             whileTap={{ scale: 0.985 }}
             transition={spring}
+            data-tap-skip="true"
             className="relative flex h-[300px] w-[300px] cursor-pointer select-none items-center justify-center"
             style={{ touchAction: "none" }}
           >
@@ -424,6 +456,7 @@ export const CounterView = () => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...softSpring, delay: 0.1 }}
+        data-tap-skip="true"
         className="mx-auto mb-2 flex items-center gap-1 rounded-full p-1.5 backdrop-blur-2xl"
         style={{
           background: "color-mix(in srgb, var(--surface) 70%, transparent)",
@@ -449,6 +482,14 @@ export const CounterView = () => {
         </SoftPill>
         <div className="mx-0.5 h-6 w-px" style={{ background: "color-mix(in srgb, var(--line) 60%, transparent)" }} />
         <SoftPill
+          onClick={() => setSettings((s) => ({ ...s, fullScreenTap: !s.fullScreenTap }))}
+          label={settings.fullScreenTap ? "Full-screen tap on" : "Full-screen tap off"}
+          tone={settings.fullScreenTap ? "active" : "default"}
+        >
+          <MousePointerClick size={17} />
+        </SoftPill>
+        <div className="mx-0.5 h-6 w-px" style={{ background: "color-mix(in srgb, var(--line) 60%, transparent)" }} />
+        <SoftPill
           onClick={() => goStep(1)}
           disabled={i === session.steps.length - 1}
           label="Next dhikr"
@@ -464,6 +505,7 @@ export const CounterView = () => {
           <motion.div
             className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-6"
             onClick={() => setComplete(false)}
+            data-tap-skip="true"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -537,6 +579,7 @@ export const CounterView = () => {
           <motion.div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center"
             onClick={() => setTargetEdit(false)}
+            data-tap-skip="true"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

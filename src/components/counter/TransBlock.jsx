@@ -67,17 +67,23 @@ export const TransBlock = ({
     (k) => FIELD_RENDERERS[k] && fieldVisible[k] !== false
   );
 
+  const interactive = typeof onOpenReader === "function";
+  const Tag = interactive ? motion.button : motion.div;
+  const interactiveProps = interactive
+    ? {
+        type: "button",
+        onClick: onOpenReader,
+        whileTap: { scale: 0.985 },
+        transition: { type: "spring", stiffness: 500, damping: 28 },
+        "aria-label": "Open dhikr reader",
+      }
+    : {};
+
   return (
-    <motion.button
-      type="button"
-      onClick={onOpenReader}
-      whileTap={{ scale: 0.985 }}
-      transition={{ type: "spring", stiffness: 500, damping: 28 }}
-      className="relative flex w-full flex-col items-stretch select-none rounded-3xl px-3 pt-3 pb-2 text-left cursor-pointer"
-      style={{
-        background: "transparent",
-      }}
-      aria-label="Open dhikr reader"
+    <Tag
+      {...interactiveProps}
+      className={`relative flex w-full flex-col items-stretch select-none rounded-3xl px-3 pt-3 pb-2 text-left ${interactive ? "cursor-pointer" : ""}`}
+      style={{ background: "transparent" }}
     >
       {/* Text area — fade is anchored to this so it sits over the bottom of visible text */}
       <div
@@ -124,7 +130,8 @@ export const TransBlock = ({
         </AnimatePresence>
       </div>
 
-      {/* "Tap to read" indicator — sits in normal flow below text with consistent spacing */}
+      {/* "Tap to read" indicator — hidden when the block isn't interactive */}
+      {interactive && (
       <motion.div
         initial={{ opacity: 0, y: -2 }}
         animate={{ opacity: 1, y: 0 }}
@@ -149,7 +156,8 @@ export const TransBlock = ({
           Tap to read
         </span>
       </motion.div>
-    </motion.button>
+      )}
+    </Tag>
   );
 };
 

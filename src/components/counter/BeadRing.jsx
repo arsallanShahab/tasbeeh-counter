@@ -11,9 +11,10 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
   const drag = useRef(null);
 
   // Ring rotation — the active (front) bead always sits at top-center.
-  // We track cumulative ticks so lap loops continue forward (no snap-back).
-  // rotation = -(ticks - 1) * STEP_DEG  →  bead 0 stays at top on the very
-  // first count, bead 1 rotates up to top on the second, and so on.
+  // The component is keyed by dhikr id from the parent, so it remounts on
+  // dhikr switch and `ticks` starts at the current count. Within a dhikr we
+  // track cumulative ticks so an auto-lap (prev === N → count === 0) keeps
+  // rotating forward instead of snapping back through every bead.
   const [ticks, setTicks] = useState(count);
   const lastCountRef = useRef(count);
 
@@ -21,12 +22,15 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
     const prev = lastCountRef.current;
     lastCountRef.current = count;
     if (prev === count) return;
-    let delta = count - prev;
-    // Auto-loop reset: prev hit lap end (N), count fell back to 0.
-    // Keep rotation continuous by treating it as no extra step here —
-    // the next tap will rotate the ring forward by one as part of the new lap.
-    if (prev === N && count === 0) delta = 0;
-    setTicks((t) => Math.max(0, t + delta));
+    if (count === 0 && prev === N) {
+      setTicks((t) => t + N);
+      return;
+    }
+    if (count === 0) {
+      setTicks(0);
+      return;
+    }
+    setTicks((t) => Math.max(0, t + (count - prev)));
   }, [count, N]);
 
   const ringDeg = ticks === 0 ? 0 : -(ticks - 1) * STEP_DEG;
@@ -101,6 +105,7 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       className="relative flex h-[320px] w-[320px] cursor-pointer select-none items-center justify-center"
       style={{ touchAction: "none" }}
+      data-tap-skip="true"
     >
       {/* Soft ambient halo that intensifies with progress (no scale pulse — keeps the ring grounded) */}
       <motion.div

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
-  ChevronRight, RotateCcw, Hand, Keyboard, Sparkles,
+  ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
   RefreshCw, Download, Smartphone
 } from "lucide-react";
@@ -316,10 +316,13 @@ export const SettingsView = () => {
     }
   };
 
-  const Row = ({ icon: Ico, label, children }) => (
+  const Row = ({ icon: Ico, label, hint, children }) => (
     <div className="flex items-center gap-3 py-3.5">
       <Ico size={19} className="text-[var(--gold)] shrink-0" />
-      <span className="flex-1 text-[var(--text)] text-sm font-medium">{label}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[var(--text)] text-sm font-medium">{label}</p>
+        {hint && <p className="text-[var(--muted)] text-[11px] leading-snug mt-0.5">{hint}</p>}
+      </div>
       {children}
     </div>
   );
@@ -574,9 +577,16 @@ export const SettingsView = () => {
         </Row>
         <div className="border-t border-[var(--line)]" />
         <Row icon={RotateCcw} label="Loop single dhikr">
-          <Toggle 
-            on={settings.loop} 
-            onClick={() => set("loop", !settings.loop)} 
+          <Toggle
+            on={settings.loop}
+            onClick={() => set("loop", !settings.loop)}
+          />
+        </Row>
+        <div className="border-t border-[var(--line)]" />
+        <Row icon={MousePointerClick} label="Full-screen tap to count" hint="Tap anywhere on the counter (except top & bottom bars) to increment">
+          <Toggle
+            on={settings.fullScreenTap}
+            onClick={() => set("fullScreenTap", !settings.fullScreenTap)}
           />
         </Row>
       </Card>
