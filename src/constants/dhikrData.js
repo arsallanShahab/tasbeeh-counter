@@ -934,6 +934,22 @@ export const OCCASION_ICONS = {
 
 export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "friday"];
 
+// Home page widget sections — order and visibility are user-configurable in
+// Settings. The "continue" widget (active session) is contextual and renders
+// independently above the configurable stack.
+export const HOME_SECTIONS = {
+  streak: { label: "Daily Streak & Goal" },
+  quick: { label: "Quick Collections" },
+  suggested: { label: "Suggested Session" },
+  pinned: { label: "Your Widgets" },
+};
+export const DEFAULT_HOME_SECTIONS = [
+  { key: "streak", visible: true },
+  { key: "quick", visible: true },
+  { key: "suggested", visible: true },
+  { key: "pinned", visible: true },
+];
+
 export const DHIKR_FIELDS = {
   arabic: { label: "Arabic" },
   translit: { label: "Transliteration" },
@@ -951,6 +967,7 @@ export const DEFAULT_SETTINGS = {
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
   dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
   quickCollections: DEFAULT_QUICK_COLLECTIONS,
+  homeSections: DEFAULT_HOME_SECTIONS,
   dailyGoal: 100,
   haptics: true,
   sound: false,

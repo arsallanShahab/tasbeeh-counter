@@ -1,11 +1,16 @@
-import React from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Plus, Sparkles, Sunrise, Moon, Sun, Star, ArrowRight, Zap, Target
+  Plus, Sparkles, ArrowRight, Zap, Target,
+  ChevronUp, ChevronDown, Pencil, Check
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
-import { ICONS, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS } from "../../constants/dhikrData";
+import {
+  ICONS, OCCASIONS, OCCASION_ICONS,
+  DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
+} from "../../constants/dhikrData";
 
 export const HomeView = () => {
   const {
@@ -13,15 +18,27 @@ export const HomeView = () => {
     lists,
     dhikrs,
     pinned,
+    setPinned,
     stats,
     startList,
     startDhikr,
-    setActiveOccasion,
     setSearchQuery,
     session,
     complete,
     settings,
   } = useApp();
+  const navigate = useNavigate();
+  const [editPinned, setEditPinned] = useState(false);
+
+  const movePinned = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= pinned.length) return;
+    setPinned((p) => {
+      const next = [...p];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
+  };
 
   const hr = new Date().getHours();
   const suggestId = hr < 12 ? "morning" : hr >= 15 ? "evening" : "after-salah";
@@ -57,9 +74,11 @@ export const HomeView = () => {
     }));
 
   const handleQuickLink = (catKey) => {
-    setActiveOccasion(catKey);
+    // Navigate + set the occasion in one go — calling setActiveOccasion and
+    // then setView wipes the search param because navigate("/library")
+    // replaces the URL entirely.
     setSearchQuery("");
-    setView("library");
+    navigate(catKey === "all" ? "/library" : `/library?occasion=${encodeURIComponent(catKey)}`);
   };
 
   // Format today's calendar date nicely
@@ -67,6 +86,208 @@ export const HomeView = () => {
     const options = { weekday: "short", month: "short", day: "numeric" };
     return new Date().toLocaleDateString("en-US", options);
   };
+
+  // ───────── Section renderers (composed in user-defined order) ─────────
+  const renderStreak = () => (
+    <Card key="streak" className="p-5 border-[var(--line)] shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5">
+          <Zap size={16} className="text-[var(--gold)] animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
+            Daily Streak
+          </span>
+        </div>
+        <span className="font-display text-xl text-[var(--gold)] font-bold">
+          {streak} Days 🔥
+        </span>
+      </div>
+      <div className="space-y-2 mb-5">
+        <div className="flex items-center justify-between text-xs font-medium">
+          <span className="text-[var(--muted)] flex items-center gap-1">
+            <Target size={12} /> Daily Goal: {DAILY_GOAL} recitations
+          </span>
+          <span className="text-[var(--text)] font-semibold">{Math.round(progressPercent)}%</span>
+        </div>
+        <div className="h-2.5 w-full rounded-full bg-[var(--surface2)] overflow-hidden border border-[var(--line)]/50">
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progressPercent}%`, background: "var(--primary)" }}
+          />
+        </div>
+      </div>
+      <div className="border-t border-[var(--line)]/60 my-3" />
+      <div className="grid grid-cols-2 text-center pt-2">
+        <div className="border-r border-[var(--line)]/60">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Today</p>
+          <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(today)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">All-Time</p>
+          <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(stats.total)}</p>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderQuick = () => quickCategories.length > 0 && (
+    <div key="quick" className="space-y-3">
+      <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">Quick Collections</h2>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${Math.min(quickCategories.length, 4)}, minmax(0, 1fr))` }}
+      >
+        {quickCategories.map((cat) => {
+          const CatIcon = cat.icon;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => handleQuickLink(cat.key)}
+              className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] py-3.5 text-center cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97]"
+            >
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl"
+                style={{ background: "var(--surface2)", color: "var(--primary)" }}
+              >
+                <CatIcon size={18} />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text)]">{cat.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderSuggested = () => suggest && (
+    <Card key="suggested" className="p-5 border-2 border-[var(--primary)] bg-[var(--surface)] shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold">
+          Suggested Session
+        </p>
+        <h3 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">
+          {suggest.name}
+        </h3>
+        <p className="text-xs text-[var(--muted)] max-w-xs leading-relaxed">
+          recite and fulfill your daily goal requirements.
+        </p>
+      </div>
+      <button
+        onClick={() => startList(suggest)}
+        className="rounded-2xl px-5 py-3 text-xs font-bold text-white cursor-pointer active:scale-[0.96] hover:brightness-105 transition-all duration-300 flex items-center gap-1.5 shrink-0 shadow-sm"
+        style={{ background: "var(--primary)" }}
+      >
+        Begin Adhkar <ArrowRight size={14} />
+      </button>
+    </Card>
+  );
+
+  const renderPinned = () => (
+    <div key="pinned">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-base font-semibold text-[var(--text)]">Your widgets</h2>
+        <div className="flex items-center gap-3">
+          {pinnedItems.length > 1 && (
+            <button
+              onClick={() => setEditPinned((v) => !v)}
+              className="flex items-center gap-1 text-sm text-[var(--muted)] cursor-pointer font-bold hover:text-[var(--text)] active:scale-95 transition-all"
+              aria-label={editPinned ? "Done reordering" : "Reorder widgets"}
+            >
+              {editPinned ? (<><Check size={15} /> Done</>) : (<><Pencil size={13} /> Edit</>)}
+            </button>
+          )}
+          <button
+            onClick={() => setView("library")}
+            className="flex items-center gap-1 text-sm text-[var(--gold)] cursor-pointer font-bold hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus size={15} /> Add
+          </button>
+        </div>
+      </div>
+
+      {pinnedItems.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-[var(--muted)]">
+          No pinned items yet. Pin sets or single dhikrs from the Library.
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {pinnedItems.map((item, idx) => {
+            const isList = item.type === "list";
+            const data = item.data;
+            const Ico = isList ? (ICONS[data.icon] || Sparkles) : null;
+            const total = isList ? data.steps.reduce((acc, s) => acc + s.target, 0) : null;
+            const onActivate = () => isList ? startList(data) : startDhikr(data);
+
+            return (
+              <div key={data.id} className="relative">
+                <button
+                  onClick={editPinned ? undefined : onActivate}
+                  disabled={editPinned}
+                  className={`text-left w-full ${editPinned ? "cursor-default" : "cursor-pointer"}`}
+                >
+                  <Card className={`h-full p-4 transition-all flex flex-col justify-between min-h-[110px] ${editPinned ? "" : "hover:scale-[1.02] active:scale-95"}`}>
+                    <div>
+                      {isList ? (
+                        <div
+                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
+                          style={{ background: "var(--surface2)" }}
+                        >
+                          <Ico size={18} className="text-[var(--gold)]" />
+                        </div>
+                      ) : (
+                        <div
+                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl font-arabic text-lg text-[var(--gold)]"
+                          style={{ background: "var(--surface2)" }}
+                        >
+                          {data.arabic.charAt(0)}
+                        </div>
+                      )}
+                      <p className="font-semibold text-xs leading-snug text-[var(--text)] line-clamp-2">
+                        {isList ? data.name : data.tr}
+                      </p>
+                    </div>
+                    <span className="mt-2 text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider block">
+                      {isList ? `Set · ${total} counts` : `Dhikr · ×${data.target}`}
+                    </span>
+                  </Card>
+                </button>
+
+                {editPinned && (
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); movePinned(idx, -1); }}
+                      disabled={idx === 0}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--surface2)] border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer active:scale-90 transition-transform"
+                      aria-label="Move up"
+                    >
+                      <ChevronUp size={13} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); movePinned(idx, 1); }}
+                      disabled={idx === pinnedItems.length - 1}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--surface2)] border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer active:scale-90 transition-transform"
+                      aria-label="Move down"
+                    >
+                      <ChevronDown size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  const sectionRenderers = {
+    streak: renderStreak,
+    quick: renderQuick,
+    suggested: renderSuggested,
+    pinned: renderPinned,
+  };
+  const homeSections = (settings?.homeSections && settings.homeSections.length > 0)
+    ? settings.homeSections
+    : DEFAULT_HOME_SECTIONS;
 
   return (
     <div className="space-y-6 anim-fade pb-6">
@@ -86,53 +307,7 @@ export const HomeView = () => {
         </div>
       </header>
 
-      {/* Redesigned Master Dashboard Tracker Card */}
-      <Card className="p-5 border-[var(--line)] shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1.5">
-            <Zap size={16} className="text-[var(--gold)] animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
-              Daily Streak
-            </span>
-          </div>
-          <span className="font-display text-xl text-[var(--gold)] font-bold">
-            {streak} Days 🔥
-          </span>
-        </div>
-
-        {/* Goal Progress Indicator */}
-        <div className="space-y-2 mb-5">
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className="text-[var(--muted)] flex items-center gap-1">
-              <Target size={12} /> Daily Goal: {DAILY_GOAL} recitations
-            </span>
-            <span className="text-[var(--text)] font-semibold">{Math.round(progressPercent)}%</span>
-          </div>
-          {/* Flat solid progress bar */}
-          <div className="h-2.5 w-full rounded-full bg-[var(--surface2)] overflow-hidden border border-[var(--line)]/50">
-            <div 
-              className="h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progressPercent}%`, background: "var(--primary)" }}
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-[var(--line)]/60 my-3" />
-
-        {/* HUD Sub-stats */}
-        <div className="grid grid-cols-2 text-center pt-2">
-          <div className="border-r border-[var(--line)]/60">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Today</p>
-            <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(today)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">All-Time</p>
-            <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(stats.total)}</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Premium Continue Session Widget */}
+      {/* Continue Session — contextual, always above the configurable stack */}
       {session && !complete && session.counts.some(c => c > 0) && (() => {
         const idx = session.stepIndex;
         const currentCount = session.counts[idx];
@@ -168,133 +343,12 @@ export const HomeView = () => {
         );
       })()}
 
-      {/* Quick Collections — configurable via Settings */}
-      {quickCategories.length > 0 && (
-      <div className="space-y-3">
-        <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">Quick Collections</h2>
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${Math.min(quickCategories.length, 4)}, minmax(0, 1fr))` }}
-        >
-          {quickCategories.map((cat) => {
-            const CatIcon = cat.icon;
-            return (
-              <button 
-                key={cat.key}
-                onClick={() => handleQuickLink(cat.key)}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] py-3.5 text-center cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97]"
-              >
-                <div 
-                  className="flex h-9 w-9 items-center justify-center rounded-xl"
-                  style={{ background: "var(--surface2)", color: "var(--primary)" }}
-                >
-                  <CatIcon size={18} />
-                </div>
-                <span className="text-[10px] font-bold text-[var(--text)]">{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      )}
-
-      {/* Redesigned Active Session Reminder Card */}
-      <Card className="p-5 border-2 border-[var(--primary)] bg-[var(--surface)] shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold">
-            Suggested Session
-          </p>
-          <h3 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">
-            {suggest.name}
-          </h3>
-          <p className="text-xs text-[var(--muted)] max-w-xs leading-relaxed">
-            recite and fulfill your daily goal requirements.
-          </p>
-        </div>
-        
-        <button 
-          onClick={() => startList(suggest)} 
-          className="rounded-2xl px-5 py-3 text-xs font-bold text-white cursor-pointer active:scale-[0.96] hover:brightness-105 transition-all duration-300 flex items-center gap-1.5 shrink-0 shadow-sm"
-          style={{ background: "var(--primary)" }}
-        >
-          Begin Adhkar <ArrowRight size={14} />
-        </button>
-      </Card>
-
-      {/* Redesigned Pinned Widgets Section */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-base font-semibold text-[var(--text)]">Your widgets</h2>
-          <button 
-            onClick={() => setView("library")} 
-            className="flex items-center gap-1 text-sm text-[var(--gold)] cursor-pointer font-bold hover:brightness-110 active:scale-95 transition-all"
-          >
-            <Plus size={15} /> Add
-          </button>
-        </div>
-        
-        {pinnedItems.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-[var(--muted)]">
-            No pinned items yet. Pin sets or single dhikrs from the Library.
-          </Card>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {pinnedItems.map((item) => {
-              if (item.type === "list") {
-                const l = item.data;
-                const Ico = ICONS[l.icon] || Sparkles;
-                const total = l.steps.reduce((acc, s) => acc + s.target, 0);
-                return (
-                  <button 
-                    key={l.id} 
-                    onClick={() => startList(l)} 
-                    className="text-left cursor-pointer"
-                  >
-                    <Card className="h-full p-4 transition-all hover:scale-[1.02] active:scale-95 flex flex-col justify-between min-h-[110px]">
-                      <div>
-                        <div 
-                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl" 
-                          style={{ background: "var(--surface2)" }}
-                        >
-                          <Ico size={18} className="text-[var(--gold)]" />
-                        </div>
-                        <p className="font-semibold text-xs leading-snug text-[var(--text)] line-clamp-2">{l.name}</p>
-                      </div>
-                      <span className="mt-2 text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider block">
-                        Set · {total} counts
-                      </span>
-                    </Card>
-                  </button>
-                );
-              } else {
-                const d = item.data;
-                return (
-                  <button 
-                    key={d.id} 
-                    onClick={() => startDhikr(d)} 
-                    className="text-left cursor-pointer"
-                  >
-                    <Card className="h-full p-4 transition-all hover:scale-[1.02] active:scale-95 flex flex-col justify-between min-h-[110px]">
-                      <div>
-                        <div 
-                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl font-arabic text-lg text-[var(--gold)]" 
-                          style={{ background: "var(--surface2)" }}
-                        >
-                          {d.arabic.charAt(0)}
-                        </div>
-                        <p className="font-semibold text-xs leading-snug text-[var(--text)] line-clamp-2">{d.tr}</p>
-                      </div>
-                      <span className="mt-2 text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider block">
-                        Dhikr · ×{d.target}
-                      </span>
-                    </Card>
-                  </button>
-                );
-              }
-            })}
-          </div>
-        )}
-      </div>
+      {/* Configurable section stack — order/visibility from settings.homeSections */}
+      {homeSections.map((s) => {
+        if (!s.visible) return null;
+        const render = sectionRenderers[s.key];
+        return render ? render() : null;
+      })}
     </div>
   );
 };

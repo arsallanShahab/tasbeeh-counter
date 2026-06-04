@@ -10,8 +10,94 @@ import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
-import { BEAD_THEMES, THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS } from "../../constants/dhikrData";
+import { BEAD_THEMES, THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../../constants/dhikrData";
 import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
+
+const HomeSectionsEditor = ({ value, onChange }) => {
+  // Normalize: merge stored order with any newly-introduced section keys so
+  // upgrades don't drop new defaults the user has never seen.
+  const stored = Array.isArray(value) && value.length ? value : DEFAULT_HOME_SECTIONS;
+  const knownKeys = Object.keys(HOME_SECTIONS);
+  const list = [
+    ...stored.filter((s) => HOME_SECTIONS[s.key]),
+    ...knownKeys
+      .filter((k) => !stored.some((s) => s.key === k))
+      .map((k) => ({ key: k, visible: true })),
+  ];
+
+  const move = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= list.length) return;
+    const next = [...list];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  };
+  const toggle = (idx) => {
+    const next = list.map((s, i) => i === idx ? { ...s, visible: !s.visible } : s);
+    onChange(next);
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      {list.map((s, idx) => (
+        <motion.div
+          key={s.key}
+          layout
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          className="flex items-center gap-2 rounded-2xl border px-3 py-2"
+          style={{
+            borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+            background: "color-mix(in srgb, var(--surface2) 60%, transparent)",
+            opacity: s.visible ? 1 : 0.55,
+          }}
+        >
+          <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
+          <span className="flex-1 text-sm font-medium text-[var(--text)] truncate">
+            {HOME_SECTIONS[s.key].label}
+          </span>
+          <div className="flex items-center gap-1">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => move(idx, -1)}
+              disabled={idx === 0}
+              className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+              style={{ color: "var(--muted)" }}
+              aria-label="Move up"
+            >
+              <ChevronUp size={15} />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => move(idx, 1)}
+              disabled={idx === list.length - 1}
+              className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
+              style={{ color: "var(--muted)" }}
+              aria-label="Move down"
+            >
+              <ChevronDown size={15} />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => toggle(idx)}
+              className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
+              style={{
+                background: s.visible
+                  ? "color-mix(in srgb, var(--primary) 14%, transparent)"
+                  : "color-mix(in srgb, var(--surface) 80%, transparent)",
+                color: s.visible ? "var(--primary)" : "var(--muted)",
+              }}
+              aria-label={s.visible ? "Hide section" : "Show section"}
+            >
+              {s.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+            </motion.button>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
 
 const QuickCollectionsEditor = ({ value, onChange }) => {
   const [picking, setPicking] = useState(false);
@@ -361,6 +447,21 @@ export const SettingsView = () => {
           visible={settings.dhikrFieldVisible || DEFAULT_DHIKR_FIELD_VISIBLE}
           onOrderChange={(next) => set("dhikrFieldOrder", next)}
           onVisibleChange={(next) => set("dhikrFieldVisible", next)}
+        />
+      </Card>
+
+      {/* Home Layout — section order + visibility */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <LayoutGrid size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Home Layout</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Reorder or hide sections on the Home page. The Continue Session widget always sits at the top when an active session exists.
+        </p>
+        <HomeSectionsEditor
+          value={settings.homeSections || DEFAULT_HOME_SECTIONS}
+          onChange={(next) => set("homeSections", next)}
         />
       </Card>
 
