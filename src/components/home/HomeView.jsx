@@ -10,6 +10,7 @@ import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import {
   ICONS, OCCASIONS, OCCASION_ICONS,
   DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
+  EMOTIONAL_REMEDIES,
 } from "../../constants/dhikrData";
 
 export const HomeView = () => {
@@ -158,6 +159,39 @@ export const HomeView = () => {
     </div>
   );
 
+  const renderRemedies = () => (
+    <div key="remedies" className="space-y-3">
+      <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">
+        Remedies for the Heart
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
+          const RemIcon = rem.icon;
+          return (
+            <button
+              key={key}
+              onClick={() => handleQuickLink(key)}
+              className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                style={{ background: "var(--surface2)", color: rem.color }}
+              >
+                <RemIcon size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-[var(--text)]">{rem.label}</span>
+                <span className="block text-[10px] text-[var(--muted)] mt-0.5 leading-snug truncate">
+                  {rem.desc}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const renderSuggested = () => suggest && (
     <Card key="suggested" className="p-5 border-2 border-[var(--primary)] bg-[var(--surface)] shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="space-y-1">
@@ -177,6 +211,33 @@ export const HomeView = () => {
         style={{ background: "var(--primary)" }}
       >
         Begin Adhkar <ArrowRight size={14} />
+      </button>
+    </Card>
+  );
+
+  const renderNamesShortcut = () => (
+    <Card 
+      key="asmaul_husna"
+      className="p-5 border border-[var(--line)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
+      onClick={() => setView("names")}
+    >
+      <div className="space-y-1 min-w-0 flex-1">
+        <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
+          <Sparkles size={12} className="text-[var(--gold)]" />
+          Dedicated Mode
+        </p>
+        <h3 className="font-display text-xl font-bold text-[var(--text)] leading-tight">
+          Asma-ul-Husna Mode
+        </h3>
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
+          Contemplate the 99 Beautiful Names of Allah.
+        </p>
+      </div>
+      <button 
+        className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer shadow-sm shrink-0 flex items-center gap-1 hover:brightness-105 active:scale-[0.96] transition-all"
+        style={{ background: "var(--gold)" }}
+      >
+        Begin <ArrowRight size={14} />
       </button>
     </Card>
   );
@@ -281,6 +342,8 @@ export const HomeView = () => {
 
   const sectionRenderers = {
     streak: renderStreak,
+    remedies: renderRemedies,
+    asmaul_husna: renderNamesShortcut,
     quick: renderQuick,
     suggested: renderSuggested,
     pinned: renderPinned,

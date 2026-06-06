@@ -6,7 +6,7 @@ import { useApp } from "../../context/AppContext";
 export const Navbar = () => {
   const { view, setView } = useApp();
 
-  if (view === "counter") return null;
+  if (view === "counter" || view === "names") return null;
 
   const navItems = [
     { v: "home", icon: Home, label: "Home" },

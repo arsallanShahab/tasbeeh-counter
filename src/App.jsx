@@ -7,6 +7,7 @@ import { useEffectiveAppearance } from "./utils/theme";
 import HomeView from "./components/home/HomeView";
 import LibraryView from "./components/library/LibraryView";
 import CounterView from "./components/counter/CounterView";
+import NamesView from "./components/counter/NamesView";
 import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
 import Navbar from "./components/layout/Navbar";
@@ -68,7 +69,7 @@ const AppContent = () => {
         <rect width="100%" height="100%" fill="url(#geo)" />
       </svg>
 
-      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${view === "counter" ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
+      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${["counter", "names"].includes(view) ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -81,6 +82,7 @@ const AppContent = () => {
               <Route path="/" element={<HomeView />} />
               <Route path="/library" element={<LibraryView />} />
               <Route path="/counter" element={<CounterView />} />
+              <Route path="/names" element={<NamesView />} />
               <Route path="/stats" element={<StatsView />} />
               <Route path="/settings" element={<SettingsView />} />
               <Route path="*" element={<Navigate to="/" replace />} />

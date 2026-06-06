@@ -54,7 +54,7 @@ const ListRow = ({ l, dById, pinned, togglePin, startList, removeList, inPinnedS
         background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
       } : undefined}
     >
-<div
+      <div
         className="flex h-10 w-10 items-center justify-center rounded-2xl shrink-0"
         style={{
           background: "color-mix(in srgb, var(--primary) 12%, transparent)",
@@ -107,7 +107,7 @@ const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang, inPinne
         background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
       } : undefined}
     >
-<button onClick={() => startDhikr(d)} className="min-w-0 flex-1 text-left cursor-pointer">
+      <button onClick={() => startDhikr(d)} className="min-w-0 flex-1 text-left cursor-pointer">
         <div className="flex items-center gap-1.5">
           <p className="font-arabic text-lg text-[var(--text)] truncate" dir="rtl">
             {d.arabic}
@@ -138,6 +138,42 @@ const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang, inPinne
           <Trash2 size={14} />
         </motion.button>
       )}
+    </Card>
+  );
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Name card (for 99 Names of Allah)
+// ────────────────────────────────────────────────────────────────────────
+const NameCard = ({ d, pinned, togglePin, startDhikr, lang }) => {
+  const isPinned = pinned.includes(d.id);
+  const numStr = d.id.replace("name_", "");
+  return (
+    <Card
+      animated
+      className="flex flex-col justify-between p-3.5 h-full min-h-[135px] relative"
+      style={isPinned ? {
+        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
+        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
+      } : undefined}
+    >
+      <div className="flex justify-between items-center w-full mb-1">
+        <span className="text-[9px] font-bold text-[var(--gold)] bg-[var(--surface2)] px-2 py-0.5 rounded-lg border border-[var(--line)]/50">
+          #{numStr}
+        </span>
+        <PinButton isPinned={isPinned} onClick={() => togglePin(d.id)} />
+      </div>
+      <button onClick={() => startDhikr(d)} className="w-full text-center flex-1 flex flex-col justify-center cursor-pointer mt-1 select-none font-sans">
+        <p className="font-arabic text-xl text-[var(--text)] leading-[1.6] line-clamp-1" dir="rtl">
+          {d.arabic}
+        </p>
+        <p className="text-[11px] font-semibold text-[var(--gold)] mt-0.5 truncate">
+          {d.tr}
+        </p>
+        <p className="text-[10px] text-[var(--muted)] mt-1 line-clamp-2 leading-snug">
+          {lang === "ur" ? d.ur || d.en : d.en}
+        </p>
+      </button>
     </Card>
   );
 };
@@ -208,6 +244,28 @@ export const LibraryView = () => {
   const [toast, setToast] = useState(null); // { action, label } | null
   const toastTimer = useRef(null);
 
+  // Auto-switch tab from "sets" if there are no sets for the active occasion but there are matching items in other tabs
+  useEffect(() => {
+    if (tab === "sets" && activeOccasion !== "all") {
+      const hasSets = lists.some((l) => l.occasion === activeOccasion);
+      if (!hasSets) {
+        const hasDhikrs = dhikrs.some((d) =>
+          !d.tags?.includes("names-of-allah") && d.tags?.includes(activeOccasion)
+        );
+        if (hasDhikrs) {
+          setTab("dhikrs");
+        } else {
+          const hasNames = dhikrs.some((d) =>
+            d.tags?.includes("names-of-allah") && d.tags?.includes(activeOccasion)
+          );
+          if (hasNames) {
+            setTab("names");
+          }
+        }
+      }
+    }
+  }, [activeOccasion, tab, lists, dhikrs]);
+
   const togglePin = (id) => {
     const wasPinned = pinned.includes(id);
     const item = lists.find((x) => x.id === id) || dhikrs.find((x) => x.id === id);
@@ -235,6 +293,22 @@ export const LibraryView = () => {
 
   const filteredDhikrs = useMemo(
     () => dhikrs.filter((d) => {
+      if (d.tags?.includes("names-of-allah")) return false; // Filter out names from standard list
+      const matchesSearch =
+        !q ||
+        d.tr.toLowerCase().includes(q) ||
+        (d.en && d.en.toLowerCase().includes(q)) ||
+        d.arabic.includes(searchQuery) ||
+        (d.ur && d.ur.includes(searchQuery));
+      const matchesOccasion = activeOccasion === "all" || (d.tags && d.tags.includes(activeOccasion));
+      return matchesSearch && matchesOccasion;
+    }),
+    [dhikrs, q, activeOccasion, searchQuery]
+  );
+
+  const filteredNames = useMemo(
+    () => dhikrs.filter((d) => {
+      if (!d.tags?.includes("names-of-allah")) return false; // Only names
       const matchesSearch =
         !q ||
         d.tr.toLowerCase().includes(q) ||
@@ -256,6 +330,10 @@ export const LibraryView = () => {
   const unpinnedDhikrs = useMemo(
     () => filtersActive ? filteredDhikrs : filteredDhikrs.filter((d) => !pinned.includes(d.id)),
     [filteredDhikrs, pinned, filtersActive]
+  );
+  const unpinnedNames = useMemo(
+    () => filtersActive ? filteredNames : filteredNames.filter((d) => !pinned.includes(d.id)),
+    [filteredNames, pinned, filtersActive]
   );
 
   // Group dhikrs by primary occasion tag when unfiltered for browsability
@@ -300,10 +378,10 @@ export const LibraryView = () => {
     setPinned((p) => p.filter((x) => x !== id));
   };
 
-  const totalCount = tab === "sets" ? filteredLists.length : filteredDhikrs.length;
+  const totalCount = tab === "sets" ? filteredLists.length : tab === "dhikrs" ? filteredDhikrs.length : filteredNames.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 relative">
       {/* Header */}
       <header className="flex items-center justify-between pt-2">
         <h1 className="font-display text-2xl text-[var(--text)]">Library</h1>
@@ -330,7 +408,7 @@ export const LibraryView = () => {
       <div
         className="sticky top-0 z-20 -mx-5 px-5 pt-0 pb-3 space-y-3"
         style={{
-          background: "color-mix(in srgb, var(--bg) 95%, transparent)",
+          background: "",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
@@ -374,6 +452,7 @@ export const LibraryView = () => {
             {[
               { id: "sets", icon: FolderHeart, label: "Sets" },
               { id: "dhikrs", icon: BookOpen, label: "Dhikrs" },
+              { id: "names", icon: Sparkles, label: "99 Names" },
             ].map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
@@ -408,7 +487,7 @@ export const LibraryView = () => {
                       color: active ? "var(--primary)" : "var(--muted)",
                     }}
                   >
-                    {t.id === "sets" ? filteredLists.length : filteredDhikrs.length}
+                    {t.id === "sets" ? filteredLists.length : t.id === "dhikrs" ? filteredDhikrs.length : filteredNames.length}
                   </span>
                 </motion.button>
               );
@@ -439,18 +518,28 @@ export const LibraryView = () => {
 
         {/* Occasion filter pills */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+          {activeOccasion !== "all" && OCCASIONS[activeOccasion] && (
+            <PillButton
+              active={true}
+              onClick={() => setActiveOccasion("all")}
+            >
+              {OCCASIONS[activeOccasion]}
+            </PillButton>
+          )}
           <PillButton active={activeOccasion === "all"} onClick={() => setActiveOccasion("all")}>
             All
           </PillButton>
-          {Object.entries(OCCASIONS).map(([k, v]) => (
-            <PillButton
-              key={k}
-              active={activeOccasion === k}
-              onClick={() => setActiveOccasion(k)}
-            >
-              {v}
-            </PillButton>
-          ))}
+          {Object.entries(OCCASIONS)
+            .filter(([k]) => k !== activeOccasion)
+            .map(([k, v]) => (
+              <PillButton
+                key={k}
+                active={false}
+                onClick={() => setActiveOccasion(k)}
+              >
+                {v}
+              </PillButton>
+            ))}
         </div>
       </div>
 
@@ -564,7 +653,7 @@ export const LibraryView = () => {
                 </div>
               )}
             </>
-          ) : (
+          ) : tab === "dhikrs" ? (
             <>
               {unpinnedDhikrs.length === 0 ? (
                 filteredDhikrs.length === 0 ? (
@@ -617,6 +706,42 @@ export const LibraryView = () => {
                         togglePin={togglePin}
                         startDhikr={startDhikr}
                         removeDhikr={removeDhikr}
+                        lang={settings.lang}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </>
+          ) : (
+            <>
+              {unpinnedNames.length === 0 ? (
+                filteredNames.length === 0 ? (
+                  <EmptyState
+                    icon={Sparkles}
+                    title={filtersActive ? "No names match" : "No names available"}
+                    subtitle={
+                      filtersActive
+                        ? "Try a different category or clear the search."
+                        : "Names of Allah database."
+                    }
+                    cta={
+                      filtersActive
+                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
+                        : null
+                    }
+                  />
+                ) : null
+              ) : (
+                <motion.div layout className="grid grid-cols-2 gap-3 pt-1">
+                  <AnimatePresence initial={false}>
+                    {unpinnedNames.map((n) => (
+                      <NameCard
+                        key={n.id}
+                        d={n}
+                        pinned={pinned}
+                        togglePin={togglePin}
+                        startDhikr={startDhikr}
                         lang={settings.lang}
                       />
                     ))}

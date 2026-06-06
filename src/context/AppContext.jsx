@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION } from "../constants/dhikrData";
+import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../constants/dhikrData";
 import { store } from "../utils/storage";
 import { dateKey } from "../utils/stats";
 import { WebHaptics } from "web-haptics";
 
 const AppContext = createContext(null);
 
-const VALID_VIEWS = ["home", "library", "stats", "settings", "counter"];
+const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names"];
 
 const pathToView = (pathname) => {
   const p = (pathname || "/").replace(/^\//, "").replace(/\/$/, "") || "home";
@@ -26,13 +26,18 @@ export const AppProvider = ({ children }) => {
   const activeOccasion = searchParams.get("occasion") || "all";
 
   const [loaded, setLoaded] = useState(false);
-  const [dhikrs, setDhikrs] = useState(SEED_DHIKRS);
+  const [dhikrs, setDhikrs] = useState(() => [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH]);
   const [lists, setLists] = useState(SEED_LISTS);
   const [pinned, setPinned] = useState(["after-salah", "istighfar-100", "durood-100"]);
   const [stats, setStats] = useState({ total: 0, byDate: {}, perDhikr: {} });
   const [settings, setSettingsInternal] = useState(DEFAULT_SETTINGS);
 
   const [session, setSession] = useState(null);
+  const [namesSession, setNamesSession] = useState(() => ({
+    index: 0,
+    counts: Array(99).fill(0),
+    targets: Array(99).fill(100)
+  }));
   const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEditInternal] = useState(false);
@@ -112,8 +117,8 @@ export const AppProvider = ({ children }) => {
         const customDhikrs = loadedDhikrs ? loadedDhikrs.filter(d => d.id.startsWith("c_") || d.tags?.includes("custom")) : [];
         const customLists = loadedLists ? loadedLists.filter(l => l.id.startsWith("c_")) : [];
         
-        // 2. Overwrite defaults with new SEED_DHIKRS & SEED_LISTS, appending custom items
-        loadedDhikrs = [...SEED_DHIKRS, ...customDhikrs];
+        // 2. Overwrite defaults with new SEED_DHIKRS, SEED_NAMES_OF_ALLAH & SEED_LISTS, appending custom items
+        loadedDhikrs = [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH, ...customDhikrs];
         loadedLists = [...SEED_LISTS, ...customLists];
         
         // 3. Clear active session on structure upgrade to avoid mismatch crashes
@@ -130,6 +135,10 @@ export const AppProvider = ({ children }) => {
         // Normal load
         setSession(store.get("session", null));
         setComplete(store.get("complete", false));
+      }
+      const loadedNamesSession = store.get("names_session", null);
+      if (loadedNamesSession) {
+        setNamesSession(loadedNamesSession);
       }
       
       setDhikrs(loadedDhikrs);
@@ -160,6 +169,15 @@ export const AppProvider = ({ children }) => {
         });
       }
       
+      // Normalize homeSections to ensure any newly added sections are present
+      if (loadedSettings.homeSections && Array.isArray(loadedSettings.homeSections)) {
+        const existingKeys = loadedSettings.homeSections.map(s => s.key);
+        const missingSections = DEFAULT_HOME_SECTIONS.filter(s => !existingKeys.includes(s.key));
+        if (missingSections.length > 0) {
+          loadedSettings.homeSections = [...loadedSettings.homeSections, ...missingSections];
+        }
+      }
+      
       setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
       setLoaded(true);
     };
@@ -178,9 +196,10 @@ export const AppProvider = ({ children }) => {
       store.set("settings", settings);
       store.set("session", session);
       store.set("complete", complete);
+      store.set("names_session", namesSession);
     }, 700);
     return () => clearTimeout(saveTimer.current);
-  }, [dhikrs, lists, pinned, stats, settings, session, complete, loaded]);
+  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession, loaded]);
 
   /* Utility functions */
   const dById = useCallback((id) => dhikrs.find((d) => d.id === id), [dhikrs]);
@@ -533,7 +552,7 @@ export const AppProvider = ({ children }) => {
     );
     const customLists = lists.filter((l) => l.id.startsWith("c_"));
 
-    const nextDhikrs = [...SEED_DHIKRS, ...customDhikrs];
+    const nextDhikrs = [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH, ...customDhikrs];
     const nextLists = [...SEED_LISTS, ...customLists];
 
     setDhikrs(nextDhikrs);
@@ -707,6 +726,156 @@ export const AppProvider = ({ children }) => {
       document.removeEventListener("visibilitychange", onVisChange);
     };
   }, [notifyPermission, settings.alerts, settings.alertsEnabled, triggerNotification]);
+  const startNamesSession = useCallback((index) => {
+    setNamesSession((prev) => ({ ...prev, index }));
+    setView("names");
+  }, [setView]);
+
+  const incrementName = useCallback(() => {
+    setNamesSession((prev) => {
+      const counts = [...prev.counts];
+      const i = prev.index;
+      const target = prev.targets[i];
+      const activeName = SEED_NAMES_OF_ALLAH[i];
+      
+      counts[i] += 1;
+      
+      setStats((st) => {
+        const k = dateKey();
+        return {
+          total: st.total + 1,
+          byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
+          perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 }
+        };
+      });
+
+      if (counts[i] === target) {
+        vibe([0, 38, 28, 38]);
+        click();
+      } else {
+        vibe(8);
+        click();
+      }
+      
+      bumpNum();
+      return { ...prev, counts };
+    });
+  }, [vibe, click]);
+
+  const decrementName = useCallback(() => {
+    setNamesSession((prev) => {
+      const counts = [...prev.counts];
+      const i = prev.index;
+      if (counts[i] <= 0) return prev;
+      
+      counts[i] -= 1;
+      const activeName = SEED_NAMES_OF_ALLAH[i];
+
+      setStats((st) => {
+        const k = dateKey();
+        return {
+          total: Math.max(0, st.total - 1),
+          byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
+          perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) }
+        };
+      });
+
+      vibe(8);
+      return { ...prev, counts };
+    });
+  }, [vibe]);
+
+  const resetName = useCallback(() => {
+    setNamesSession((prev) => {
+      const counts = [...prev.counts];
+      const i = prev.index;
+      counts[i] = 0;
+      return { ...prev, counts };
+    });
+    vibe(8);
+  }, [vibe]);
+
+  const navigateNames = useCallback((dir) => {
+    setNamesSession((prev) => {
+      const nextIndex = Math.min(Math.max(prev.index + dir, 0), 98);
+      if (nextIndex !== prev.index) {
+        vibe(8);
+      }
+      return { ...prev, index: nextIndex };
+    });
+  }, [vibe]);
+
+  const applyNameTarget = useCallback((val) => {
+    const v = Math.max(1, Math.round(Number(val) || 0));
+    if (!v) return;
+    setNamesSession((prev) => {
+      const targets = [...prev.targets];
+      targets[prev.index] = v;
+      return { ...prev, targets };
+    });
+    setTargetEdit(false);
+    setCustomT("");
+    vibe(8);
+  }, [vibe]);
+
+  const cleanUpApp = useCallback(async () => {
+    // 1. Unregister service workers
+    if ("serviceWorker" in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      } catch (e) {
+        console.warn("SW unregistration failed:", e);
+      }
+    }
+
+    // 2. Clear Cache Storage
+    if ("caches" in window) {
+      try {
+        const keys = await caches.keys();
+        for (const key of keys) {
+          await caches.delete(key);
+        }
+      } catch (e) {
+        console.warn("Cache deletion failed:", e);
+      }
+    }
+
+    // 3. Clear other local storage keys, but KEEP "stats" and custom items
+    const currentStats = store.get("stats", { total: 0, byDate: {}, perDhikr: {} });
+    const customDhikrs = dhikrs.filter((d) => d.id.startsWith("c_") || d.tags?.includes("custom"));
+    const customLists = lists.filter((l) => l.id.startsWith("c_"));
+    
+    const nextDhikrs = [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH, ...customDhikrs];
+    const nextLists = [...SEED_LISTS, ...customLists];
+    
+    setDhikrs(nextDhikrs);
+    setLists(nextLists);
+    setPinned(["after-salah", "istighfar-100", "durood-100"]);
+    setSettingsInternal(DEFAULT_SETTINGS);
+    setSession(null);
+    setComplete(false);
+    setNamesSession({
+      index: 0,
+      counts: Array(99).fill(0),
+      targets: Array(99).fill(100)
+    });
+    
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.clear();
+    }
+    
+    store.set("stats", currentStats);
+    store.set("dhikrs", nextDhikrs);
+    store.set("lists", nextLists);
+    store.set("pinned", ["after-salah", "istighfar-100", "durood-100"]);
+    store.set("settings", DEFAULT_SETTINGS);
+    store.set("storage_version", STORAGE_VERSION);
+    
+    window.location.reload();
+  }, [dhikrs, lists]);
 
   return (
     <AppContext.Provider
@@ -762,6 +931,15 @@ export const AppProvider = ({ children }) => {
         promptInstall,
         isInstalled,
         resyncLibrary,
+        namesSession,
+        setNamesSession,
+        startNamesSession,
+        incrementName,
+        decrementName,
+        resetName,
+        navigateNames,
+        applyNameTarget,
+        cleanUpApp,
       }}
     >
       {children}

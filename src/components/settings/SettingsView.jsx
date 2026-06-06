@@ -372,6 +372,7 @@ export const SettingsView = () => {
     installPrompt,
     promptInstall,
     isInstalled,
+    cleanUpApp,
   } = useApp();
 
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
@@ -1012,6 +1013,36 @@ export const SettingsView = () => {
                 {updateAvailable
                   ? "A newer version of Tasbeeh is ready"
                   : "Reload the app to fetch the newest version"}
+              </p>
+            </div>
+          </button>
+
+          {/* Clean up & Repair App */}
+          <button
+            onClick={() => {
+              if (window.confirm("Clean up and repair the application? This will reset your settings and cached files, but your recitation stats and custom items will be preserved.")) {
+                cleanUpApp();
+              }
+            }}
+            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
+            style={{
+              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
+            }}
+          >
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{
+                background: "color-mix(in srgb, var(--danger) 14%, transparent)",
+                color: "var(--danger)",
+              }}
+            >
+              <RotateCcw size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--text)]">Clean up & Repair App</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                Clears app caches and resets settings (keeps stats & custom dhikrs)
               </p>
             </div>
           </button>
