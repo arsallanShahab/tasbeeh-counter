@@ -1,4 +1,8 @@
-const CACHE_NAME = "sabha-v4";
+// __APP_VERSION__ is replaced at build time by vite.config.js → versionPlugin.
+// In dev (no build step), it stays as the literal string, which is fine — the
+// dev server bypasses the SW for HMR anyway.
+const APP_VERSION = "__APP_VERSION__";
+const CACHE_NAME = `sabha-v${APP_VERSION}`;
 const ALERT_CACHE = "sabha-alerts";
 const ASSETS = [
   "/",
@@ -34,6 +38,13 @@ self.addEventListener("activate", (e) => {
 // ─── Fetch (Offline support – stale-while-revalidate) ────────────────
 self.addEventListener("fetch", (e) => {
   if (!e.request.url.startsWith(self.location.origin)) return;
+
+  // version.json must always hit the network — it's the freshness probe.
+  const url = new URL(e.request.url);
+  if (url.pathname === "/version.json") {
+    e.respondWith(fetch(e.request, { cache: "no-store" }));
+    return;
+  }
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {

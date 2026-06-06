@@ -7,6 +7,10 @@ import { WebHaptics } from "web-haptics";
 
 const AppContext = createContext(null);
 
+// Injected by Vite (see vite.config.js → define). In dev, esbuild substitutes
+// the literal; in build, the production version. Falls back to a sentinel.
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0-dev";
+
 const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names"];
 
 const pathToView = (pathname) => {
@@ -501,6 +505,44 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  // Runtime version check — polls /version.json so we catch new releases even
+  // when the SW updatefound event doesn't fire (iOS standalone, long-lived tabs).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (APP_VERSION === "0.0.0-dev") return; // skip in dev
+
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const { version } = await res.json();
+        if (cancelled || !version) return;
+        if (version !== APP_VERSION) {
+          setUpdateAvailable(true);
+          // Nudge the SW too so its waiting worker is ready when the user reloads.
+          navigator.serviceWorker?.getRegistration?.().then((reg) => reg?.update?.()).catch(() => {});
+        }
+      } catch (_) {
+        // network errors are silent — we'll retry on the next tick
+      }
+    };
+
+    check();
+    const onFocus = () => check();
+    const onVisibility = () => { if (document.visibilityState === "visible") check(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    const id = setInterval(check, 30 * 60 * 1000); // every 30 minutes
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   const promptInstall = useCallback(async () => {
     if (!installPrompt) return false;
     try {
@@ -924,6 +966,7 @@ export const AppProvider = ({ children }) => {
         saveList,
         notifyPermission,
         requestNotificationPermission,
+        appVersion: APP_VERSION,
         updateAvailable,
         applyUpdate,
         checkForUpdates,

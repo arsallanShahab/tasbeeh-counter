@@ -366,6 +366,7 @@ export const SettingsView = () => {
     dhikrs,
     lists,
     resyncLibrary,
+    appVersion,
     updateAvailable,
     applyUpdate,
     checkForUpdates,
@@ -1138,6 +1139,10 @@ export const SettingsView = () => {
       
       <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed">
         Dhikr wording and counts follow common narrations. Please verify against a trusted source.
+      </p>
+
+      <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed font-mono">
+        Sabḥa v{appVersion}
       </p>
     </div>
   );
