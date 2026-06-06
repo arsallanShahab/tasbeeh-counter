@@ -1291,4 +1291,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 7;
+export const STORAGE_VERSION = 8;
