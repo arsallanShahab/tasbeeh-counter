@@ -446,7 +446,7 @@ export const LibraryView = () => {
         {/* Tabs + result count */}
         <div className="flex items-center justify-between gap-2">
           <div
-            className="flex gap-1 rounded-full p-1"
+            className="flex gap-1 rounded-full p-1 overflow-x-auto no-scrollbar whitespace-nowrap min-w-0"
             style={{ background: "color-mix(in srgb, var(--surface2) 60%, transparent)" }}
           >
             {[
@@ -461,7 +461,7 @@ export const LibraryView = () => {
                   key={t.id}
                   whileTap={{ scale: 0.94 }}
                   onClick={() => setTab(t.id)}
-                  className="relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold cursor-pointer"
+                  className="relative flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
                   style={{ color: active ? "var(--primary)" : "var(--muted)" }}
                 >
                   {active && (

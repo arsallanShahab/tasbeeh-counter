@@ -92,7 +92,7 @@ export const NamesView = () => {
   return (
     <div
       className="flex h-[calc(100svh-2.5rem)] flex-col justify-between"
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "pan-y" }}
     >
       {/* Floating Header */}
       <motion.header
@@ -131,12 +131,11 @@ export const NamesView = () => {
         </div>
       </motion.header>
 
-      {/* Main Contemplation Content Wrapper with stable Drag Gesture */}
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.6}
-        style={{ x: dragX }}
+        style={{ x: dragX, touchAction: "pan-y" }}
         onDragEnd={(event, info) => {
           const threshold = 60;
           if (info.offset.x < -threshold) {
@@ -145,9 +144,9 @@ export const NamesView = () => {
             handleNavigate(-1);
           }
         }}
-        className="flex-1 flex flex-col min-h-0 select-none cursor-grab active:cursor-grabbing touch-pan-y"
+        className="flex-1 flex flex-col min-h-0 select-none cursor-grab active:cursor-grabbing"
       >
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar py-6 space-y-5">
+        <div className="flex-1 flex flex-col min-h-0 py-6 space-y-5">
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
               key={activeName.id}
@@ -237,7 +236,7 @@ export const NamesView = () => {
               )}
 
               {/* Tab Content Display */}
-              <div className="flex-1 px-2 overflow-y-auto no-scrollbar" onPointerDown={(e) => e.stopPropagation()}>
+              <div className="flex-1 px-2 overflow-y-auto no-scrollbar">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeName.id + "_" + activeTab}
