@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
-  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle
+  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
@@ -379,6 +380,11 @@ export const SettingsView = () => {
     importData,
   } = useApp();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const panel = searchParams.get("panel");
+
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
 
   const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", targetType: "none", targetId: "" });
@@ -389,6 +395,38 @@ export const SettingsView = () => {
   const [exportState, setExportState] = useState("idle"); // idle | done
   const [restoreState, setRestoreState] = useState("idle"); // idle | working | done
   const [restoreError, setRestoreError] = useState("");
+
+  /* ── Sub-screen (panel) navigation ──────────────────────────────────────
+     Each category opens as its own screen, native-settings style. The active
+     panel lives in the URL (?panel=…) so hardware/browser back closes it. */
+  const openPanel = (id) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("panel", id);
+        return next;
+      },
+      { replace: false }
+    );
+    window.scrollTo({ top: 0 });
+  };
+
+  const closePanel = () => {
+    // Pop history when we have an entry to pop (so the pushed panel state is
+    // removed cleanly); otherwise (deep-link / refresh) just clear the param.
+    if (location.key && location.key !== "default") {
+      navigate(-1);
+    } else {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("panel");
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  };
 
   const handleExport = () => {
     try {
@@ -461,20 +499,19 @@ export const SettingsView = () => {
 
   const set = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
 
-  return (
-    <div className="space-y-6 anim-fade pb-6">
-      <h1 className="pt-2 font-display text-2xl text-[var(--text)]">Settings</h1>
-
+  /* ── Category sections ──────────────────────────────────────────────── */
+  const sectionDisplay = (
+    <div className="space-y-6">
       <Card className="px-5 py-1">
         <div className="py-3.5">
           <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
             <Globe size={19} className="text-[var(--gold)]" />
             <span className="text-[var(--text)]">Translation</span>
           </div>
-          <Seg 
-            value={settings.lang} 
-            onChange={(v) => set("lang", v)} 
-            options={[{ v: "en", l: "English" }, { v: "ur", l: "اردو" }, { v: "both", l: "Both" }]} 
+          <Seg
+            value={settings.lang}
+            onChange={(v) => set("lang", v)}
+            options={[{ v: "en", l: "English" }, { v: "ur", l: "اردو" }, { v: "both", l: "Both" }]}
           />
         </div>
       </Card>
@@ -525,7 +562,11 @@ export const SettingsView = () => {
           onChange={(next) => set("quickCollections", next)}
         />
       </Card>
+    </div>
+  );
 
+  const sectionAppearance = (
+    <div className="space-y-6">
       <Card className="px-5 py-4">
         <div className="mb-3 flex items-center justify-between gap-3 font-semibold text-sm">
           <div className="flex items-center gap-3">
@@ -572,7 +613,7 @@ export const SettingsView = () => {
                   background: isSel ? "var(--surface2)" : "transparent"
                 }}
               >
-                <div 
+                <div
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-black/10 shadow-sm"
                   style={{ background: previewVars["--primary"] }}
                 >
@@ -603,10 +644,10 @@ export const SettingsView = () => {
             <Disc size={19} className="text-[var(--gold)]" />
             <span className="text-[var(--text)]">Counter style</span>
           </div>
-          <Seg 
-            value={settings.counterStyle} 
-            onChange={(v) => set("counterStyle", v)} 
-            options={[{ v: "beads", l: "Beads" }, { v: "ring", l: "Ring" }]} 
+          <Seg
+            value={settings.counterStyle}
+            onChange={(v) => set("counterStyle", v)}
+            options={[{ v: "beads", l: "Beads" }, { v: "ring", l: "Ring" }]}
           />
         </div>
       </Card>
@@ -620,16 +661,16 @@ export const SettingsView = () => {
           {[...BEAD_THEMES, buildCustom(settings.customBead.dark, settings.customBead.gold)].map((t) => {
             const sel = settings.beadTheme === t.id;
             return (
-              <button 
-                key={t.id} 
-                onClick={() => set("beadTheme", t.id)} 
+              <button
+                key={t.id}
+                onClick={() => set("beadTheme", t.id)}
                 className="flex shrink-0 flex-col items-center gap-1.5 cursor-pointer"
               >
-                <div 
-                  className="rounded-2xl border p-1.5 transition-all" 
-                  style={{ 
-                    borderColor: sel ? "var(--primary)" : "var(--line)", 
-                    background: "var(--bg2)" 
+                <div
+                  className="rounded-2xl border p-1.5 transition-all"
+                  style={{
+                    borderColor: sel ? "var(--primary)" : "var(--line)",
+                    background: "var(--bg2)"
                   }}
                 >
                   <svg viewBox="0 0 64 64" className="h-14 w-14">
@@ -641,19 +682,19 @@ export const SettingsView = () => {
                       const front = k === 3;
                       const on = k < 4;
                       return (
-                        <circle 
-                          key={k} 
-                          cx={x} 
-                          cy={y} 
-                          r={front ? 5.5 : 4.5} 
-                          fill={front ? t.front[1] : on ? t.gold[1] : t.dark[1]} 
+                        <circle
+                          key={k}
+                          cx={x}
+                          cy={y}
+                          r={front ? 5.5 : 4.5}
+                          fill={front ? t.front[1] : on ? t.gold[1] : t.dark[1]}
                         />
                       );
                     })}
                   </svg>
                 </div>
-                <span 
-                  className="text-[10px] font-medium" 
+                <span
+                  className="text-[10px] font-medium"
                   style={{ color: sel ? "var(--text)" : "var(--muted)" }}
                 >
                   {t.name}
@@ -667,20 +708,20 @@ export const SettingsView = () => {
           <div className="mt-4 flex items-center gap-5 rounded-2xl border border-[var(--line)] bg-[var(--bg2)] p-3 anim-fade">
             <label className="flex items-center gap-2 text-sm text-[var(--text)] font-medium">
               Bead
-              <input 
-                type="color" 
-                value={settings.customBead.dark} 
-                onChange={(e) => set("customBead", { ...settings.customBead, dark: e.target.value })} 
-                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent" 
+              <input
+                type="color"
+                value={settings.customBead.dark}
+                onChange={(e) => set("customBead", { ...settings.customBead, dark: e.target.value })}
+                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
               />
             </label>
             <label className="flex items-center gap-2 text-sm text-[var(--text)] font-medium">
               Active
-              <input 
-                type="color" 
-                value={settings.customBead.gold} 
-                onChange={(e) => set("customBead", { ...settings.customBead, gold: e.target.value })} 
-                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent" 
+              <input
+                type="color"
+                value={settings.customBead.gold}
+                onChange={(e) => set("customBead", { ...settings.customBead, gold: e.target.value })}
+                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
               />
             </label>
           </div>
@@ -688,38 +729,42 @@ export const SettingsView = () => {
 
         <div className="mt-4">
           <p className="mb-2 text-sm text-[var(--muted)] font-medium">Active bead style</p>
-          <Seg 
-            value={settings.activeStyle} 
-            onChange={(v) => set("activeStyle", v)} 
+          <Seg
+            value={settings.activeStyle}
+            onChange={(v) => set("activeStyle", v)}
             options={[
-              { v: "glow", l: "Glow" }, 
-              { v: "ring", l: "Ring" }, 
-              { v: "pulse", l: "Pulse" }, 
+              { v: "glow", l: "Glow" },
+              { v: "ring", l: "Ring" },
+              { v: "pulse", l: "Pulse" },
               { v: "plain", l: "Plain" }
-            ]} 
+            ]}
           />
         </div>
       </Card>
+    </div>
+  );
 
+  const sectionCounter = (
+    <div className="space-y-6">
       <Card className="px-5 py-1">
         <Row icon={Vibrate} label="Haptic feedback">
-          <Toggle 
-            on={settings.haptics} 
-            onClick={() => set("haptics", !settings.haptics)} 
+          <Toggle
+            on={settings.haptics}
+            onClick={() => set("haptics", !settings.haptics)}
           />
         </Row>
         <div className="border-t border-[var(--line)]" />
         <Row icon={Volume2} label="Click sound">
-          <Toggle 
-            on={settings.sound} 
-            onClick={() => set("sound", !settings.sound)} 
+          <Toggle
+            on={settings.sound}
+            onClick={() => set("sound", !settings.sound)}
           />
         </Row>
         <div className="border-t border-[var(--line)]" />
         <Row icon={ChevronRight} label="Auto-advance sets">
-          <Toggle 
-            on={settings.autoAdvance} 
-            onClick={() => set("autoAdvance", !settings.autoAdvance)} 
+          <Toggle
+            on={settings.autoAdvance}
+            onClick={() => set("autoAdvance", !settings.autoAdvance)}
           />
         </Row>
         <div className="border-t border-[var(--line)]" />
@@ -738,6 +783,27 @@ export const SettingsView = () => {
         </Row>
       </Card>
 
+      <Card className="px-5 py-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <Hand size={17} className="text-[var(--gold)]" />
+          Gestures
+        </div>
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
+          Beads: tap to count, or drag the beads around the loop — clockwise to count up, counter-clockwise to go back. Ring: tap to count, swipe left/right to switch dhikr. Tap the target under the number to change it (33 / 100 / 300 / 1000 / custom).
+        </p>
+        <div className="mb-3 mt-4 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <Keyboard size={17} className="text-[var(--gold)]" />
+          Keyboard (Desktop)
+        </div>
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
+          Space / Enter / ↑ count · Backspace / ↓ undo · ← → switch · R reset · Esc back.
+        </p>
+      </Card>
+    </div>
+  );
+
+  const sectionReminders = (
+    <div className="space-y-6">
       {/* Customizable PWA Reminders & Alerts Card */}
       <Card className="px-5 py-4 space-y-4">
         <div className="flex items-center justify-between font-semibold text-sm">
@@ -745,8 +811,8 @@ export const SettingsView = () => {
             <Bell size={19} className="text-[var(--gold)] shrink-0" />
             <span className="text-[var(--text)]">Daily Reminders & Alerts</span>
           </div>
-          <Toggle 
-            on={settings.alertsEnabled} 
+          <Toggle
+            on={settings.alertsEnabled}
             onClick={async () => {
               const enabling = !settings.alertsEnabled;
               set("alertsEnabled", enabling);
@@ -755,7 +821,7 @@ export const SettingsView = () => {
               } else if (enabling && notifyPermission === "denied") {
                 window.alert("Notifications are blocked. Please enable them in your browser/device settings for this app.");
               }
-            }} 
+            }}
           />
         </div>
 
@@ -835,15 +901,15 @@ export const SettingsView = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Toggle 
-                        on={a.enabled} 
+                      <Toggle
+                        on={a.enabled}
                         onClick={() => {
                           const next = settings.alerts.map(x => x.id === a.id ? { ...x, enabled: !x.enabled } : x);
                           set("alerts", next);
-                        }} 
+                        }}
                       />
                       {a.custom && (
-                        <button 
+                        <button
                           onClick={() => {
                             const next = settings.alerts.filter(x => x.id !== a.id);
                             set("alerts", next);
@@ -862,12 +928,12 @@ export const SettingsView = () => {
             {/* Custom alarm creator */}
             <div className="border-t border-[var(--line)]/60 pt-3 space-y-3">
               <p className="text-xs font-semibold text-[var(--text)]">Add Custom Reminder Alert</p>
-              
+
               <div className="space-y-2">
                 {/* Selector for Alert Action Target */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Links Recitation Target</label>
-                  <select 
+                  <select
                     value={newAlert.targetType === "none" ? "none" : `${newAlert.targetType}:${newAlert.targetId}`}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -908,27 +974,27 @@ export const SettingsView = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newAlert.title}
                     onChange={(e) => setNewAlert({ ...newAlert, title: e.target.value })}
-                    placeholder="e.g. Duha prayer remembrance…" 
+                    placeholder="e.g. Duha prayer remembrance…"
                     className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface2)] px-3 py-2 text-xs text-[var(--text)] outline-none focus:border-[var(--primary)] font-semibold"
                   />
                   <div className="flex gap-2 shrink-0">
-                    <input 
-                      type="time" 
+                    <input
+                      type="time"
                       value={newAlert.time}
                       onChange={(e) => setNewAlert({ ...newAlert, time: e.target.value })}
                       className="rounded-xl border border-[var(--line)] bg-[var(--surface2)] px-3 py-2 text-xs font-bold text-[var(--text)] outline-none focus:border-[var(--primary)]"
                     />
-                    <button 
+                    <button
                       onClick={() => {
                         if (!newAlert.title.trim() || !newAlert.time) return;
                         const alertItem = {
                           id: "a_" + Date.now(),
                           title: newAlert.title.trim(),
-                          body: newAlert.targetType !== "none" 
+                          body: newAlert.targetType !== "none"
                             ? `It's time to begin your custom ${newAlert.targetType} recitation session.`
                             : "It's time for your custom dhikr remembrance.",
                           time: newAlert.time,
@@ -951,24 +1017,11 @@ export const SettingsView = () => {
           </div>
         )}
       </Card>
+    </div>
+  );
 
-      <Card className="px-5 py-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Hand size={17} className="text-[var(--gold)]" /> 
-          Gestures
-        </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Beads: tap to count, or drag the beads around the loop — clockwise to count up, counter-clockwise to go back. Ring: tap to count, swipe left/right to switch dhikr. Tap the target under the number to change it (33 / 100 / 300 / 1000 / custom).
-        </p>
-        <div className="mb-3 mt-4 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Keyboard size={17} className="text-[var(--gold)]" /> 
-          Keyboard (Desktop)
-        </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Space / Enter / ↑ count · Backspace / ↓ undo · ← → switch · R reset · Esc back.
-        </p>
-      </Card>
-
+  const sectionData = (
+    <div className="space-y-6">
       {/* Backup & Restore */}
       <Card className="px-5 py-4">
         <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
@@ -1280,21 +1333,144 @@ export const SettingsView = () => {
       <button
         onClick={() => {
           if (window.confirm("Reset all statistics? This cannot be undone.")) {
-            setStats({ total: 0, byDate: {}, perDhikr: {} }); 
+            setStats({ total: 0, byDate: {}, perDhikr: {} });
           }
         }}
         className="w-full rounded-2xl border border-[var(--danger)] py-3 text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger)]/5 transition-all cursor-pointer active:scale-99"
       >
         Reset statistics
       </button>
-      
+
       <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed">
         Dhikr wording and counts follow common narrations. Please verify against a trusted source.
       </p>
+    </div>
+  );
 
-      <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed font-mono">
-        Sabḥa v{appVersion}
-      </p>
+  /* ── Menu config ────────────────────────────────────────────────────── */
+  const CATEGORIES = [
+    {
+      id: "display",
+      label: "Display & Reading",
+      hint: "Language, dhikr fields, home layout",
+      icon: LayoutGrid,
+      content: sectionDisplay,
+    },
+    {
+      id: "appearance",
+      label: "Appearance & Themes",
+      hint: "Light/dark, theme presets, beads",
+      icon: Palette,
+      content: sectionAppearance,
+    },
+    {
+      id: "counter",
+      label: "Counting & Feedback",
+      hint: "Haptics, sound, gestures, auto-advance",
+      icon: Disc,
+      content: sectionCounter,
+    },
+    {
+      id: "reminders",
+      label: "Reminders & Alerts",
+      hint: "Daily notifications and schedules",
+      icon: Bell,
+      content: sectionReminders,
+    },
+    {
+      id: "data",
+      label: "Backup & App",
+      hint: "Backup, restore, updates, reset",
+      icon: DatabaseBackup,
+      content: sectionData,
+    },
+  ];
+
+  const active = CATEGORIES.find((c) => c.id === panel) || null;
+
+  return (
+    <div className="anim-fade pb-6 overflow-hidden">
+      <AnimatePresence mode="wait" initial={false}>
+        {!active ? (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h1 className="pt-2 pb-4 font-display text-2xl text-[var(--text)]">Settings</h1>
+
+            <div className="flex flex-col gap-2">
+              {CATEGORIES.map((c, i) => {
+                const Icon = c.icon;
+                return (
+                  <motion.button
+                    key={c.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04, type: "spring", stiffness: 320, damping: 26 }}
+                    whileTap={{ scale: 0.985 }}
+                    onClick={() => openPanel(c.id)}
+                    className="flex items-center gap-3.5 rounded-2xl border px-4 py-3.5 text-left cursor-pointer"
+                    style={{
+                      borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+                      background: "color-mix(in srgb, var(--surface) 70%, transparent)",
+                    }}
+                  >
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl shrink-0"
+                      style={{
+                        background: "color-mix(in srgb, var(--primary) 13%, transparent)",
+                        color: "var(--primary)",
+                      }}
+                    >
+                      <Icon size={19} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[var(--text)]">{c.label}</p>
+                      <p className="text-[11px] text-[var(--muted)] mt-0.5 truncate">{c.hint}</p>
+                    </div>
+                    <ChevronRight size={18} className="text-[var(--muted)] shrink-0" />
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <p className="px-4 pt-6 text-center text-[10px] text-[var(--muted)] leading-relaxed font-mono">
+              Sabḥa v{appVersion}
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            key={active.id}
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 28 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {/* Sub-screen header with back affordance */}
+            <div className="flex items-center gap-2 pt-2 pb-4">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={closePanel}
+                aria-label="Back to settings"
+                className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 cursor-pointer"
+                style={{
+                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
+                  color: "var(--text)",
+                }}
+              >
+                <ArrowLeft size={18} />
+              </motion.button>
+              <h1 className="font-display text-xl text-[var(--text)] truncate">{active.label}</h1>
+            </div>
+
+            {active.content}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
