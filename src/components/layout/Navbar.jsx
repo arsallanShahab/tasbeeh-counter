@@ -20,7 +20,7 @@ export const Navbar = () => {
       initial={{ y: 30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
-      className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full px-1.5 py-1.5 backdrop-blur-2xl"
+      className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-3xl px-1.5 py-1.5 backdrop-blur-2xl"
       style={{
         background: "color-mix(in srgb, var(--surface) 70%, transparent)",
         border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
@@ -28,7 +28,7 @@ export const Navbar = () => {
           "0 8px 32px -16px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
       }}
     >
-      <div className="flex justify-around">
+      <div className="grid grid-cols-4">
         {navItems.map((n) => {
           const active = view === n.v;
           const Icon = n.icon;
@@ -36,13 +36,13 @@ export const Navbar = () => {
             <button
               key={n.v}
               onClick={() => setView(n.v)}
-              className="relative flex flex-1 items-center justify-center py-2 cursor-pointer"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 cursor-pointer"
               aria-label={n.label}
             >
               {active && (
                 <motion.span
                   layoutId="nav-pill"
-                  className="absolute inset-x-1 inset-y-0 rounded-full"
+                  className="absolute inset-x-1.5 inset-y-0 rounded-2xl"
                   style={{
                     background: "color-mix(in srgb, var(--primary) 16%, transparent)",
                     boxShadow:
@@ -51,35 +51,23 @@ export const Navbar = () => {
                   transition={{ type: "spring", stiffness: 380, damping: 32 }}
                 />
               )}
-              <motion.div
+              <motion.span
+                animate={{ scale: active ? 1.08 : 1, y: active ? -1 : 0 }}
                 whileTap={{ scale: 0.86 }}
-                transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                className="relative flex items-center gap-1.5"
+                transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                className="relative flex items-center"
               >
-                <motion.span
-                  animate={{ scale: active ? 1.05 : 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                  className="flex items-center"
-                >
-                  <Icon
-                    size={19}
-                    style={{ color: active ? "var(--primary)" : "var(--muted)" }}
-                  />
-                </motion.span>
-                <motion.span
-                  initial={false}
-                  animate={{
-                    width: active ? "auto" : 0,
-                    opacity: active ? 1 : 0,
-                    marginLeft: active ? 4 : 0,
-                  }}
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  className="overflow-hidden whitespace-nowrap text-[11px] font-bold tracking-wide"
-                  style={{ color: "var(--primary)" }}
-                >
-                  {n.label}
-                </motion.span>
-              </motion.div>
+                <Icon
+                  size={20}
+                  style={{ color: active ? "var(--primary)" : "var(--muted)" }}
+                />
+              </motion.span>
+              <span
+                className="relative text-[10px] font-bold tracking-wide leading-none transition-colors"
+                style={{ color: active ? "var(--primary)" : "var(--muted)" }}
+              >
+                {n.label}
+              </span>
             </button>
           );
         })}

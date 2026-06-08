@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Flame } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { computeStreak, dateKey, fmt } from "../../utils/stats";
+import BrandMark from "../common/BrandMark";
 
 const VIEW_LABEL = {
   home: "Home",
@@ -32,40 +33,22 @@ export const AppHeader = () => {
           "0 6px 24px -14px color-mix(in srgb, var(--gold) 35%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
       }}
     >
-      <div className="flex items-center justify-between px-2.5 py-1.5">
+      <div className="flex items-center justify-between px-3.5 py-1.5">
         {/* Brand */}
-        <div className="flex items-center gap-2 pl-1.5">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full"
-            style={{
-              background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--gold) 28%, transparent), color-mix(in srgb, var(--primary) 18%, transparent))",
-              border: "1px solid color-mix(in srgb, var(--gold) 40%, transparent)",
-            }}
-          >
-            <span
-              className="font-arabic text-lg leading-none"
-              dir="rtl"
-              style={{ color: "var(--gold)" }}
+        <div className="flex flex-col leading-tight pl-0.5">
+          <BrandMark className="text-lg" />
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={view}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="text-[10px] uppercase tracking-wider text-[var(--muted)]"
             >
-              ﷲ
-            </span>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="font-display text-sm text-[var(--text)]">Tasbeeh</span>
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={view}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="text-[10px] uppercase tracking-wider text-[var(--muted)]"
-              >
-                {VIEW_LABEL[view] || ""}
-              </motion.span>
-            </AnimatePresence>
-          </div>
+              {VIEW_LABEL[view] || ""}
+            </motion.span>
+          </AnimatePresence>
         </div>
 
         {/* Status pills */}

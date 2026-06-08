@@ -4,6 +4,7 @@ import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
+import { useDocumentSeo } from "./utils/seo";
 import HomeView from "./components/home/HomeView";
 import LibraryView from "./components/library/LibraryView";
 import CounterView from "./components/counter/CounterView";
@@ -15,25 +16,24 @@ import AppHeader from "./components/layout/AppHeader";
 import NewDhikrModal from "./components/library/NewDhikrModal";
 import NewListModal from "./components/library/NewListModal";
 import UpdateBanner from "./components/common/UpdateBanner";
+import BrandMark from "./components/common/BrandMark";
 
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
   const location = useLocation();
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
+  useDocumentSeo();
 
   if (!loaded) {
     return (
       <div
-        className="font-body flex min-h-svh items-center justify-center bg-[#030806]"
-        style={{ ...THEMES.classic.dark, background: "var(--bg)" }}
+        className="font-body flex min-h-svh items-center justify-center"
+        style={{ background: "#151e31", "--text": "#f6efe0" }}
       >
-        <p
-          className="font-arabic text-3xl text-[var(--gold)]"
-          style={{ animation: "shimmer 1.4s ease infinite" }}
-          dir="rtl"
-        >
-          سُبْحَة
-        </p>
+        <BrandMark
+          className="text-5xl"
+          style={{ animation: "shimmer 1.6s ease infinite" }}
+        />
       </div>
     );
   }

@@ -7,6 +7,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
+import BrandMark from "../common/BrandMark";
 import {
   ICONS, OCCASIONS, OCCASION_ICONS,
   DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
@@ -360,9 +361,7 @@ export const HomeView = () => {
           <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[var(--gold)]">
             {getFormattedDate()}
           </p>
-          <h1 className="font-display text-3xl text-[var(--text)] mt-0.5">
-            Sabḥa <span className="font-arabic text-[var(--gold)] ml-1" dir="rtl">سُبْحَة</span>
-          </h1>
+          <BrandMark className="mt-1 text-4xl" />
         </div>
         <div className="text-right">
           <span className="text-xs text-[var(--muted)] block font-medium">{greet},</span>

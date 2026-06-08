@@ -54,5 +54,11 @@ export function resolveBeadTheme(settings) {
     const c = settings.customBead || { dark: "#15302a", gold: "#d8a93a" };
     return buildCustom(c.dark, c.gold);
   }
+  // The Pastel color theme defaults its beads to the matching pastel set while
+  // the user is still on the default "onyx" beads — picking any other bead
+  // theme explicitly overrides this.
+  if (settings.theme === "pastel" && (!settings.beadTheme || settings.beadTheme === "onyx")) {
+    return BEAD_THEMES.find((t) => t.id === "pastel") || BEAD_THEMES[0];
+  }
   return BEAD_THEMES.find((t) => t.id === settings.beadTheme) || BEAD_THEMES[0];
 }

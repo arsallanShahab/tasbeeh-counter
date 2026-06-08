@@ -1,16 +1,144 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Primary meta -->
+    <title>Tasbeeh Go — Digital Tasbeeh & Dhikr Counter</title>
+    <meta
+      name="description"
+      content="Free digital tasbeeh & dhikr counter for phone and desktop. Track daily adhkar, build custom dua routines, view streak stats, and read the 99 Names of Allah."
+    />
+    <meta
+      name="keywords"
+      content="tasbeeh counter, dhikr counter, digital tasbeeh, misbaha, electronic tasbeeh, dua counter, adhkar, zikr counter, 99 names of Allah, asma ul husna, مسبحة إلكترونية, عداد التسبيح, عداد الذكر, تسبيح, أذكار"
+    />
+    <link rel="canonical" href="https://tasbeehgo.vercel.app/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content="Tasbeeh Go" />
+    <meta name="application-name" content="Tasbeeh Go" />
+    <meta name="generator" content="Tasbeeh Go" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Multilingual (single URL serves English + Arabic) -->
+    <link rel="alternate" hreflang="en" href="https://tasbeehgo.vercel.app/" />
+    <link rel="alternate" hreflang="ar" href="https://tasbeehgo.vercel.app/" />
+    <link rel="alternate" hreflang="x-default" href="https://tasbeehgo.vercel.app/" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sabḥa — Digital Tasbeeh & Dhikr Counter</title>
-    <meta name="description" content="Sabḥa is a digital tasbeeh / dhikr counter designed for mobile and desktop. Track your daily adhkar, build custom routines, analyze streaks, and customize beautiful bead themes." />
-    <meta name="theme-color" content="#07140f" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#151e31" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tasbeeh Go" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tasbeeh Go" />
+    <meta property="og:title" content="Tasbeeh Go — Digital Tasbeeh & Dhikr Counter" />
+    <meta
+      property="og:description"
+      content="Free digital tasbeeh & dhikr counter for phone and desktop. Track daily adhkar, build custom dua routines, view streak stats, and read the 99 Names of Allah."
+    />
+    <meta property="og:url" content="https://tasbeehgo.vercel.app/" />
+    <meta property="og:image" content="https://tasbeehgo.vercel.app/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Tasbeeh Go — digital tasbeeh and dhikr counter" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ar_AR" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tasbeeh Go — Digital Tasbeeh & Dhikr Counter" />
+    <meta
+      name="twitter:description"
+      content="Free digital tasbeeh & dhikr counter. Track daily adhkar, build custom dua routines, view streak stats, and read the 99 Names of Allah."
+    />
+    <meta name="twitter:image" content="https://tasbeehgo.vercel.app/icon-512.png" />
+    <meta name="twitter:image:alt" content="Tasbeeh Go — digital tasbeeh and dhikr counter" />
+
+    <!-- Structured data: the app itself -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Tasbeeh Go",
+        "alternateName": ["مسبحة إلكترونية", "عداد التسبيح", "Digital Tasbeeh Counter"],
+        "url": "https://tasbeehgo.vercel.app/",
+        "description": "Free digital tasbeeh and dhikr counter for phone and desktop. Track daily adhkar, build custom dua routines, view streak stats, and read the 99 Names of Allah.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Web, Android, iOS",
+        "browserRequirements": "Requires a modern browser. Works offline as a PWA.",
+        "inLanguage": ["en", "ar"],
+        "isAccessibleForFree": true,
+        "image": "https://tasbeehgo.vercel.app/icon-512.png",
+        "screenshot": "https://tasbeehgo.vercel.app/icon-512.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Digital tasbeeh / dhikr counter",
+          "Custom dua and adhkar routines",
+          "Daily goals, streaks and statistics",
+          "99 Names of Allah (Asma ul Husna)",
+          "Customizable bead themes",
+          "Offline-first PWA"
+        ]
+      }
+    </script>
+
+    <!-- Structured data: FAQ (eligible for rich results + AI answers) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Tasbeeh Go?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Tasbeeh Go is a free digital tasbeeh (dhikr) counter for phone and desktop. It replaces a physical misbaha, letting you count adhkar, build custom dua routines, and track your daily progress."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Tasbeeh Go free to use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Tasbeeh Go is completely free, with no ads and no account required. Your counts are stored privately on your own device."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the tasbeeh counter work offline?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Tasbeeh Go is an offline-first progressive web app (PWA). You can install it to your home screen and count dhikr without an internet connection."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it include the 99 Names of Allah?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Tasbeeh Go includes the 99 Names of Allah (Asma ul Husna) with transliteration and meaning, alongside a large library of common adhkar and du'as."
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

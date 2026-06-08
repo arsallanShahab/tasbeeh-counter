@@ -1,9 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import React, { useEffect, useState, useRef } from "react";
+import { AnimatePresence, motion, animate, useMotionValue } from "motion/react";
 import { X, BookOpen, Quote, Sparkles, BookText } from "lucide-react";
+
+// Directional slide for swiping between tabs
+const tabSlide = {
+  enter: (dir) => ({ x: dir > 0 ? 48 : dir < 0 ? -48 : 0, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1] } },
+  exit: (dir) => ({ x: dir > 0 ? -48 : dir < 0 ? 48 : 0, opacity: 0, transition: { duration: 0.16 } }),
+};
 
 export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
   const [activeTab, setActiveTab] = useState("translation");
+  const [direction, setDirection] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +33,48 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
   const hasVirtues = !!(d?.hadith || d?.benefits);
   const hasStory = !!d?.story;
   const showTabs = hasVirtues || hasStory;
+
+  // Ordered list of available tabs — used for swipe navigation
+  const tabs = ["translation", ...(hasVirtues ? ["virtues"] : []), ...(hasStory ? ["story"] : [])];
+
+  const goTab = (dir) => {
+    const cur = tabs.indexOf(activeTab);
+    const next = cur + dir;
+    if (next < 0 || next >= tabs.length) return;
+    setDirection(dir);
+    setActiveTab(tabs[next]);
+  };
+
+  // Swipe handling (pointer events + axis lock) — horizontal switches tabs,
+  // vertical falls through to native scrolling (touch-action: pan-y).
+  const contentX = useMotionValue(0);
+  const swipe = useRef({ x: 0, y: 0, axis: null, active: false });
+
+  const onPointerDown = (e) => {
+    swipe.current = { x: e.clientX, y: e.clientY, axis: null, active: true };
+  };
+  const onPointerMove = (e) => {
+    const s = swipe.current;
+    if (!s.active) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (!s.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    if (s.axis === "x") contentX.set(dx * 0.4);
+  };
+  const endSwipe = (e) => {
+    const s = swipe.current;
+    if (!s.active) return;
+    const dx = (e?.clientX ?? s.x) - s.x;
+    const threshold = 55;
+    if (s.axis === "x" && tabs.length > 1) {
+      if (dx < -threshold) goTab(1);
+      else if (dx > threshold) goTab(-1);
+    }
+    animate(contentX, 0, { type: "spring", stiffness: 350, damping: 35 });
+    swipe.current = { x: 0, y: 0, axis: null, active: false };
+  };
 
   return (
     <AnimatePresence>
@@ -131,17 +181,25 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
               </div>
             )}
 
-            {/* Scrollable content */}
-            <div className="mt-6 flex-1 overflow-y-auto no-scrollbar">
+            {/* Scrollable content — horizontal swipe switches tabs */}
+            <motion.div
+              className="mt-6 flex-1 overflow-y-auto no-scrollbar"
+              style={{ x: contentX, touchAction: "pan-y" }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endSwipe}
+              onPointerCancel={endSwipe}
+            >
               <div className="flex flex-col gap-6 pb-10">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" custom={direction}>
                   {activeTab === "translation" && (
                     <motion.div
                       key="translation-tab"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
+                      custom={direction}
+                      variants={tabSlide}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
                       className="space-y-6"
                     >
                       {/* Arabic — hero */}
@@ -203,10 +261,11 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
                   {activeTab === "virtues" && (
                     <motion.div
                       key="virtues-tab"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
+                      custom={direction}
+                      variants={tabSlide}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
                       className="space-y-6"
                     >
                       {d.hadith && (
@@ -248,10 +307,11 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
                   {activeTab === "story" && d.story && (
                     <motion.div
                       key="story-tab"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
+                      custom={direction}
+                      variants={tabSlide}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
                       className="rounded-3xl p-5 border"
                       style={{
                         borderColor: "color-mix(in srgb, var(--line) 50%, transparent)",
@@ -275,10 +335,10 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
                   transition={{ delay: 0.35, duration: 0.4 }}
                   className="text-center text-[11px] text-[var(--muted)] mt-4"
                 >
-                  Tap anywhere outside to close
+                  {showTabs ? "Swipe to switch · tap outside to close" : "Tap anywhere outside to close"}
                 </motion.p>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}

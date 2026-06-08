@@ -1,0 +1,28 @@
+# https://tasbeehgo.vercel.app/robots.txt
+User-agent: *
+Allow: /
+
+# Internal app states that require local data (low SEO value)
+Disallow: /counter
+Disallow: /settings
+
+# AI search crawlers — explicitly allowed so the app can be cited
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://tasbeehgo.vercel.app/sitemap.xml

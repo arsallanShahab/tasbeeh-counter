@@ -1217,7 +1217,7 @@ export const DEFAULT_DHIKR_FIELD_VISIBLE = { arabic: true, translit: true, trans
 
 export const DEFAULT_SETTINGS = {
   lang: "both",
-  theme: "classic",
+  theme: "pastel",
   appearance: "system",
   translit: true,
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
@@ -1246,6 +1246,13 @@ export const THEMES = {
     name: "Sabḥa",
     dark: { "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820", "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee", "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c", "--gold": "#e0bd5c", "--danger": "#e07a6b" },
     light: { "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff", "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a", "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6", "--gold": "#b0851f", "--danger": "#c14a3a" },
+  },
+  // Pastel theme built around the "Tasbeeh Go" logo — cream + navy, teal "g",
+  // coral "o", orange spark, lilac accents — paired with rounded Fredoka/Nunito.
+  pastel: {
+    name: "Tasbeeh Go",
+    dark: { "--bg": "#131e3c", "--bg2": "#182549", "--surface": "#1f2e57", "--surface2": "#293a69", "--line": "#36477c", "--text": "#f6efe0", "--muted": "#9aa4c8", "--primary": "#5fc8ba", "--primary-dim": "#25454c", "--gold": "#f4b14e", "--danger": "#f3938a", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
+    light: { "--bg": "#faf2e4", "--bg2": "#f4e8d4", "--surface": "#fffdf8", "--surface2": "#fbf3e5", "--line": "#ece0cc", "--text": "#1f2c54", "--muted": "#8580a0", "--primary": "#2fab9b", "--primary-dim": "#c8ece6", "--gold": "#df9528", "--danger": "#e8786c", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
   },
   sage: {
     name: "Sage & Oat",
@@ -1281,6 +1288,7 @@ export const THEMES = {
 
 export const BEAD_THEMES = [
   { id: "onyx", name: "Onyx", dark: ["#5f7b71", "#15302a", "#04100b"], gold: ["#ffe6a8", "#d8a93a", "#7a5c16"], front: ["#fff7da", "#ffd866", "#a9802a"], glow: "#ffd866", thread: "#1f4034", arc: "#d8a93a" },
+  { id: "pastel", name: "Pastel", dark: ["#a6e3d8", "#62c9bb", "#2e9286"], gold: ["#ffd0c7", "#f3938a", "#c8675c"], front: ["#ffe7c4", "#f5b14e", "#c98a2c"], glow: "#f5b14e", thread: "#9d8ad0", arc: "#62c9bb" },
   { id: "sandalwood", name: "Sandalwood", dark: ["#9a7550", "#5a3a22", "#241208"], gold: ["#f2cd8a", "#c08a44", "#6a4418"], front: ["#ffe7b6", "#d99a48", "#7a4e1e"], glow: "#e0a85a", thread: "#3a2414", arc: "#c08a44" },
   { id: "amber", name: "Amber", dark: ["#c08a3a", "#6e451a", "#2e1c08"], gold: ["#ffd27a", "#e8a02e", "#8a5410"], front: ["#fff0b0", "#ffc04d", "#a86c18"], glow: "#ffb84d", thread: "#3a2810", arc: "#e8a02e" },
   { id: "jade", name: "Jade", dark: ["#5f9f86", "#1f5a45", "#0a2c20"], gold: ["#a6eccc", "#3fae86", "#16604a"], front: ["#dcffee", "#5fd6a6", "#1f7a5c"], glow: "#5fd6a6", thread: "#16463a", arc: "#3fae86" },

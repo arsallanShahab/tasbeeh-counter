@@ -8,6 +8,10 @@ const ASSETS = [
   "/",
   "/index.html",
   "/favicon.svg",
+  "/favicon-64.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
   "/manifest.json"
 ];
 
@@ -138,9 +142,9 @@ async function checkAndFireAlerts() {
 
       await self.registration.showNotification(alert.title, {
         body: alert.body || "It's time for your dhikr recitations.",
-        icon: "/favicon.svg",
+        icon: "/icon-192.png",
         vibrate: [200, 100, 200],
-        badge: "/favicon.svg",
+        badge: "/favicon-64.png",
         tag: `sabha-${alert.id}`,
         data: { url: deepLink },
         actions: [

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
 
 @import "tailwindcss";
 
@@ -10,17 +10,26 @@
 }
 
 :root {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body, 'Outfit', sans-serif);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* .font-display / .font-body read CSS vars so a theme can swap the typeface
+   (e.g. the Pastel theme overrides them with Fredoka / Nunito to match the
+   rounded "Tasbeeh Go" wordmark). Falls back to the defaults above. */
 .font-display {
-  font-family: 'Marcellus', serif;
+  font-family: var(--font-display, 'Marcellus', serif);
   letter-spacing: .01em;
 }
 
 .font-body {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body, 'Outfit', sans-serif);
+}
+
+/* The "Tasbeeh Go" wordmark always uses the rounded brand typeface,
+   independent of the active theme's display font. */
+.font-brand {
+  font-family: 'Fredoka', sans-serif;
 }
 
 .font-arabic {

@@ -1,24 +1,55 @@
 {
-  "name": "Sabḥa — Digital Tasbeeh & Dhikr Counter",
-  "short_name": "Sabḥa",
-  "description": "Sabḥa is a digital tasbeeh / dhikr counter designed for mobile and desktop. Track your daily adhkar, build custom routines, analyze streaks, and customize beautiful bead themes.",
-  "start_url": "/",
+  "id": "/",
+  "name": "Tasbeeh Go — Digital Tasbeeh & Dhikr Counter",
+  "short_name": "Tasbeeh Go",
+  "description": "Tasbeeh Go is a digital tasbeeh / dhikr counter designed for mobile and desktop. Track your daily adhkar, build custom routines, analyze streaks, and customize beautiful bead themes.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["lifestyle", "education", "utilities"],
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#07140f",
-  "theme_color": "#07140f",
+  "background_color": "#151e31",
+  "theme_color": "#151e31",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
+      "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
+      "src": "/icon-512.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dhikr & Du'a Library",
+      "short_name": "Library",
+      "url": "/library?source=pwa-shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "99 Names of Allah",
+      "short_name": "99 Names",
+      "url": "/names?source=pwa-shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Stats & Streaks",
+      "short_name": "Stats",
+      "url": "/stats?source=pwa-shortcut",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

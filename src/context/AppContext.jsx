@@ -690,9 +690,9 @@ export const AppProvider = ({ children }) => {
         navigator.serviceWorker.ready.then((reg) => {
           reg.showNotification(title, {
             body,
-            icon: "/favicon.svg",
+            icon: "/icon-192.png",
             vibrate: [200, 100, 200],
-            badge: "/favicon.svg",
+            badge: "/favicon-64.png",
             tag: `sabha-${alertId || "reminder"}`,
             data: { url },
             actions: [
@@ -702,7 +702,7 @@ export const AppProvider = ({ children }) => {
           });
         });
       } else {
-        const n = new Notification(title, { body, icon: "/favicon.svg" });
+        const n = new Notification(title, { body, icon: "/icon-192.png" });
         n.onclick = () => {
           window.focus();
           if (url) {

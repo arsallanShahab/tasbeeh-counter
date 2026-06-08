@@ -364,8 +364,10 @@ export const CounterView = () => {
         </div>
       </div>
 
-      {/* Ring placed below optical center for natural mobile balance */}
-      <div className="flex flex-1 min-h-0 items-end justify-center pb-2 md:items-center md:pb-0">
+      {/* Ring placed below optical center for natural mobile balance.
+          Extra bottom padding reserves room for the lap badge (-bottom-5 on the
+          ring) so it doesn't overlap the hint line below. */}
+      <div className="flex flex-1 min-h-0 items-end justify-center pb-10 md:items-center md:pb-6">
         {beads ? (
           <BeadRing
             key={d?.id}
