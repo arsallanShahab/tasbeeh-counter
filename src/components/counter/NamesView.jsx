@@ -82,6 +82,11 @@ export const NamesView = () => {
     const dy = e.clientY - s.y;
     if (!s.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      // Capture the pointer for horizontal swipes so the browser's edge
+      // back/forward gesture can't hijack a left-to-right drag mid-way.
+      if (s.axis === "x") {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+      }
     }
     if (s.axis === "x") dragX.set(dx * 0.6);
   };
@@ -127,7 +132,7 @@ export const NamesView = () => {
   return (
     <div
       className="flex h-[calc(100svh-2.5rem)] flex-col justify-between"
-      style={{ touchAction: "pan-y" }}
+      style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
     >
       {/* Floating Header */}
       <motion.header
@@ -167,7 +172,7 @@ export const NamesView = () => {
       </motion.header>
 
       <motion.div
-        style={{ x: dragX, touchAction: "pan-y" }}
+        style={{ x: dragX, touchAction: "pan-y", overscrollBehaviorX: "contain" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endSwipe}

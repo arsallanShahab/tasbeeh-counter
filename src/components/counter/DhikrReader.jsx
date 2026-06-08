@@ -60,6 +60,9 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
     const dy = e.clientY - s.y;
     if (!s.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (s.axis === "x") {
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+      }
     }
     if (s.axis === "x") contentX.set(dx * 0.4);
   };
@@ -184,7 +187,7 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
             {/* Scrollable content — horizontal swipe switches tabs */}
             <motion.div
               className="mt-6 flex-1 overflow-y-auto no-scrollbar"
-              style={{ x: contentX, touchAction: "pan-y" }}
+              style={{ x: contentX, touchAction: "pan-y", overscrollBehaviorX: "contain" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={endSwipe}
