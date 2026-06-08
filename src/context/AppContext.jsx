@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../constants/dhikrData";
 import { store } from "../utils/storage";
+import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { WebHaptics } from "web-haptics";
 
@@ -919,6 +920,91 @@ export const AppProvider = ({ children }) => {
     window.location.reload();
   }, [dhikrs, lists]);
 
+  /* ─── Backup & Restore ─────────────────────────────────────────────────
+     Export reads straight from storage so the download is consistent even
+     mid-session. The debounced save effect flushes pending React state to
+     storage on a 700ms timer, so a fresh count could lag — flush synchronously
+     first to guarantee the export captures the very latest state. */
+  const exportData = useCallback(() => {
+    store.set("dhikrs", dhikrs);
+    store.set("lists", lists);
+    store.set("pinned", pinned);
+    store.set("stats", stats);
+    store.set("settings", settings);
+    store.set("session", session);
+    store.set("complete", complete);
+    store.set("names_session", namesSession);
+    return downloadBackup(APP_VERSION);
+  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession]);
+
+  /* Restore a parsed backup's inner `data` object. We rebuild the library by
+     merging the *current* SEED data with the backup's custom items (same logic
+     as resync / load-time migration). This keeps built-in dhikrs current while
+     faithfully restoring everything the user owns — stats, settings, pins, and
+     even an in-progress session — so they can continue exactly where they were.
+     State and storage are both written so the restore survives a reload. */
+  const importData = useCallback((data) => {
+    if (!data || typeof data !== "object") {
+      throw new Error("Nothing to restore.");
+    }
+
+    const importedDhikrs = Array.isArray(data.dhikrs) ? data.dhikrs : [];
+    const importedLists = Array.isArray(data.lists) ? data.lists : [];
+
+    const customDhikrs = importedDhikrs.filter(
+      (d) => d?.id && (d.id.startsWith("c_") || d.tags?.includes("custom"))
+    );
+    const customLists = importedLists.filter((l) => l?.id && l.id.startsWith("c_"));
+
+    const nextDhikrs = [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH, ...customDhikrs];
+    const nextLists = [...SEED_LISTS, ...customLists];
+
+    const nextSettings =
+      data.settings && typeof data.settings === "object"
+        ? { ...DEFAULT_SETTINGS, ...data.settings }
+        : DEFAULT_SETTINGS;
+    const nextStats =
+      data.stats && typeof data.stats === "object"
+        ? { total: 0, byDate: {}, perDhikr: {}, ...data.stats }
+        : { total: 0, byDate: {}, perDhikr: {} };
+    const nextPinned = Array.isArray(data.pinned)
+      ? data.pinned.filter(
+          (id) => nextDhikrs.some((d) => d.id === id) || nextLists.some((l) => l.id === id)
+        )
+      : ["after-salah", "istighfar-100", "durood-100"];
+    const nextNames =
+      data.names_session && Array.isArray(data.names_session.counts)
+        ? data.names_session
+        : { index: 0, counts: Array(99).fill(0), targets: Array(99).fill(100) };
+    const nextSession = data.session ?? null;
+    const nextComplete = !!data.complete;
+
+    setDhikrs(nextDhikrs);
+    setLists(nextLists);
+    setPinned(nextPinned);
+    setStats(nextStats);
+    setSettingsInternal(nextSettings);
+    setNamesSession(nextNames);
+    setSession(nextSession);
+    setComplete(nextComplete);
+
+    store.set("dhikrs", nextDhikrs);
+    store.set("lists", nextLists);
+    store.set("pinned", nextPinned);
+    store.set("stats", nextStats);
+    store.set("settings", nextSettings);
+    store.set("names_session", nextNames);
+    store.set("session", nextSession);
+    store.set("complete", nextComplete);
+    store.set("storage_version", STORAGE_VERSION);
+
+    return {
+      dhikrs: nextDhikrs.length,
+      lists: nextLists.length,
+      total: nextStats.total || 0,
+    };
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -983,6 +1069,8 @@ export const AppProvider = ({ children }) => {
         navigateNames,
         applyNameTarget,
         cleanUpApp,
+        exportData,
+        importData,
       }}
     >
       {children}

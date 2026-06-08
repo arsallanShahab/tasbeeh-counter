@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
-  RefreshCw, Download, Smartphone
+  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
+import { parseBackup, readFileAsText } from "../../utils/backup";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
@@ -374,6 +375,8 @@ export const SettingsView = () => {
     promptInstall,
     isInstalled,
     cleanUpApp,
+    exportData,
+    importData,
   } = useApp();
 
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
@@ -381,6 +384,47 @@ export const SettingsView = () => {
   const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", targetType: "none", targetId: "" });
   const [syncState, setSyncState] = useState("idle"); // idle | syncing | done
   const [updateState, setUpdateState] = useState("idle"); // idle | checking | upToDate
+
+  const fileInputRef = useRef(null);
+  const [exportState, setExportState] = useState("idle"); // idle | done
+  const [restoreState, setRestoreState] = useState("idle"); // idle | working | done
+  const [restoreError, setRestoreError] = useState("");
+
+  const handleExport = () => {
+    try {
+      exportData();
+      setExportState("done");
+      setTimeout(() => setExportState("idle"), 2200);
+    } catch (e) {
+      setRestoreError("Couldn't create a backup file. Please try again.");
+    }
+  };
+
+  const handleRestoreFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+    setRestoreError("");
+    setRestoreState("working");
+    try {
+      const text = await readFileAsText(file);
+      const { data } = parseBackup(text);
+      if (
+        !window.confirm(
+          "Restore this backup? It will replace your current settings, stats, custom dhikrs and any active session with the backed-up data."
+        )
+      ) {
+        setRestoreState("idle");
+        return;
+      }
+      importData(data);
+      setRestoreState("done");
+      setTimeout(() => setRestoreState("idle"), 2600);
+    } catch (err) {
+      setRestoreError(err?.message || "That backup couldn't be restored.");
+      setRestoreState("idle");
+    }
+  };
 
   const handleResync = async () => {
     if (syncState === "syncing") return;
@@ -923,6 +967,113 @@ export const SettingsView = () => {
         <p className="text-xs text-[var(--muted)] leading-relaxed">
           Space / Enter / ↑ count · Backspace / ↓ undo · ← → switch · R reset · Esc back.
         </p>
+      </Card>
+
+      {/* Backup & Restore */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <DatabaseBackup size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Backup &amp; Restore</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Save a backup file with your stats, settings, custom dhikrs, sets and current session. Restore it on a new device — or after reinstalling — to pick up right where you left off.
+        </p>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={handleRestoreFile}
+        />
+
+        <div className="flex flex-col gap-2">
+          {/* Export */}
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
+            style={{
+              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
+            }}
+          >
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{
+                background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                color: "var(--primary)",
+              }}
+            >
+              {exportState === "done" ? <Check size={17} /> : <Download size={16} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--text)]">
+                {exportState === "done" ? "Backup downloaded" : "Export backup"}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {exportState === "done"
+                  ? "Saved as a .json file to your device"
+                  : "Download all your data as a single file"}
+              </p>
+            </div>
+          </button>
+
+          {/* Restore */}
+          <button
+            onClick={() => {
+              if (restoreState === "working") return;
+              setRestoreError("");
+              fileInputRef.current?.click();
+            }}
+            disabled={restoreState === "working"}
+            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
+            style={{
+              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
+              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
+            }}
+          >
+            <motion.div
+              animate={restoreState === "working" ? { rotate: 360 } : { rotate: 0 }}
+              transition={restoreState === "working"
+                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
+                : { duration: 0.2 }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+              style={{
+                background: "color-mix(in srgb, var(--gold) 16%, transparent)",
+                color: "var(--gold)",
+              }}
+            >
+              {restoreState === "done" ? <Check size={17} /> : <Upload size={16} />}
+            </motion.div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--text)]">
+                {restoreState === "done"
+                  ? "Backup restored"
+                  : restoreState === "working"
+                  ? "Reading backup…"
+                  : "Restore from backup"}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {restoreState === "done"
+                  ? "Your data has been brought back"
+                  : "Replace current data with a backup file"}
+              </p>
+            </div>
+          </button>
+
+          {restoreError && (
+            <div
+              className="flex items-start gap-2 rounded-2xl border px-3 py-2.5 anim-fade"
+              style={{
+                borderColor: "color-mix(in srgb, var(--danger) 40%, var(--line))",
+                background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+              }}
+            >
+              <AlertTriangle size={15} className="text-[var(--danger)] shrink-0 mt-0.5" />
+              <p className="text-[11px] font-medium text-[var(--danger)] leading-snug">{restoreError}</p>
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* App & library maintenance */}
