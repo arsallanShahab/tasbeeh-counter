@@ -95,7 +95,7 @@ export const NamesView = () => {
     const s = swipe.current;
     if (!s.active) return;
     const dx = (e?.clientX ?? s.x) - s.x;
-    const threshold = 60;
+    const threshold = 55;
     if (s.axis === "x") {
       if (dx < -threshold) handleNavigate(1);
       else if (dx > threshold) handleNavigate(-1);
