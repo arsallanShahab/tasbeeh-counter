@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "motion/react";
+import { useDrag } from "@use-gesture/react";
 import { Navigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronLeft, ChevronRight, BookOpen, Sparkles, Quote, BookText
@@ -64,45 +65,25 @@ export const NamesView = () => {
     navigateNames(dir);
   };
 
-  // Manual swipe handling (pointer events + axis lock). This replaces Framer's
-  // `drag`, which fought with the vertically-scrollable tab content on touch
-  // devices — leaving the bottom section unresponsive to gestures. With
-  // touch-action: pan-y the browser keeps native vertical scrolling, while we
-  // only claim horizontal moves to flip between names.
-  const swipe = useRef({ x: 0, y: 0, axis: null, active: false });
-
-  const onPointerDown = (e) => {
-    swipe.current = { x: e.clientX, y: e.clientY, axis: null, active: true };
-  };
-
-  const onPointerMove = (e) => {
-    const s = swipe.current;
-    if (!s.active) return;
-    const dx = e.clientX - s.x;
-    const dy = e.clientY - s.y;
-    if (!s.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      s.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-      // Capture the pointer for horizontal swipes so the browser's edge
-      // back/forward gesture can't hijack a left-to-right drag mid-way.
-      if (s.axis === "x") {
-        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+  // Horizontal swipe via @use-gesture — axis-locked to "x" so the browser keeps
+  // native vertical scrolling (touch-action: pan-y) for the tab content, while
+  // the library handles pointer capture, tap-filtering and edge-gesture safety.
+  const bindSwipe = useDrag(
+    ({ down, movement: [mx], velocity: [vx], last, tap }) => {
+      if (tap) return;
+      if (down) {
+        dragX.set(mx * 0.6);
+        return;
       }
-    }
-    if (s.axis === "x") dragX.set(dx * 0.6);
-  };
-
-  const endSwipe = (e) => {
-    const s = swipe.current;
-    if (!s.active) return;
-    const dx = (e?.clientX ?? s.x) - s.x;
-    const threshold = 55;
-    if (s.axis === "x") {
-      if (dx < -threshold) handleNavigate(1);
-      else if (dx > threshold) handleNavigate(-1);
-    }
-    animate(dragX, 0, { type: "spring", stiffness: 350, damping: 35 });
-    swipe.current = { x: 0, y: 0, axis: null, active: false };
-  };
+      // released: commit on distance OR a quick flick (either direction)
+      if (last) {
+        const committed = Math.abs(mx) > 55 || vx > 0.35;
+        if (committed) handleNavigate(mx < 0 ? 1 : -1);
+        animate(dragX, 0, { type: "spring", stiffness: 350, damping: 35 });
+      }
+    },
+    { axis: "x", filterTaps: true, pointer: { touch: true } }
+  );
 
   // Reset tab to meaning when active name changes
   useEffect(() => {
@@ -172,11 +153,8 @@ export const NamesView = () => {
       </motion.header>
 
       <motion.div
+        {...bindSwipe()}
         style={{ x: dragX, touchAction: "pan-y", overscrollBehaviorX: "contain" }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endSwipe}
-        onPointerCancel={endSwipe}
         className="flex-1 flex flex-col min-h-0 select-none cursor-grab active:cursor-grabbing"
       >
         <div className="flex-1 flex flex-col min-h-0 py-6 space-y-5">

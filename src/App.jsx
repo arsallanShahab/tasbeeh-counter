@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
@@ -24,16 +24,40 @@ const AppContent = () => {
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
   useDocumentSeo();
 
+  // Wait for the Fredoka brand font before revealing the splash wordmark.
+  // Otherwise it renders in the fallback font first and visibly reflows when
+  // Fredoka swaps in (FOUT). We force the load, then fade it in already-static.
+  const [brandFontReady, setBrandFontReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const reveal = () => { if (!cancelled) setBrandFontReady(true); };
+    if (typeof document !== "undefined" && document.fonts?.load) {
+      Promise.race([
+        document.fonts.load("700 1em Fredoka"),
+        new Promise((r) => setTimeout(r, 1500)), // safety fallback
+      ]).then(reveal, reveal);
+    } else {
+      reveal();
+    }
+    return () => { cancelled = true; };
+  }, []);
+
   if (!loaded) {
     return (
       <div
         className="font-body flex min-h-svh items-center justify-center"
         style={{ background: "#151e31", "--text": "#f6efe0" }}
       >
-        <BrandMark
-          className="text-5xl"
-          style={{ animation: "shimmer 1.6s ease infinite" }}
-        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: brandFontReady ? 1 : 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <BrandMark
+            className="text-5xl"
+            style={brandFontReady ? { animation: "shimmer 1.6s ease infinite" } : undefined}
+          />
+        </motion.div>
       </div>
     );
   }
