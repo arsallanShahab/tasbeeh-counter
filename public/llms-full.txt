@@ -1,0 +1,62 @@
+# Tasbeeh Go — Full Content
+
+> Free, offline-first digital tasbeeh & dhikr counter for phone and desktop.
+
+Canonical site: https://tasbeehgo.vercel.app/
+Languages: English, Arabic
+License/Price: Free, no ads, no account required.
+
+## What is Tasbeeh Go?
+
+Tasbeeh Go is a digital misbaha (electronic tasbeeh) that replaces a physical
+bead counter. It functions as a dhikr counter, zikr counter, and dua counter,
+letting you count adhkar with adjustable targets, laps, and haptic feedback. It
+is a progressive web app (PWA): it installs to the home screen on iOS and
+Android, works fully offline, requires no account, shows no ads, and stores all
+counts privately on the user's own device.
+
+## Features
+
+- Digital tasbeeh and dhikr counter with custom targets, laps, and auto-advance.
+- Multi-step routines: chain several adhkar together and advance automatically as
+  each target is reached, with an optional looping mode for single dhikr.
+- Curated library of authentic morning and evening adhkar and du'as, including
+  tasbeeh after salah and du'as for protection.
+- Create, save, and pin your own custom dhikr and routines.
+- The 99 Names of Allah (Asma ul Husna) with Arabic script, transliteration, and
+  English meaning, each countable with the built-in tasbeeh.
+- Statistics: daily goals, current and longest streaks, a 12-week activity
+  heatmap, and milestone tracking.
+- Selectable Arabic typefaces: Naskh (Amiri, Scheherazade, Noto Naskh, Lateef),
+  Indo-Pak Nastaliq (Gulzar), and Kufi (Reem Kufi).
+- Customizable bead themes and light/dark/system appearance.
+- Daily reminder notifications for morning, evening, and bedtime adhkar.
+- Backup and restore all data via a JSON export/import file.
+
+## Frequently asked questions
+
+### What is Tasbeeh Go?
+Tasbeeh Go is a free digital tasbeeh (dhikr) counter for phone and desktop. It
+replaces a physical misbaha, letting you count adhkar, build custom dua routines,
+and track your daily progress.
+
+### Is Tasbeeh Go free to use?
+Yes. Tasbeeh Go is completely free, with no ads and no account required. Your
+counts are stored privately on your own device.
+
+### Does the tasbeeh counter work offline?
+Yes. Tasbeeh Go is an offline-first progressive web app (PWA). You can install it
+to your home screen and count dhikr without an internet connection.
+
+### Does it include the 99 Names of Allah?
+Yes. Tasbeeh Go includes the 99 Names of Allah (Asma ul Husna) with
+transliteration and meaning, alongside a large library of common adhkar and du'as.
+
+### Which Arabic fonts are supported?
+Arabic text can be shown in several typefaces: Amiri, Scheherazade, and Noto
+Naskh (Naskh styles), Lateef, Gulzar (Indo-Pak Nastaliq), and Reem Kufi (Kufi).
+
+### How is my data stored?
+All data — counts, custom dhikr, streaks, and settings — is stored locally in your
+browser on your own device. Nothing is uploaded to a server, and you can export a
+backup file at any time.

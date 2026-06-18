@@ -20,16 +20,19 @@ export const ROUTE_SEO = {
     title: "Dhikr & Du'a Library — Tasbeeh Go",
     description:
       "Browse a curated library of authentic adhkar and du'as — morning & evening remembrance, tasbeeh after salah, and more. Pin favorites and start counting in one tap.",
+    crumb: "Dhikr & Du'a Library",
   },
   "/names": {
     title: "99 Names of Allah (Asma ul Husna) — Tasbeeh Go",
     description:
       "Read and recite the 99 Names of Allah (Asma ul Husna) with Arabic, transliteration, and meaning. Count each name with the built-in digital tasbeeh.",
+    crumb: "99 Names of Allah",
   },
   "/stats": {
     title: "Your Dhikr Stats & Streaks — Tasbeeh Go",
     description:
       "Track your dhikr habit with daily goals, streaks, a 12-week heatmap, and milestones in Tasbeeh Go.",
+    crumb: "Stats & Streaks",
   },
   "/counter": {
     title: "Counter — Tasbeeh Go",
@@ -49,5 +52,21 @@ export const getRouteSeo = (pathname) => {
     index: true,
     ...match,
     url: `${SITE_URL}${pathname === "/" ? "/" : pathname}`,
+  };
+};
+
+// BreadcrumbList JSON-LD for the active route. Home is the implicit root; only
+// indexable sub-pages with a `crumb` label get a second level. Returns null on
+// routes that shouldn't advertise a breadcrumb (home, noindex app states).
+export const getBreadcrumbLd = (pathname) => {
+  const match = ROUTE_SEO[pathname];
+  if (!match || !match.crumb || match.index === false) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: match.crumb, item: `${SITE_URL}${pathname}` },
+    ],
   };
 };

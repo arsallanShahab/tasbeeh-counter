@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { getRouteSeo, OG_IMAGE, SITE_NAME } from "../constants/seo";
+import { getRouteSeo, getBreadcrumbLd, OG_IMAGE, SITE_NAME } from "../constants/seo";
 
 // Upsert a <meta>/<link> tag in <head> by selector, creating it if absent.
 function setTag(selector, attrs) {
@@ -42,5 +42,21 @@ export function useDocumentSeo() {
     // Twitter
     setTag('meta[name="twitter:title"]', { name: "twitter:title", content: title });
     setTag('meta[name="twitter:description"]', { name: "twitter:description", content: description });
+
+    // BreadcrumbList JSON-LD — upsert a single managed <script> so client-side
+    // navigation keeps it in sync (and removes it on routes without a crumb).
+    let crumbEl = document.getElementById("ld-breadcrumb");
+    const crumb = getBreadcrumbLd(pathname);
+    if (crumb) {
+      if (!crumbEl) {
+        crumbEl = document.createElement("script");
+        crumbEl.type = "application/ld+json";
+        crumbEl.id = "ld-breadcrumb";
+        document.head.appendChild(crumbEl);
+      }
+      crumbEl.textContent = JSON.stringify(crumb);
+    } else if (crumbEl) {
+      crumbEl.remove();
+    }
   }, [pathname]);
 }

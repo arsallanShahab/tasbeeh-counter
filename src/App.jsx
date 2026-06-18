@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
-import { THEMES } from "./constants/dhikrData";
+import { THEMES, ARABIC_FONTS } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
 import { useDocumentSeo } from "./utils/seo";
 import HomeView from "./components/home/HomeView";
@@ -65,11 +65,16 @@ const AppContent = () => {
   const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
   const themeVars = activeThemeGroup[effectiveAppearance];
 
+  const arabicFont =
+    ARABIC_FONTS.find((f) => f.id === settings.arabicFont) || ARABIC_FONTS[0];
+
   return (
     <div
       className="font-body min-h-svh transition-colors duration-300 relative overflow-x-hidden"
+      data-arabic-font={arabicFont.id}
       style={{
         ...themeVars,
+        "--font-arabic": arabicFont.stack,
         background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))",
         color: "var(--text)",
       }}

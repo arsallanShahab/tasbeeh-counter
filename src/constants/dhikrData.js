@@ -651,6 +651,19 @@ export const SEED_DHIKRS = [
   },
 
   {
+    id: "dua_al_karb",
+    tr: "La ilaha illallahul-'Azimul-Halim, la ilaha illallahu Rabbul-'Arshil-'Azim, la ilaha illallahu Rabbus-samawati wa Rabbul-ardi wa Rabbul-'Arshil-Karim",
+    arabic:
+      "لَا إِلَٰهَ إِلَّا اللّٰهُ الْعَظِيمُ الْحَلِيمُ، لَا إِلَٰهَ إِلَّا اللّٰهُ رَبُّ الْعَرْشِ الْعَظِيمِ، لَا إِلَٰهَ إِلَّا اللّٰهُ رَبُّ السَّمَاوَاتِ وَرَبُّ الْأَرْضِ وَرَبُّ الْعَرْشِ الْكَرِيمِ",
+    en: "There is no god but Allah, the Incomparably Great, the Forbearing. There is no god but Allah, the Lord of the Mighty Throne. There is no god but Allah, the Lord of the heavens and the Lord of the earth, and the Lord of the Noble Throne (Du'a al-Karb — the supplication for distress)",
+    target: 3,
+    tags: ["distress", "anxiety", "grief"],
+    hadith: "Ibn Abbas ﺭﺽ reported that in times of distress the Prophet ﷺ would say: 'La ilaha illallahul-'Azimul-Halim, la ilaha illallahu Rabbul-'Arshil-'Azim, la ilaha illallahu Rabbus-samawati wa Rabbul-ardi wa Rabbul-'Arshil-Karim.' (Bukhari 6345, Muslim 2730)",
+    story: "The Du'a al-Karb — the supplication for distress. Before asking for a single thing, it magnifies Allah three times over: the Forbearing who is never hasty to punish, the Lord of the Mighty Throne, and the Lord of the heavens, the earth, and the Noble Throne. The relief is found in remembering who He is before the trial is even named.",
+    benefits: "The Prophet's ﷺ go-to dhikr when seized by worry, anxiety, or severe hardship; re-anchors the heart in Allah's greatness above the burden, turning panic into trust."
+  },
+
+  {
     id: "allahumma_anta_salam",
     tr: "Allahumma antas-Salam wa minkas-salam, tabarakta ya Dhal-Jalali wal-Ikram",
     arabic:
@@ -850,15 +863,15 @@ export const SEED_LISTS = [
     ]
   },
 
-  // {
-  //   id: "istighfar-100",
-  //   name: "Forgiveness ×100",
-  //   occasion: "forgiveness",
-  //   icon: "heart",
-  //   steps: [
-  //     { dhikr: "astaghfirullah_wa_atubu", target: 100 }
-  //   ]
-  // },
+  {
+    id: "istighfar-100",
+    name: "Forgiveness ×100",
+    occasion: "forgiveness",
+    icon: "heart",
+    steps: [
+      { dhikr: "astaghfirullah_wa_atubu", target: 100 }
+    ]
+  },
 
   {
     id: "sayyidul-istighfar",
@@ -978,10 +991,21 @@ export const SEED_LISTS = [
     icon: "heart",
     steps: [
       { dhikr: "dua_yunus", target: 40 },
+      { dhikr: "dua_al_karb", target: 3 },
       { dhikr: "hasbiyallah_tawakkaltu", target: 7 },
       { dhikr: "ya_hayyu_ya_qayyum", target: 3 },
       { dhikr: "allahumma_la_sahla", target: 3 },
       { dhikr: "hammi_wal_hazan", target: 3 }
+    ]
+  },
+
+  {
+    id: "dua-al-karb",
+    name: "Du'a al-Karb (For Distress)",
+    occasion: "distress",
+    icon: "shield",
+    steps: [
+      { dhikr: "dua_al_karb", target: 3 }
     ]
   },
 
@@ -1215,10 +1239,24 @@ export const DHIKR_FIELDS = {
 export const DEFAULT_DHIKR_FIELD_ORDER = ["arabic", "translit", "translation"];
 export const DEFAULT_DHIKR_FIELD_VISIBLE = { arabic: true, translit: true, translation: true };
 
+// Selectable typefaces for the Arabic script. Each is loaded from Google Fonts
+// (see the @import in index.css). `stack` is dropped into the --font-arabic CSS
+// variable at runtime; `lh` bumps line-height for tall calligraphic styles like
+// Nastaliq so harakat/descenders don't clip against the tighter Tailwind leadings.
+export const ARABIC_FONTS = [
+  { id: "amiri", name: "Amiri", sub: "Naskh · Classic", stack: "'Amiri', serif" },
+  { id: "scheherazade", name: "Scheherazade", sub: "Uthmani · Qur'an", stack: "'Scheherazade New', 'Amiri', serif" },
+  { id: "noto-naskh", name: "Noto Naskh", sub: "Naskh · Modern", stack: "'Noto Naskh Arabic', 'Amiri', serif" },
+  { id: "lateef", name: "Lateef", sub: "Naskh · Soft", stack: "'Lateef', 'Amiri', serif" },
+  { id: "nastaliq", name: "Nastaliq", sub: "Indo-Pak · Urdu", stack: "'Gulzar', 'Noto Nastaliq Urdu', 'Amiri', serif", lh: 2.1 },
+  { id: "reem-kufi", name: "Reem Kufi", sub: "Kufi · Geometric", stack: "'Reem Kufi', sans-serif" },
+];
+
 export const DEFAULT_SETTINGS = {
   lang: "both",
   theme: "pastel",
   appearance: "system",
+  arabicFont: "amiri",
   translit: true,
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
   dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
@@ -1299,4 +1337,4 @@ export const BEAD_THEMES = [
   { id: "mono", name: "Mono", dark: ["#9a9a9a", "#3c3c3c", "#101010"], gold: ["#f2f2f2", "#bdbdbd", "#6a6a6a"], front: ["#ffffff", "#e2e2e2", "#8a8a8a"], glow: "#ffffff", thread: "#4a4a4a", arc: "#cfcfcf" },
 ];
 
-export const STORAGE_VERSION = 8;
+export const STORAGE_VERSION = 9;

@@ -4,7 +4,7 @@ import {
   Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
-  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft
+  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft, Type
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
@@ -12,7 +12,7 @@ import { parseBackup, readFileAsText } from "../../utils/backup";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
-import { BEAD_THEMES, THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../../constants/dhikrData";
+import { BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../../constants/dhikrData";
 import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
 
 const HomeSectionsEditor = ({ value, onChange }) => {
@@ -513,6 +513,46 @@ export const SettingsView = () => {
             onChange={(v) => set("lang", v)}
             options={[{ v: "en", l: "English" }, { v: "ur", l: "اردو" }, { v: "both", l: "Both" }]}
           />
+        </div>
+      </Card>
+
+      {/* Arabic Font — typeface for the Arabic script across the app */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
+          <Type size={19} className="text-[var(--gold)]" />
+          <span className="text-[var(--text)]">Arabic Font</span>
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Choose the typeface used for Arabic text on the counter, library, and 99 Names. Includes Naskh, Indo-Pak (Nastaliq), and Kufi styles.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {ARABIC_FONTS.map((f) => {
+            const isSel = (settings.arabicFont || "amiri") === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => set("arabicFont", f.id)}
+                className="flex flex-col gap-1.5 rounded-2xl border p-3 text-left cursor-pointer transition-all active:scale-[0.97]"
+                style={{
+                  borderColor: isSel ? "var(--primary)" : "var(--line)",
+                  background: isSel ? "var(--surface2)" : "transparent",
+                }}
+              >
+                <span
+                  dir="rtl"
+                  className="block w-full truncate text-[1.55rem] leading-[1.7] text-[var(--text)]"
+                  style={{ fontFamily: f.stack }}
+                >
+                  بِسْمِ اللّٰه
+                </span>
+                <span className="flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-[11px] font-semibold text-[var(--text)] truncate">{f.name}</span>
+                  {isSel && <Check size={13} className="text-[var(--primary)] shrink-0" />}
+                </span>
+                <span className="text-[9px] text-[var(--muted)] truncate">{f.sub}</span>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

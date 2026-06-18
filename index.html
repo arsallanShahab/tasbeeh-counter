@@ -21,6 +21,16 @@
     <meta name="generator" content="Tasbeeh Go" />
     <meta name="format-detection" content="telephone=no" />
 
+    <!-- Pre-paint background so the fallback/splash never flashes white while
+         the bundled CSS (imported via JS) is still loading. -->
+    <style>
+      html, body { margin: 0; background: #151e31; }
+      .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+      }
+    </style>
+
     <!-- Multilingual (single URL serves English + Arabic) -->
     <link rel="alternate" hreflang="en" href="https://tasbeehgo.vercel.app/" />
     <link rel="alternate" hreflang="ar" href="https://tasbeehgo.vercel.app/" />
@@ -98,6 +108,30 @@
       }
     </script>
 
+    <!-- Structured data: site + publisher entity (helps entity understanding
+         and sitelinks). No fake ratings/social profiles are claimed. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Tasbeeh Go",
+        "alternateName": "Digital Tasbeeh & Dhikr Counter",
+        "url": "https://tasbeehgo.vercel.app/",
+        "inLanguage": ["en", "ar"],
+        "publisher": {
+          "@type": "Organization",
+          "name": "Tasbeeh Go",
+          "url": "https://tasbeehgo.vercel.app/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://tasbeehgo.vercel.app/icon-512.png",
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    </script>
+
     <!-- Structured data: FAQ (eligible for rich results + AI answers) -->
     <script type="application/ld+json">
       {
@@ -141,7 +175,62 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-render fallback content. React replaces this entirely on mount,
+           so JS users never see it for more than a frame. It exists so crawlers
+           that don't execute JavaScript (many AI bots, social scrapers, and as a
+           safety net for search engines) still get a real <h1>, descriptive prose,
+           and internal links instead of an empty page. The copy honestly
+           describes the app — no cloaking or keyword stuffing. -->
+      <main
+        style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 20px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#f6efe0;text-align:center;"
+      >
+        <h1 style="font-size:28px;font-weight:700;margin:0;letter-spacing:.01em;">
+          Tasbeeh Go
+        </h1>
+        <p style="max-width:34rem;margin:0;color:#9aa4c8;line-height:1.6;">
+          A free digital tasbeeh &amp; dhikr counter for phone and desktop. Count
+          your daily adhkar, build custom du'a routines, track streak statistics,
+          and read the 99 Names of Allah (Asma ul Husna) — online or offline.
+        </p>
+        <nav
+          aria-label="Primary"
+          style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:4px;"
+        >
+          <a href="/library" style="color:#5fc8ba;text-decoration:none;font-weight:600;">Dhikr &amp; Du'a Library</a>
+          <a href="/names" style="color:#5fc8ba;text-decoration:none;font-weight:600;">99 Names of Allah</a>
+          <a href="/stats" style="color:#5fc8ba;text-decoration:none;font-weight:600;">Stats &amp; Streaks</a>
+        </nav>
+
+        <!-- Extended crawlable detail. Visually hidden to keep the loading frame
+             clean, but present in the DOM for non-JS crawlers and AI answers. -->
+        <div class="sr-only">
+          <h2>What is Tasbeeh Go?</h2>
+          <p>
+            Tasbeeh Go is a digital misbaha (electronic tasbeeh) that replaces a
+            physical bead counter. It works as a dhikr counter, zikr counter, and
+            dua counter, with adjustable targets, haptic feedback, and beautiful
+            customizable bead themes. It is completely free, requires no account,
+            stores your counts privately on your own device, and works offline as
+            an installable progressive web app (PWA).
+          </p>
+          <h2>Features</h2>
+          <ul>
+            <li>Digital tasbeeh and dhikr counter with custom targets and laps</li>
+            <li>Curated library of authentic morning and evening adhkar and du'as</li>
+            <li>Build and save your own custom dhikr routines</li>
+            <li>The 99 Names of Allah with Arabic, transliteration, and meaning</li>
+            <li>Daily goals, streaks, a 12-week heatmap, and milestone tracking</li>
+            <li>Selectable Arabic typefaces including Naskh, Indo-Pak Nastaliq, and Kufi</li>
+            <li>Offline-first PWA — install it to your home screen on iOS and Android</li>
+          </ul>
+          <p>
+            تطبيق مسبحة إلكترونية وعداد التسبيح والذكر مجاني للهاتف وسطح المكتب —
+            تتبع الأذكار اليومية، وأنشئ أورادك الخاصة، واقرأ أسماء الله الحسنى.
+          </p>
+        </div>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

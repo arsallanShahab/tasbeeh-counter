@@ -1,0 +1,19 @@
+# Tasbeeh Go
+
+> Free, offline-first digital tasbeeh & dhikr counter for phone and desktop. Count daily adhkar, build custom du'a routines, track streak statistics, and read the 99 Names of Allah (Asma ul Husna). No account, no ads, with all data stored privately on the user's own device.
+
+Tasbeeh Go is a progressive web app (PWA) that replaces a physical misbaha (prayer beads). It works as a dhikr counter, zikr counter, and dua counter with adjustable targets, laps, haptic feedback, and customizable bead themes. It works fully offline once installed and is completely free. Arabic text can be displayed in selectable typefaces including Naskh (Amiri, Scheherazade, Noto Naskh), Indo-Pak Nastaliq (Gulzar), and Kufi (Reem Kufi).
+
+Canonical site: https://tasbeehgo.vercel.app/
+
+## Pages
+
+- [Home — Digital Tasbeeh & Dhikr Counter](https://tasbeehgo.vercel.app/): The main counter. Pick a dhikr or routine, set a target, and count with taps. Supports auto-advance through multi-step routines and looping.
+- [Dhikr & Du'a Library](https://tasbeehgo.vercel.app/library): Curated library of authentic adhkar and du'as — morning and evening remembrance, tasbeeh after salah, du'as for protection, and more. Users can pin favorites and create custom dhikr.
+- [99 Names of Allah (Asma ul Husna)](https://tasbeehgo.vercel.app/names): All 99 Names of Allah with Arabic script, transliteration, and English meaning, each countable with the built-in tasbeeh.
+- [Stats & Streaks](https://tasbeehgo.vercel.app/stats): Daily goals, current and longest streaks, a 12-week activity heatmap, and milestone tracking for the user's dhikr habit.
+
+## Optional
+
+- [Full plain-text content](https://tasbeehgo.vercel.app/llms-full.txt): A single self-contained document covering what the app is, its full feature list, and frequently asked questions.
+- [FAQ structured data](https://tasbeehgo.vercel.app/): The homepage embeds schema.org FAQPage, WebApplication, and WebSite JSON-LD for machine-readable answers.
