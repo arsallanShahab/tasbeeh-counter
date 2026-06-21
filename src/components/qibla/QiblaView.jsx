@@ -8,6 +8,24 @@ import { qiblaBearing, distanceToKaaba, timezoneCity } from "../../utils/prayerT
 const COMPASS_DIRS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const dirText = (deg) => COMPASS_DIRS[Math.round(((deg % 360) / 22.5)) % 16];
 
+/* Turn a wrapping 0–360 angle (compass heading) into a continuous, ever-
+   accumulating value so spring rotations always take the shortest path instead
+   of unwinding the long way around when crossing the 360°↔0° seam. */
+function useContinuousAngle(target) {
+  const cont = useRef(null);
+  const last = useRef(null);
+  if (target != null) {
+    if (cont.current == null) {
+      cont.current = target;
+    } else if (target !== last.current) {
+      const delta = ((((target - last.current) % 360) + 540) % 360) - 180; // (-180, 180]
+      cont.current += delta;
+    }
+    last.current = target;
+  }
+  return cont.current ?? 0;
+}
+
 export const QiblaView = () => {
   const { settings, requestPrayerLocation, vibe } = useApp();
   const navigate = useNavigate();
@@ -135,8 +153,10 @@ export const QiblaView = () => {
 
   // Dial rotates opposite to heading so its North tick tracks true north; in
   // static mode (no sensor) we keep North up and just mark the Qibla bearing.
-  const dialRotation = heading != null ? -heading : 0;
+  // Both rotations are unwrapped so they animate the short way across 0°/360°.
+  const dialRotation = useContinuousAngle(heading != null ? -heading : 0);
   const kaabaAngle = bearing != null ? bearing : 0;
+  const needleAngle = useContinuousAngle(qiblaScreenAngle != null ? qiblaScreenAngle : kaabaAngle);
 
   return (
     <div className="anim-fade min-h-svh flex flex-col">
@@ -291,7 +311,7 @@ export const QiblaView = () => {
             {/* Needle from center toward the Qibla (above the dial, below hub). */}
             <motion.div
               className="pointer-events-none absolute left-1/2 top-1/2 z-[5]"
-              animate={{ rotate: qiblaScreenAngle != null ? qiblaScreenAngle : kaabaAngle }}
+              animate={{ rotate: needleAngle }}
               transition={{ type: "spring", stiffness: 90, damping: 18, mass: 0.5 }}
               style={{ transformOrigin: "center" }}
             >
