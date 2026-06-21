@@ -1168,20 +1168,23 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 export const HOME_SECTIONS = {
   prayer: { label: "Prayer Times" },
   streak: { label: "Daily Streak & Goal" },
+  pinned: { label: "Your Dhikr" },
+  suggested: { label: "Suggested Session" },
+  quick: { label: "Quick Collections" },
   remedies: { label: "Remedies for the Heart" },
   asmaul_husna: { label: "Asma-ul-Husna Mode" },
-  quick: { label: "Quick Collections" },
-  suggested: { label: "Suggested Session" },
-  pinned: { label: "Your Widgets" },
 };
+// Every section is visible by default so users discover all features; they can
+// hide any in Settings → Display → Home Layout. The discovery launchers also
+// live in the Library, but stay on here unless the user turns them off.
 export const DEFAULT_HOME_SECTIONS = [
   { key: "prayer", visible: true },
   { key: "streak", visible: true },
+  { key: "pinned", visible: true },
+  { key: "suggested", visible: true },
+  { key: "quick", visible: true },
   { key: "remedies", visible: true },
   { key: "asmaul_husna", visible: true },
-  { key: "quick", visible: true },
-  { key: "suggested", visible: true },
-  { key: "pinned", visible: true },
 ];
 
 export const EMOTIONAL_REMEDIES = {

@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Plus, Trash2, Pin, Sparkles, Search, X, Check,
-  BookOpen, FolderHeart, ChevronRight,
+  BookOpen, FolderHeart, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
-import { OCCASIONS, ICONS } from "../../constants/dhikrData";
+import { OCCASIONS, ICONS, EMOTIONAL_REMEDIES } from "../../constants/dhikrData";
 
 const spring = { type: "spring", stiffness: 320, damping: 28 };
 
@@ -238,6 +238,7 @@ export const LibraryView = () => {
     dhikrs, setDhikrs, lists, setLists, pinned, setPinned,
     setModal, dById, togglePin: rawTogglePin, startList, startDhikr,
     settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion,
+    setView,
   } = useApp();
 
   const [tab, setTab] = useState("sets"); // "sets" | "dhikrs"
@@ -543,6 +544,39 @@ export const LibraryView = () => {
         </div>
       </div>
 
+      {/* Discovery: Remedies for the Heart — only on the default (unfiltered) view */}
+      {!filtersActive && (
+        <section className="space-y-2">
+          <h2 className="flex items-center gap-2 pl-1 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+            <Sparkles size={13} className="text-[var(--gold)]" /> Remedies for the Heart
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
+              const RemIcon = rem.icon;
+              return (
+                <motion.button
+                  key={key}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveOccasion(key)}
+                  className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left cursor-pointer"
+                >
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                    style={{ background: "color-mix(in srgb, var(--gold) 12%, transparent)", color: rem.color }}
+                  >
+                    <RemIcon size={17} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold text-[var(--text)] truncate">{rem.label}</span>
+                    <span className="block text-[10px] text-[var(--muted)] mt-0.5 leading-snug truncate">{rem.desc}</span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Pinned section — only when no filter */}
       <AnimatePresence>
         {pinnedItems.length > 0 && (
@@ -715,6 +749,33 @@ export const LibraryView = () => {
             </>
           ) : (
             <>
+              {/* Asma-ul-Husna contemplation mode — the dedicated swipe-through
+                  flow, surfaced here since Library is the discovery home. */}
+              {!filtersActive && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setView("names")}
+                  className="mb-3 flex w-full items-center gap-3 rounded-2xl p-4 text-left cursor-pointer shadow-sm"
+                  style={{
+                    background: "color-mix(in srgb, var(--gold) 12%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--gold) 30%, transparent)",
+                  }}
+                >
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                    style={{ background: "var(--gold)", color: "#1a1206" }}
+                  >
+                    <Sparkles size={19} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-sm font-bold text-[var(--text)]">Contemplation Mode</p>
+                    <p className="text-[11px] text-[var(--muted)] leading-snug">
+                      Flow through the 99 Names one by one, with meanings.
+                    </p>
+                  </div>
+                  <ArrowRight size={16} className="text-[var(--gold)] shrink-0" />
+                </motion.button>
+              )}
               {unpinnedNames.length === 0 ? (
                 filteredNames.length === 0 ? (
                   <EmptyState

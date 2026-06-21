@@ -187,6 +187,17 @@ export const AppProvider = ({ children }) => {
         if (missingSections.length > 0) {
           loadedSettings.homeSections = [...loadedSettings.homeSections, ...missingSections];
         }
+
+        // One-time correction: an earlier build hid the discovery launchers on
+        // Home. We've since decided every section should be visible by default
+        // (users hide what they don't want), so re-show them once.
+        if (!store.get("home_show_all_v1", false)) {
+          const relocated = new Set(["remedies", "quick", "suggested", "asmaul_husna"]);
+          loadedSettings.homeSections = loadedSettings.homeSections.map((s) =>
+            relocated.has(s.key) ? { ...s, visible: true } : s
+          );
+          store.set("home_show_all_v1", true);
+        }
       }
       
       // Deep-merge the nested `prayer` object so partial/older saves still get

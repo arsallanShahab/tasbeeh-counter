@@ -1019,7 +1019,11 @@ export const SettingsView = () => {
           <span className="text-[var(--text)]">Home Layout</span>
         </div>
         <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Reorder or hide sections on the Home page. The Continue Session widget always sits at the top when an active session exists.
+          Reorder or hide sections on Home. The date &amp; occasion intro and the
+          Continue Session widget always stay pinned to the top. The discovery
+          sections — Suggested, Quick Collections, Remedies and Asma-ul-Husna —
+          now live in the Library and are off here by default; switch any back on
+          to also surface it on Home.
         </p>
         <HomeSectionsEditor
           value={settings.homeSections || DEFAULT_HOME_SECTIONS}
@@ -1027,14 +1031,16 @@ export const SettingsView = () => {
         />
       </Card>
 
-      {/* Quick Collections — Home grid configuration */}
+      {/* Quick Collections — Home grid configuration (only when enabled above) */}
       <Card className="px-5 py-4">
         <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
           <LayoutGrid size={19} className="text-[var(--gold)]" />
           <span className="text-[var(--text)]">Quick Collections</span>
         </div>
         <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Choose which occasion shortcuts appear on the Home grid, and in what order. Tapping one opens the Library filtered to that category.
+          Occasion shortcuts for the optional Quick Collections section. They only
+          appear on Home if you enable that section in Home Layout above — tapping
+          one opens the Library filtered to that category.
         </p>
         <QuickCollectionsEditor
           value={settings.quickCollections || DEFAULT_QUICK_COLLECTIONS}

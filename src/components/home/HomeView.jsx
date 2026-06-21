@@ -240,7 +240,7 @@ export const HomeView = () => {
   const renderPinned = () => (
     <div key="pinned">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-base font-semibold text-[var(--text)]">Your widgets</h2>
+        <h2 className="font-display text-base font-semibold text-[var(--text)]">Your Dhikr</h2>
         <div className="flex items-center gap-3">
           {pinnedItems.length > 1 && (
             <button
@@ -285,14 +285,14 @@ export const HomeView = () => {
                       {isList ? (
                         <div
                           className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
-                          style={{ background: "var(--surface2)" }}
+                          style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
                         >
                           <Ico size={18} className="text-[var(--gold)]" />
                         </div>
                       ) : (
                         <div
                           className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl font-arabic text-lg text-[var(--gold)]"
-                          style={{ background: "var(--surface2)" }}
+                          style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
                         >
                           {data.arabic.charAt(0)}
                         </div>
