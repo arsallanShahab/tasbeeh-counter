@@ -13,6 +13,7 @@ import {
   Qibla,
   SunnahTimes,
 } from "adhan";
+import { regionalHijriOffset } from "./hijri";
 
 export const KAABA = { lat: 21.4225, lng: 39.8262 };
 
@@ -210,6 +211,18 @@ export function hijriNightOffset(prayer, date = new Date()) {
   } catch {
     return 0;
   }
+}
+
+/* The total offset to apply to the Umm al-Qura date when displaying the Hijri
+   date: the user's manual ±day fine-tune, plus the regional convention (e.g.
+   −1 in the subcontinent), plus the Maghrib night rollover. Computed live so it
+   tracks the user's region, manual setting, and the time of day. */
+export function hijriDisplayOffset(prayer, date = new Date()) {
+  return (
+    (prayer?.hijriOffset || 0) +
+    regionalHijriOffset() +
+    hijriNightOffset(prayer, date)
+  );
 }
 
 /* Great-circle distance to the Kaaba in km (Haversine) — shown on the Qibla

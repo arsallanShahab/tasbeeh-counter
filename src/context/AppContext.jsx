@@ -5,6 +5,7 @@ import { store } from "../utils/storage";
 import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity } from "../utils/prayerTimes";
+import { regionalHijriOffset } from "../utils/hijri";
 import { WebHaptics } from "web-haptics";
 
 const AppContext = createContext(null);
@@ -217,6 +218,17 @@ export const AppProvider = ({ children }) => {
           },
         },
       };
+      // The regional Hijri ± is now applied live (see hijriDisplayOffset), so
+      // undo any earlier static seed to avoid double-counting. A manual value
+      // that differs from the old auto-seed is preserved.
+      if (!store.get("hijri_live_v2", false)) {
+        if ((mergedSettings.prayer.hijriOffset || 0) === regionalHijriOffset()) {
+          mergedSettings.prayer.hijriOffset = 0;
+        }
+        store.set("hijri_region_default_v1", true); // neutralize old migration
+        store.set("hijri_live_v2", true);
+      }
+
       setSettingsInternal(mergedSettings);
       setLoaded(true);
     };

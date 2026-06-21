@@ -153,6 +153,16 @@ export function detectOccasions(date = new Date(), offset = 0) {
       cta: { kind: "occasion", id: "ramadan", label: "Ramadan adhkar" },
     });
   }
+  if (ashura) {
+    out.push({
+      id: "ashura",
+      label: day === 10 ? "Day of ʿAshura" : "Eve of ʿAshura",
+      desc: "A recommended day of fasting and remembrance.",
+      icon: "moon",
+      accent: "var(--primary)",
+      cta: { kind: "occasion", id: "general", label: "Browse dhikr" },
+    });
+  }
   if (isFriday) {
     out.push({
       id: "friday",
@@ -173,16 +183,7 @@ export function detectOccasions(date = new Date(), offset = 0) {
       cta: { kind: "list", id: "tahleel-100", label: "Begin Tahlil" },
     });
   }
-  if (ashura) {
-    out.push({
-      id: "ashura",
-      label: day === 10 ? "Day of ʿAshura" : "Eve of ʿAshura",
-      desc: "A recommended day of fasting and remembrance.",
-      icon: "moon",
-      accent: "var(--primary)",
-      cta: { kind: "occasion", id: "general", label: "Browse dhikr" },
-    });
-  } else if (muharram) {
+  if (muharram && !ashura) {
     out.push({
       id: "muharram",
       label: "Sacred Month of Muharram",
@@ -208,4 +209,42 @@ export function detectOccasions(date = new Date(), offset = 0) {
 
 export function topOccasion(date = new Date(), offset = 0) {
   return detectOccasions(date, offset)[0] || null;
+}
+
+/* ─── Regional offset ──────────────────────────────────────────────────────
+   We keep Umm al-Qura (Saudi) as the base calendar and apply the *commonly
+   used* ±day offset for the device's region — most of the world follows the
+   Saudi/Umm al-Qura date (offset 0), while the Indian subcontinent typically
+   observes one day later (offset −1). This is the conventional regional shift,
+   not a per-night sighting calculation, so the manual ±day stepper in Settings
+   stays available to fine-tune for a specific country/authority. */
+const REGION_OFFSETS = [
+  {
+    // Regions that commonly observe one day after Saudi via local moon-sighting.
+    // Everything not listed defaults to 0 (follows Umm al-Qura / Saudi), which
+    // covers the Gulf, the Levant, Egypt, Türkiye, Europe, the Americas and most
+    // of Africa. The manual ±day stepper handles any country that differs.
+    off: -1,
+    tz: new Set([
+      // South Asia
+      "Asia/Kolkata", "Asia/Calcutta", "Asia/Karachi", "Asia/Dhaka",
+      "Asia/Colombo", "Asia/Kathmandu", "Asia/Thimphu", "Asia/Kabul",
+      "Indian/Maldives",
+      // Iran (Tehran sighting)
+      "Asia/Tehran",
+      // Southeast Asia — MABIMS (Indonesia, Malaysia, Singapore, Brunei)
+      "Asia/Jakarta", "Asia/Pontianak", "Asia/Makassar", "Asia/Jayapura",
+      "Asia/Kuala_Lumpur", "Asia/Kuching", "Asia/Singapore", "Asia/Brunei",
+    ]),
+  },
+];
+
+export function regionalHijriOffset() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    for (const r of REGION_OFFSETS) if (r.tz.has(tz)) return r.off;
+    return 0; // most of the world follows Umm al-Qura
+  } catch {
+    return 0;
+  }
 }

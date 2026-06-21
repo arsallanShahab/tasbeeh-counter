@@ -4,7 +4,7 @@ import { Star, Moon, Sun, Sparkles, Mountain, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import BrandMark from "../common/BrandMark";
 import { hijriFormatted, topOccasion } from "../../utils/hijri";
-import { hijriNightOffset } from "../../utils/prayerTimes";
+import { hijriDisplayOffset } from "../../utils/prayerTimes";
 
 const ICON_MAP = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
 
@@ -26,7 +26,7 @@ export const HomeIntro = () => {
   const hr = d.getHours();
   const greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 
-  const offset = (settings.prayer?.hijriOffset || 0) + hijriNightOffset(settings.prayer, d);
+  const offset = hijriDisplayOffset(settings.prayer, d);
   const greg = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const hijri = hijriFormatted(d, offset);
   const occ = topOccasion(d, offset);
