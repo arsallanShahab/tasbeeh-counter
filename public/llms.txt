@@ -12,6 +12,7 @@ Canonical site: https://tasbeehgo.vercel.app/
 - [Dhikr & Du'a Library](https://tasbeehgo.vercel.app/library): Curated library of authentic adhkar and du'as — morning and evening remembrance, tasbeeh after salah, du'as for protection, and more. Users can pin favorites and create custom dhikr.
 - [99 Names of Allah (Asma ul Husna)](https://tasbeehgo.vercel.app/names): All 99 Names of Allah with Arabic script, transliteration, and English meaning, each countable with the built-in tasbeeh.
 - [Stats & Streaks](https://tasbeehgo.vercel.app/stats): Daily goals, current and longest streaks, a 12-week activity heatmap, and milestone tracking for the user's dhikr habit.
+- [Qibla Direction Finder](https://tasbeehgo.vercel.app/qibla): A live Qibla compass that points to the Kaaba in Makkah from the user's current location. Works in the browser with no app download.
 
 ## Optional
 

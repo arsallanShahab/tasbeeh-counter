@@ -355,6 +355,11 @@ export const HomeView = () => {
 
   return (
     <div className="space-y-6 anim-fade pb-6">
+      {/* Page H1 for SEO. Kept sr-only because the visual hero is the brand
+          wordmark/greeting in HomeIntro; this gives crawlers a keyword-anchored
+          heading without altering the dashboard layout. */}
+      <h1 className="sr-only">Free Online Tasbeeh Counter — Digital Dhikr &amp; Zikr Counter</h1>
+
       {/* Merged transparent intro: date · Hijri · brand · greeting · occasion */}
       <HomeIntro />
 

@@ -7,13 +7,13 @@ export const SITE_NAME = "Tasbeeh Go";
 export const OG_IMAGE = `${SITE_URL}/icon-512.png`;
 
 const DEFAULT_DESCRIPTION =
-  "Free digital tasbeeh & dhikr counter for phone and desktop. Track daily adhkar, build custom dua routines, view streak stats, and read the 99 Names of Allah.";
+  "Free online tasbeeh counter — count dhikr right in your browser, no app download. Track daily adhkar, build custom dua routines, see streaks, and read the 99 Names of Allah.";
 
 // Keyed by route pathname. `index: false` marks app-only states we keep out of
 // search (they need local device data to be meaningful).
 export const ROUTE_SEO = {
   "/": {
-    title: "Tasbeeh Go — Digital Tasbeeh & Dhikr Counter",
+    title: "Free Online Tasbeeh Counter & Dhikr Counter | Tasbeeh Go",
     description: DEFAULT_DESCRIPTION,
   },
   "/library": {
@@ -33,6 +33,12 @@ export const ROUTE_SEO = {
     description:
       "Track your dhikr habit with daily goals, streaks, a 12-week heatmap, and milestones in Tasbeeh Go.",
     crumb: "Stats & Streaks",
+  },
+  "/qibla": {
+    title: "Qibla Direction Finder Online (Live Compass) — Tasbeeh Go",
+    description:
+      "Find the Qibla direction online with a live compass that points to the Kaaba in Makkah from your location. Free Qibla finder — no app download needed, works on phone and desktop.",
+    crumb: "Qibla Direction",
   },
   "/counter": {
     title: "Counter — Tasbeeh Go",

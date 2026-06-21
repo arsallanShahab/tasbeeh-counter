@@ -185,7 +185,9 @@ export const QiblaView = () => {
         </motion.button>
         <div className="flex items-center gap-2">
           <Compass size={20} className="text-[var(--gold)]" />
-          <h1 className="font-display text-xl text-[var(--text)]">Qibla</h1>
+          <h1 className="font-display text-xl text-[var(--text)]">
+            Qibla<span className="sr-only"> Direction Finder — live compass to the Kaaba in Makkah</span>
+          </h1>
         </div>
       </div>
 

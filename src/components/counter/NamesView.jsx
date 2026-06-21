@@ -128,6 +128,10 @@ export const NamesView = () => {
       className="relative flex h-[calc(100svh-2.5rem)] flex-col justify-between"
       style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
     >
+      {/* Page H1 for SEO. sr-only so the immersive name carousel stays the
+          visual focus, while crawlers still see a keyword-anchored heading. */}
+      <h1 className="sr-only">99 Names of Allah (Asma ul Husna) with Meaning &amp; Transliteration</h1>
+
       {/* Floating Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
