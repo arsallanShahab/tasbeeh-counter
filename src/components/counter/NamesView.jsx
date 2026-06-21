@@ -3,7 +3,8 @@ import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "
 import { useDrag } from "@use-gesture/react";
 import { Navigate } from "react-router-dom";
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, BookOpen, Sparkles, Quote, BookText
+  ArrowLeft, ChevronLeft, ChevronRight, BookOpen, Sparkles, Quote, BookText,
+  LayoutGrid, X
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { SEED_NAMES_OF_ALLAH } from "../../constants/asmaUlHusna";
@@ -43,11 +44,13 @@ export const NamesView = () => {
     namesSession,
     settings,
     navigateNames,
+    startNamesSession,
     vibe,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState("meaning");
   const [direction, setDirection] = useState(0); // -1 for previous, 1 for next
+  const [overview, setOverview] = useState(false); // grid jump-to panel
 
   const idx = namesSession.index;
   const activeName = SEED_NAMES_OF_ALLAH[idx];
@@ -63,6 +66,16 @@ export const NamesView = () => {
     if (dir === -1 && idx <= 0) return;
     setDirection(dir);
     navigateNames(dir);
+  };
+
+  // Jump straight to any name from the overview grid.
+  const jumpTo = (target) => {
+    if (target !== idx) {
+      setDirection(target > idx ? 1 : -1);
+      startNamesSession(target); // sets index (we're already on /names)
+      vibe(8);
+    }
+    setOverview(false);
   };
 
   // Horizontal swipe via @use-gesture — axis-locked to "x" so the browser keeps
@@ -112,7 +125,7 @@ export const NamesView = () => {
 
   return (
     <div
-      className="flex h-[calc(100svh-2.5rem)] flex-col justify-between"
+      className="relative flex h-[calc(100svh-2.5rem)] flex-col justify-between"
       style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
     >
       {/* Floating Header */}
@@ -143,13 +156,18 @@ export const NamesView = () => {
         <p className="font-display text-sm text-[var(--text)] truncate px-2">
           Asma-ul-Husna
         </p>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full"
+        <motion.button
+          whileTap={{ scale: 0.92 }}
+          onClick={() => setOverview(true)}
+          className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 cursor-pointer"
           style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
+          aria-label="View all names"
         >
+          <LayoutGrid size={13} style={{ color: "var(--gold)" }} />
           <span className="text-[10px] font-bold" style={{ color: "var(--gold)" }}>
             {idx + 1}/99
           </span>
-        </div>
+        </motion.button>
       </motion.header>
 
       <motion.div
@@ -387,6 +405,82 @@ export const NamesView = () => {
           <span className="text-xs font-bold mr-1">Next</span> <ChevronRight size={20} />
         </button>
       </motion.div>
+
+      {/* Overview grid — jump to any of the 99 names */}
+      <AnimatePresence>
+        {overview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="absolute inset-0 z-30 flex flex-col rounded-3xl"
+            style={{
+              background: "color-mix(in srgb, var(--bg) 94%, transparent)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+            }}
+          >
+            <div className="flex items-center justify-between px-2 py-2.5">
+              <p className="font-display text-base text-[var(--text)] pl-1">All 99 Names</p>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setOverview(false)}
+                aria-label="Close"
+                className="flex h-9 w-9 items-center justify-center rounded-full cursor-pointer"
+                style={{
+                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
+                  color: "var(--text)",
+                }}
+              >
+                <X size={18} />
+              </motion.button>
+            </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
+              <div className="grid grid-cols-3 gap-2">
+                {SEED_NAMES_OF_ALLAH.map((n, i) => {
+                  const active = i === idx;
+                  return (
+                    <motion.button
+                      key={n.id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => jumpTo(i)}
+                      className="flex flex-col items-center justify-center gap-1 rounded-2xl border p-2.5 cursor-pointer"
+                      style={
+                        active
+                          ? {
+                              borderColor: "var(--primary)",
+                              background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                            }
+                          : {
+                              borderColor: "color-mix(in srgb, var(--line) 50%, transparent)",
+                              background: "color-mix(in srgb, var(--surface) 40%, transparent)",
+                            }
+                      }
+                    >
+                      <span
+                        className="text-[9px] font-bold leading-none"
+                        style={{ color: active ? "var(--primary)" : "var(--muted)" }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span
+                        className="font-arabic text-lg leading-tight text-[var(--text)]"
+                        dir="rtl"
+                      >
+                        {n.arabic}
+                      </span>
+                      <span className="w-full truncate text-center text-[8px] font-semibold leading-tight text-[var(--muted)]">
+                        {n.tr}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
