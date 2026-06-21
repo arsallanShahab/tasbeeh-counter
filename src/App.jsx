@@ -5,12 +5,14 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES, ARABIC_FONTS } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
 import { useDocumentSeo } from "./utils/seo";
+import { store } from "./utils/storage";
 import HomeView from "./components/home/HomeView";
 import LibraryView from "./components/library/LibraryView";
 import CounterView from "./components/counter/CounterView";
 import NamesView from "./components/counter/NamesView";
 import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
+import QiblaView from "./components/qibla/QiblaView";
 import Navbar from "./components/layout/Navbar";
 import AppHeader from "./components/layout/AppHeader";
 import NewDhikrModal from "./components/library/NewDhikrModal";
@@ -23,6 +25,26 @@ const AppContent = () => {
   const location = useLocation();
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
   useDocumentSeo();
+
+  const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
+  const themeVars = activeThemeGroup[effectiveAppearance];
+
+  // Persist the resolved background/text colors so index.html's pre-paint
+  // script can replay them before first paint on the next load — this is what
+  // makes the loader theme-aware and removes the dark↔light flash. Also keep
+  // the address-bar <meta theme-color> in sync with the live theme.
+  useEffect(() => {
+    // Wait until the saved settings have loaded, otherwise we'd persist the
+    // transient default (Pastel) over the user's real theme during boot.
+    if (!loaded || !themeVars) return;
+    store.set("paint", {
+      bg: themeVars["--bg"],
+      bg2: themeVars["--bg2"],
+      text: themeVars["--text"],
+    });
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", themeVars["--bg"]);
+  }, [loaded, themeVars]);
 
   // Wait for the Fredoka brand font before revealing the splash wordmark.
   // Otherwise it renders in the fallback font first and visibly reflows when
@@ -46,7 +68,7 @@ const AppContent = () => {
     return (
       <div
         className="font-body flex min-h-svh items-center justify-center"
-        style={{ background: "#151e31", "--text": "#f6efe0" }}
+        style={{ background: "transparent" }}
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -61,9 +83,6 @@ const AppContent = () => {
       </div>
     );
   }
-
-  const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
-  const themeVars = activeThemeGroup[effectiveAppearance];
 
   const arabicFont =
     ARABIC_FONTS.find((f) => f.id === settings.arabicFont) || ARABIC_FONTS[0];
@@ -98,7 +117,7 @@ const AppContent = () => {
         <rect width="100%" height="100%" fill="url(#geo)" />
       </svg>
 
-      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${["counter", "names"].includes(view) ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
+      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${["counter", "names", "qibla"].includes(view) ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -114,6 +133,7 @@ const AppContent = () => {
               <Route path="/names" element={<NamesView />} />
               <Route path="/stats" element={<StatsView />} />
               <Route path="/settings" element={<SettingsView />} />
+              <Route path="/qibla" element={<QiblaView />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </motion.div>

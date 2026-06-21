@@ -11,6 +11,9 @@ importers:
       '@use-gesture/react':
         specifier: ^10.3.1
         version: 10.3.1(react@19.2.6)
+      adhan:
+        specifier: ^4.4.4
+        version: 4.4.4
       lucide-react:
         specifier: ^1.16.0
         version: 1.16.0(react@19.2.6)
@@ -468,6 +471,9 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  adhan@4.4.4:
+    resolution: {integrity: sha512-6KmAwLtk2ZU0hLdMR3HofOuoEMa76mKv75Bknv8OEwquIGGNUFabWZna+dJI3gEuS7TqUw62Ro5PkwccgW19zw==}
 
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
@@ -1399,6 +1405,8 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
+
+  adhan@4.4.4: {}
 
   ajv@6.15.0:
     dependencies:

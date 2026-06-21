@@ -7,7 +7,10 @@ import {
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
+import { hijriShort } from "../../utils/hijri";
 import BrandMark from "../common/BrandMark";
+import PrayerTimesCard from "../prayer/PrayerTimesCard";
+import OccasionCard from "../prayer/OccasionCard";
 import {
   ICONS, OCCASIONS, OCCASION_ICONS,
   DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
@@ -341,7 +344,16 @@ export const HomeView = () => {
     </div>
   );
 
+  const renderPrayer = () =>
+    settings?.prayer?.enabled && settings?.prayer?.showOnHome ? (
+      <PrayerTimesCard key="prayer" />
+    ) : null;
+
+  const renderOccasion = () => <OccasionCard key="occasion" />;
+
   const sectionRenderers = {
+    prayer: renderPrayer,
+    occasion: renderOccasion,
     streak: renderStreak,
     remedies: renderRemedies,
     asmaul_husna: renderNamesShortcut,
@@ -360,6 +372,10 @@ export const HomeView = () => {
         <div>
           <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[var(--gold)]">
             {getFormattedDate()}
+            {(() => {
+              const h = hijriShort(new Date(), settings?.prayer?.hijriOffset || 0);
+              return h ? <span className="text-[var(--muted)] normal-case"> · {h}</span> : null;
+            })()}
           </p>
           <BrandMark className="mt-1 text-4xl" />
         </div>

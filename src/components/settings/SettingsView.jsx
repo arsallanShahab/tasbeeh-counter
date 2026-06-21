@@ -1,10 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
   ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
   Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
-  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft, Type
+  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft, Type,
+  Compass, MapPin, Minus, Navigation, CalendarDays, Clock, AlertCircle, Pencil
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
@@ -14,6 +15,11 @@ import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
 import { BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../../constants/dhikrData";
 import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
+import {
+  CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS,
+  prayerSchedule, fmtTime, methodName,
+} from "../../utils/prayerTimes";
+import { hijriFormatted } from "../../utils/hijri";
 
 const HomeSectionsEditor = ({ value, onChange }) => {
   // Normalize: merge stored order with any newly-introduced section keys so
@@ -354,6 +360,439 @@ const DhikrFieldList = ({ order, visible, onOrderChange, onVisibleChange }) => {
           );
         })}
       </AnimatePresence>
+    </div>
+  );
+};
+
+/* Small −/＋ stepper used for prayer offsets, minutes-before, and Hijri adjust. */
+const Stepper = ({ value, onDec, onInc, min, max, display }) => (
+  <div className="flex items-center gap-1">
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      onClick={onDec}
+      disabled={min != null && value <= min}
+      className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30"
+      style={{ background: "color-mix(in srgb, var(--surface2) 70%, transparent)", color: "var(--text)" }}
+      aria-label="Decrease"
+    >
+      <Minus size={13} />
+    </motion.button>
+    <span className="w-14 text-center text-sm font-semibold tabular-nums text-[var(--text)]">
+      {display}
+    </span>
+    <motion.button
+      whileTap={{ scale: 0.88 }}
+      onClick={onInc}
+      disabled={max != null && value >= max}
+      className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30"
+      style={{ background: "color-mix(in srgb, var(--surface2) 70%, transparent)", color: "var(--text)" }}
+      aria-label="Increase"
+    >
+      <Plus size={13} />
+    </motion.button>
+  </div>
+);
+
+const selectClass =
+  "w-full appearance-none rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3.5 py-2.5 text-sm font-medium text-[var(--text)] cursor-pointer";
+
+/* ── Prayer Times & Qibla settings ──────────────────────────────────────── */
+const PrayerSettings = () => {
+  const { settings, setSettings, requestPrayerLocation } = useApp();
+  const navigate = useNavigate();
+  const p = settings.prayer || {};
+  const loc = p.location || {};
+  const hasLoc = loc.lat != null && loc.lng != null;
+
+  const [locState, setLocState] = useState("idle"); // idle | loading | done | error
+  const [locError, setLocError] = useState("");
+  const [manual, setManual] = useState(false);
+  const [manualVals, setManualVals] = useState({
+    lat: loc.lat ?? "",
+    lng: loc.lng ?? "",
+    label: loc.label ?? "",
+  });
+
+  const setP = (patch) =>
+    setSettings((s) => ({ ...s, prayer: { ...s.prayer, ...patch } }));
+  const setOffset = (key, delta) =>
+    setSettings((s) => ({
+      ...s,
+      prayer: {
+        ...s.prayer,
+        offsets: {
+          ...s.prayer.offsets,
+          [key]: Math.max(-60, Math.min(60, (s.prayer.offsets?.[key] || 0) + delta)),
+        },
+      },
+    }));
+  const setReminders = (patch) =>
+    setSettings((s) => ({
+      ...s,
+      prayer: { ...s.prayer, reminders: { ...s.prayer.reminders, ...patch } },
+    }));
+  const togglePrayerReminder = (key) =>
+    setSettings((s) => ({
+      ...s,
+      prayer: {
+        ...s.prayer,
+        reminders: {
+          ...s.prayer.reminders,
+          prayers: {
+            ...s.prayer.reminders.prayers,
+            [key]: !(s.prayer.reminders.prayers?.[key] ?? true),
+          },
+        },
+      },
+    }));
+
+  const handleUseLocation = async () => {
+    setLocState("loading");
+    setLocError("");
+    try {
+      const r = await requestPrayerLocation();
+      setManualVals({ lat: r.lat, lng: r.lng, label: r.label });
+      setLocState("done");
+      setTimeout(() => setLocState("idle"), 1600);
+    } catch (e) {
+      setLocState("error");
+      setLocError(
+        e?.code === 1
+          ? "Permission denied. Allow location for this app, or enter it manually below."
+          : "Couldn't get your location. Enter it manually below."
+      );
+    }
+  };
+
+  const saveManual = () => {
+    const lat = parseFloat(manualVals.lat);
+    const lng = parseFloat(manualVals.lng);
+    if (Number.isNaN(lat) || Number.isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setLocError("Enter a valid latitude (−90…90) and longitude (−180…180).");
+      return;
+    }
+    setP({ location: { mode: "manual", lat, lng, label: manualVals.label?.trim() || "Custom location" } });
+    setManual(false);
+    setLocError("");
+  };
+
+  const offsetsKey = JSON.stringify(p.offsets);
+  const preview = useMemo(() => {
+    if (!hasLoc) return null;
+    try {
+      return prayerSchedule({
+        lat: loc.lat,
+        lng: loc.lng,
+        method: p.method,
+        madhhab: p.madhhab,
+        highLatRule: p.highLatRule,
+        offsets: p.offsets,
+      });
+    } catch {
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLoc, loc.lat, loc.lng, p.method, p.madhhab, p.highLatRule, offsetsKey]);
+
+  const hijriOffset = p.hijriOffset || 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Master enable */}
+      <Card className="px-5 py-1">
+        <div className="flex items-center gap-3 py-3.5">
+          <Clock size={19} className="text-[var(--gold)] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[var(--text)] text-sm font-medium">Prayer times</p>
+            <p className="text-[var(--muted)] text-[11px] leading-snug mt-0.5">
+              Calculated on your device, fully offline.
+            </p>
+          </div>
+          <Toggle on={!!p.enabled} onClick={() => setP({ enabled: !p.enabled })} />
+        </div>
+        <div className="border-t border-[var(--line)]" />
+        <div className="flex items-center gap-3 py-3.5">
+          <LayoutGrid size={19} className="text-[var(--gold)] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[var(--text)] text-sm font-medium">Show on Home</p>
+          </div>
+          <Toggle on={!!p.showOnHome} onClick={() => setP({ showOnHome: !p.showOnHome })} />
+        </div>
+        <div className="border-t border-[var(--line)]" />
+        <button
+          onClick={() => navigate("/qibla")}
+          className="flex w-full items-center gap-3 py-3.5 text-left cursor-pointer"
+        >
+          <Compass size={19} className="text-[var(--gold)] shrink-0" />
+          <span className="flex-1 text-sm font-medium text-[var(--text)]">Open Qibla compass</span>
+          <ChevronRight size={18} className="text-[var(--muted)]" />
+        </button>
+      </Card>
+
+      {/* Location */}
+      <Card className="px-5 py-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <MapPin size={17} className="text-[var(--gold)]" /> Location
+        </div>
+        {hasLoc && (
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[var(--text)] truncate">
+                {loc.label || "Saved location"}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] tabular-nums">
+                {Number(loc.lat).toFixed(3)}, {Number(loc.lng).toFixed(3)} ·{" "}
+                {loc.mode === "manual" ? "Manual" : "Auto"}
+              </p>
+            </div>
+            <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--primary)] bg-[var(--primary)]/10 px-2 py-1 rounded-full shrink-0">
+              <Check size={11} strokeWidth={3} /> Set
+            </span>
+          </div>
+        )}
+        <button
+          onClick={handleUseLocation}
+          disabled={locState === "loading"}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold text-white cursor-pointer active:scale-[0.97] hover:brightness-105 transition-all shadow-sm disabled:opacity-60"
+          style={{ background: "var(--primary)" }}
+        >
+          <Navigation size={14} />
+          {locState === "loading" ? "Locating…" : locState === "done" ? "Updated" : hasLoc ? "Update location" : "Use my location"}
+        </button>
+
+        <button
+          onClick={() => { setManual((v) => !v); setLocError(""); }}
+          className="flex w-full items-center justify-center gap-1.5 text-[11px] font-bold text-[var(--muted)] cursor-pointer hover:text-[var(--text)] transition-colors"
+        >
+          <Pencil size={11} /> {manual ? "Cancel manual entry" : "Enter coordinates manually"}
+        </button>
+
+        {manual && (
+          <div className="space-y-2 anim-fade">
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                inputMode="decimal"
+                placeholder="Latitude"
+                value={manualVals.lat}
+                onChange={(e) => setManualVals((v) => ({ ...v, lat: e.target.value }))}
+                className="rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
+              />
+              <input
+                inputMode="decimal"
+                placeholder="Longitude"
+                value={manualVals.lng}
+                onChange={(e) => setManualVals((v) => ({ ...v, lng: e.target.value }))}
+                className="rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
+              />
+            </div>
+            <input
+              placeholder="Label (e.g. Lahore)"
+              value={manualVals.label}
+              onChange={(e) => setManualVals((v) => ({ ...v, label: e.target.value }))}
+              className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
+            />
+            <button
+              onClick={saveManual}
+              className="w-full rounded-2xl px-4 py-2.5 text-xs font-bold text-white cursor-pointer active:scale-[0.97] shadow-sm"
+              style={{ background: "var(--gold)", color: "#1a1206" }}
+            >
+              Save coordinates
+            </button>
+          </div>
+        )}
+
+        {locError && (
+          <p className="flex items-start gap-1.5 text-[11px] text-[var(--danger)] leading-snug">
+            <AlertCircle size={13} className="mt-0.5 shrink-0" /> {locError}
+          </p>
+        )}
+      </Card>
+
+      {/* Calculation conventions */}
+      <Card className="px-5 py-4 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <Globe size={17} className="text-[var(--gold)]" /> Calculation method
+        </div>
+        <div>
+          <select
+            value={p.method}
+            onChange={(e) => setP({ method: e.target.value })}
+            className={selectClass}
+          >
+            {CALC_METHODS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}{m.note ? ` — ${m.note}` : ""}
+              </option>
+            ))}
+          </select>
+          {p.method === "auto" && preview && (
+            <p className="mt-2 text-[11px] text-[var(--muted)]">
+              Auto-selected: <span className="font-semibold text-[var(--text)]">{methodName(preview.methodId)}</span> for your region.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium text-[var(--muted)]">Asr calculation (madhhab)</p>
+          <Seg
+            value={p.madhhab}
+            onChange={(v) => setP({ madhhab: v })}
+            options={[{ v: "shafi", l: "Standard" }, { v: "hanafi", l: "Hanafi" }]}
+          />
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium text-[var(--muted)]">High-latitude rule</p>
+          <select
+            value={p.highLatRule}
+            onChange={(e) => setP({ highLatRule: e.target.value })}
+            className={selectClass}
+          >
+            {HIGH_LAT_RULES.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-[10px] text-[var(--muted)] leading-snug">
+            Only affects Fajr/Isha in far-northern/southern regions where twilight is extreme.
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium text-[var(--muted)]">Time format</p>
+          <Seg
+            value={p.hour12 ? "12" : "24"}
+            onChange={(v) => setP({ hour12: v === "12" })}
+            options={[{ v: "12", l: "12-hour" }, { v: "24", l: "24-hour" }]}
+          />
+        </div>
+      </Card>
+
+      {/* Fine-tune offsets */}
+      <Card className="px-5 py-4">
+        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <Pencil size={16} className="text-[var(--gold)]" /> Fine-tune times
+        </div>
+        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
+          Nudge any time by ±minutes to match your local mosque's printed timetable.
+        </p>
+        <div className="space-y-1">
+          {PRAYER_KEYS.map((key, i) => (
+            <div key={key}>
+              {i > 0 && <div className="border-t border-[var(--line)]/60" />}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium text-[var(--text)]">{PRAYER_LABELS[key]}</span>
+                <div className="flex items-center gap-3">
+                  {preview && (
+                    <span className="text-[11px] text-[var(--muted)] tabular-nums w-16 text-right">
+                      {fmtTime(preview.today[key], p.hour12)}
+                    </span>
+                  )}
+                  <Stepper
+                    value={p.offsets?.[key] || 0}
+                    min={-60}
+                    max={60}
+                    onDec={() => setOffset(key, -1)}
+                    onInc={() => setOffset(key, 1)}
+                    display={`${(p.offsets?.[key] || 0) > 0 ? "+" : ""}${p.offsets?.[key] || 0} min`}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Hijri calendar */}
+      <Card className="px-5 py-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <CalendarDays size={17} className="text-[var(--gold)]" /> Hijri date
+        </div>
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 text-center">
+          <p className="font-display text-lg font-bold text-[var(--text)]">
+            {hijriFormatted(new Date(), hijriOffset) || "Unavailable"}
+          </p>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[var(--text)]">Adjust by days</p>
+            <p className="text-[11px] text-[var(--muted)] leading-snug">
+              Align with your local moon-sighting.
+            </p>
+          </div>
+          <Stepper
+            value={hijriOffset}
+            min={-2}
+            max={2}
+            onDec={() => setP({ hijriOffset: Math.max(-2, hijriOffset - 1) })}
+            onInc={() => setP({ hijriOffset: Math.min(2, hijriOffset + 1) })}
+            display={`${hijriOffset > 0 ? "+" : ""}${hijriOffset} d`}
+          />
+        </div>
+      </Card>
+
+      {/* Prayer reminders */}
+      <Card className="px-5 py-4 space-y-4">
+        <div className="flex items-center justify-between font-semibold text-sm">
+          <div className="flex items-center gap-2">
+            <Bell size={17} className="text-[var(--gold)]" />
+            <span className="text-[var(--text)]">Prayer reminders</span>
+          </div>
+          <Toggle
+            on={!!p.reminders?.enabled}
+            onClick={() => setReminders({ enabled: !p.reminders?.enabled })}
+          />
+        </div>
+        {p.reminders?.enabled && (
+          <div className="space-y-4 anim-fade">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--text)]">Notify before</p>
+                <p className="text-[11px] text-[var(--muted)] leading-snug">
+                  Lead time before each adhan.
+                </p>
+              </div>
+              <Stepper
+                value={p.reminders?.before || 0}
+                min={0}
+                max={60}
+                onDec={() => setReminders({ before: Math.max(0, (p.reminders?.before || 0) - 5) })}
+                onInc={() => setReminders({ before: Math.min(60, (p.reminders?.before || 0) + 5) })}
+                display={(p.reminders?.before || 0) === 0 ? "At time" : `${p.reminders.before} min`}
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium text-[var(--muted)]">Which prayers</p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {SALAH_KEYS.map((key) => {
+                  const on = p.reminders?.prayers?.[key] ?? true;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => togglePrayerReminder(key)}
+                      className="flex flex-col items-center gap-1 rounded-xl border py-2 cursor-pointer transition-all active:scale-[0.95]"
+                      style={{
+                        borderColor: on ? "var(--primary)" : "var(--line)",
+                        background: on ? "color-mix(in srgb, var(--primary) 14%, transparent)" : "transparent",
+                        color: on ? "var(--primary)" : "var(--muted)",
+                      }}
+                    >
+                      <span className="text-[10px] font-bold">{PRAYER_LABELS[key]}</span>
+                      {on ? <Check size={12} strokeWidth={3} /> : <Plus size={12} className="rotate-45" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="text-[10px] text-[var(--muted)] leading-relaxed">
+              Reminders use the same notification system as your daily alerts and refresh each day. On iOS, keep the app open or in the background for them to fire.
+            </p>
+          </div>
+        )}
+      </Card>
+
+      <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed">
+        Times are computed from the sun's position for your coordinates. The convention you pick should match your local mosque or authority.
+      </p>
     </div>
   );
 };
@@ -1409,6 +1848,13 @@ export const SettingsView = () => {
       hint: "Haptics, sound, gestures, auto-advance",
       icon: Disc,
       content: sectionCounter,
+    },
+    {
+      id: "prayer",
+      label: "Prayer Times & Qibla",
+      hint: "Salah times, method, Hijri, compass",
+      icon: Compass,
+      content: <PrayerSettings />,
     },
     {
       id: "reminders",

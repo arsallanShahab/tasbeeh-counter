@@ -4,6 +4,7 @@ import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_
 import { store } from "../utils/storage";
 import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
+import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity } from "../utils/prayerTimes";
 import { WebHaptics } from "web-haptics";
 
 const AppContext = createContext(null);
@@ -12,7 +13,7 @@ const AppContext = createContext(null);
 // the literal; in build, the production version. Falls back to a sentinel.
 const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0-dev";
 
-const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names"];
+const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names", "qibla"];
 
 const pathToView = (pathname) => {
   const p = (pathname || "/").replace(/^\//, "").replace(/\/$/, "") || "home";
@@ -54,6 +55,11 @@ export const AppProvider = ({ children }) => {
     }
     return "default";
   });
+
+  // Prayer-time reminders are projected into the same alert schema as the
+  // manual daily reminders, but regenerated each day because prayer times
+  // shift. They live in their own state and are merged at sync/check time.
+  const [prayerAlerts, setPrayerAlerts] = useState([]);
 
   // PWA install + app-update state
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -183,7 +189,24 @@ export const AppProvider = ({ children }) => {
         }
       }
       
-      setSettingsInternal({ ...DEFAULT_SETTINGS, ...loadedSettings });
+      // Deep-merge the nested `prayer` object so partial/older saves still get
+      // any newly-introduced sub-keys (offsets, reminders, location, …).
+      const mergedSettings = { ...DEFAULT_SETTINGS, ...loadedSettings };
+      mergedSettings.prayer = {
+        ...DEFAULT_SETTINGS.prayer,
+        ...(loadedSettings.prayer || {}),
+        location: { ...DEFAULT_SETTINGS.prayer.location, ...(loadedSettings.prayer?.location || {}) },
+        offsets: { ...DEFAULT_SETTINGS.prayer.offsets, ...(loadedSettings.prayer?.offsets || {}) },
+        reminders: {
+          ...DEFAULT_SETTINGS.prayer.reminders,
+          ...(loadedSettings.prayer?.reminders || {}),
+          prayers: {
+            ...DEFAULT_SETTINGS.prayer.reminders.prayers,
+            ...(loadedSettings.prayer?.reminders?.prayers || {}),
+          },
+        },
+      };
+      setSettingsInternal(mergedSettings);
       setLoaded(true);
     };
     loadState();
@@ -631,9 +654,87 @@ export const AppProvider = ({ children }) => {
     return permission === "granted";
   }, []);
 
-  /* Auto-request notification permission when alerts are enabled */
+  /* ─── Prayer times ──────────────────────────────────────────────────────
+     Acquire the device location once and persist the coordinates into
+     settings so subsequent loads compute times without re-prompting. */
+  const requestPrayerLocation = useCallback(async () => {
+    const { lat, lng } = await getCurrentPosition();
+    const label = timezoneCity();
+    setSettings((s) => ({
+      ...s,
+      prayer: {
+        ...s.prayer,
+        location: { mode: "auto", lat, lng, label },
+      },
+    }));
+    return { lat, lng, label };
+  }, []);
+
+  /* Notifications are "active" if either the manual daily reminders or the
+     prayer-time reminders are switched on. */
+  const prayerRemindersOn =
+    !!settings.prayer?.enabled && !!settings.prayer?.reminders?.enabled;
+  const notificationsActive = !!settings.alertsEnabled || prayerRemindersOn;
+
+  /* Regenerate prayer-time alerts whenever the prayer config changes, then
+     again at the next midnight and on app focus (prayer times are date- and
+     location-dependent, so a long-lived tab must refresh them). */
   useEffect(() => {
-    if (!loaded || !settings.alertsEnabled) return;
+    if (!loaded) return;
+    const p = settings.prayer;
+    const loc = p?.location;
+    const ready =
+      prayerRemindersOn && loc && loc.lat != null && loc.lng != null;
+    if (!ready) {
+      setPrayerAlerts([]);
+      return;
+    }
+
+    const recompute = () => {
+      try {
+        const schedule = prayerSchedule({
+          lat: loc.lat,
+          lng: loc.lng,
+          method: p.method,
+          madhhab: p.madhhab,
+          highLatRule: p.highLatRule,
+          offsets: p.offsets,
+        });
+        setPrayerAlerts(buildPrayerAlerts(p, schedule));
+      } catch (e) {
+        console.warn("Prayer alert build failed:", e);
+        setPrayerAlerts([]);
+      }
+    };
+
+    recompute();
+
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 5, 0); // a few seconds past midnight
+    const midnightTimer = setTimeout(recompute, nextMidnight.getTime() - now.getTime());
+    const onVisible = () => {
+      if (document.visibilityState === "visible") recompute();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", recompute);
+    return () => {
+      clearTimeout(midnightTimer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", recompute);
+    };
+  }, [loaded, settings.prayer, prayerRemindersOn]);
+
+  /* Manual daily reminders + computed prayer reminders, fired through one
+     pipeline (foreground loop + service worker). */
+  const effectiveAlerts = useMemo(
+    () => [...(settings.alerts || []), ...prayerAlerts],
+    [settings.alerts, prayerAlerts]
+  );
+
+  /* Auto-request notification permission when reminders are enabled */
+  useEffect(() => {
+    if (!loaded || !notificationsActive) return;
     if (notifyPermission === "default" && "Notification" in window) {
       // Small delay so it doesn't fire instantly on first render
       const timer = setTimeout(() => {
@@ -643,17 +744,17 @@ export const AppProvider = ({ children }) => {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [loaded, settings.alertsEnabled, notifyPermission]);
+  }, [loaded, notificationsActive, notifyPermission]);
 
   /* Sync alert configs to service worker for background scheduling */
   const syncAlertsToSW = useCallback(() => {
     if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) return;
     navigator.serviceWorker.controller.postMessage({
       type: "SYNC_ALERTS",
-      alerts: settings.alerts || [],
-      enabled: !!settings.alertsEnabled
+      alerts: effectiveAlerts,
+      enabled: notificationsActive
     });
-  }, [settings.alerts, settings.alertsEnabled]);
+  }, [effectiveAlerts, notificationsActive]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -666,7 +767,7 @@ export const AppProvider = ({ children }) => {
 
   /* Register periodic background sync (Android Chrome) */
   useEffect(() => {
-    if (!loaded || !settings.alertsEnabled || notifyPermission !== "granted") return;
+    if (!loaded || !notificationsActive || notifyPermission !== "granted") return;
     if (!("serviceWorker" in navigator)) return;
 
     navigator.serviceWorker.ready.then(async (reg) => {
@@ -683,7 +784,7 @@ export const AppProvider = ({ children }) => {
         }
       }
     });
-  }, [loaded, settings.alertsEnabled, notifyPermission]);
+  }, [loaded, notificationsActive, notifyPermission]);
 
   const triggerNotification = useCallback((title, body, alertId, url = "/") => {
     try {
@@ -718,7 +819,7 @@ export const AppProvider = ({ children }) => {
 
   /* Foreground notification check loop + visibility-change handler */
   useEffect(() => {
-    if (notifyPermission !== "granted" || !settings.alertsEnabled || !settings.alerts) return;
+    if (notifyPermission !== "granted" || !notificationsActive) return;
 
     const checkAlerts = () => {
       const now = new Date();
@@ -727,7 +828,7 @@ export const AppProvider = ({ children }) => {
       const timeStr = `${h}:${m}`;
       const today = dateKey();
 
-      settings.alerts.forEach((alert) => {
+      effectiveAlerts.forEach((alert) => {
         if (alert.enabled && alert.time === timeStr) {
           const firedKey = `fired_${alert.id}`;
           const lastFired = store.get(firedKey, "");
@@ -768,7 +869,7 @@ export const AppProvider = ({ children }) => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisChange);
     };
-  }, [notifyPermission, settings.alerts, settings.alertsEnabled, triggerNotification]);
+  }, [notifyPermission, effectiveAlerts, notificationsActive, triggerNotification]);
   const startNamesSession = useCallback((index) => {
     setNamesSession((prev) => ({ ...prev, index }));
     setView("names");
@@ -961,7 +1062,24 @@ export const AppProvider = ({ children }) => {
 
     const nextSettings =
       data.settings && typeof data.settings === "object"
-        ? { ...DEFAULT_SETTINGS, ...data.settings }
+        ? {
+            ...DEFAULT_SETTINGS,
+            ...data.settings,
+            prayer: {
+              ...DEFAULT_SETTINGS.prayer,
+              ...(data.settings.prayer || {}),
+              location: { ...DEFAULT_SETTINGS.prayer.location, ...(data.settings.prayer?.location || {}) },
+              offsets: { ...DEFAULT_SETTINGS.prayer.offsets, ...(data.settings.prayer?.offsets || {}) },
+              reminders: {
+                ...DEFAULT_SETTINGS.prayer.reminders,
+                ...(data.settings.prayer?.reminders || {}),
+                prayers: {
+                  ...DEFAULT_SETTINGS.prayer.reminders.prayers,
+                  ...(data.settings.prayer?.reminders?.prayers || {}),
+                },
+              },
+            },
+          }
         : DEFAULT_SETTINGS;
     const nextStats =
       data.stats && typeof data.stats === "object"
@@ -1052,6 +1170,7 @@ export const AppProvider = ({ children }) => {
         saveList,
         notifyPermission,
         requestNotificationPermission,
+        requestPrayerLocation,
         appVersion: APP_VERSION,
         updateAvailable,
         applyUpdate,

@@ -1166,6 +1166,8 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 // Settings. The "continue" widget (active session) is contextual and renders
 // independently above the configurable stack.
 export const HOME_SECTIONS = {
+  prayer: { label: "Prayer Times" },
+  occasion: { label: "Occasion of the Day" },
   streak: { label: "Daily Streak & Goal" },
   remedies: { label: "Remedies for the Heart" },
   asmaul_husna: { label: "Asma-ul-Husna Mode" },
@@ -1174,6 +1176,8 @@ export const HOME_SECTIONS = {
   pinned: { label: "Your Widgets" },
 };
 export const DEFAULT_HOME_SECTIONS = [
+  { key: "prayer", visible: true },
+  { key: "occasion", visible: true },
   { key: "streak", visible: true },
   { key: "remedies", visible: true },
   { key: "asmaul_husna", visible: true },
@@ -1276,7 +1280,26 @@ export const DEFAULT_SETTINGS = {
     { id: "morning", title: "Morning Adhkar 🌅", body: "Begin your morning with beautiful remembrance.", time: "08:00", enabled: true, targetType: "list", targetId: "morning-short" },
     { id: "evening", title: "Evening Adhkar 🌙", body: "Recite your evening prayers for peace and protection.", time: "17:00", enabled: true, targetType: "list", targetId: "evening-short" },
     { id: "sleep", title: "Bedtime Remembrance 🛏️", body: "Recite the sleep sunnah tasbeeh before resting.", time: "22:00", enabled: true, targetType: "list", targetId: "before-sleep" }
-  ]
+  ],
+  // Prayer times & Qibla. All times are computed on-device (adhan-js) from the
+  // saved coordinates; only conventions vary. hijriOffset nudges the tabular
+  // Umm al-Qura date to match local moon-sighting.
+  prayer: {
+    enabled: true,
+    showOnHome: true,
+    method: "auto",          // see CALC_METHODS
+    madhhab: "shafi",        // shafi | hanafi (Asr)
+    highLatRule: "auto",     // see HIGH_LAT_RULES
+    hour12: true,
+    location: { mode: "auto", lat: null, lng: null, label: "" },
+    offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
+    hijriOffset: 0,
+    reminders: {
+      enabled: false,
+      before: 0,             // minutes before adhan
+      prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
+    },
+  },
 };
 
 export const THEMES = {

@@ -15,7 +15,7 @@ const VIEW_LABEL = {
 export const AppHeader = () => {
   const { view, stats } = useApp();
 
-  if (view === "counter" || view === "names") return null;
+  if (view === "counter" || view === "names" || view === "qibla") return null;
 
   const today = stats.byDate[dateKey()] || 0;
   const streak = computeStreak(stats.byDate);
