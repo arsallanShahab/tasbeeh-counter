@@ -27,7 +27,7 @@ export const HomeIntro = () => {
   const greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 
   const offset = (settings.prayer?.hijriOffset || 0) + hijriNightOffset(settings.prayer, d);
-  const abbr = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const greg = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const hijri = hijriFormatted(d, offset);
   const occ = topOccasion(d, offset);
   const OccIcon = occ ? ICON_MAP[occ.icon] || Sparkles : null;
@@ -49,17 +49,21 @@ export const HomeIntro = () => {
     <header className="pt-2">
       {/* Brand + greeting */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[var(--gold)]">
-            {abbr}
-            {hijri && <span className="text-[var(--muted)] normal-case"> · {hijri}</span>}
-          </p>
-          <BrandMark className="mt-1 text-4xl" />
-        </div>
+        <BrandMark className="text-4xl" />
         <div className="text-right shrink-0">
           <span className="text-xs text-[var(--muted)] block font-medium">{greet},</span>
           <span className="text-sm font-bold text-[var(--text)]">Seeker</span>
         </div>
+      </div>
+
+      {/* Date — large and glanceable, Gregorian + Hijri */}
+      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="font-display text-xl font-bold text-[var(--text)] leading-tight">
+          {greg}
+        </span>
+        {hijri && (
+          <span className="text-sm font-bold text-[var(--gold)] leading-tight">{hijri}</span>
+        )}
       </div>
 
       {/* Occasion — inline, still background-free, separated by a faint hairline */}

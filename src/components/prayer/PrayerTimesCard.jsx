@@ -143,7 +143,7 @@ export const PrayerTimesCard = () => {
             onClick={() => navigate("/settings?panel=prayer")}
             aria-label="Prayer time settings"
             className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-            style={{ background: "color-mix(in srgb, var(--surface2) 70%, transparent)", color: "var(--muted)" }}
+            style={{ background: "color-mix(in srgb, var(--gold) 12%, transparent)", color: "var(--gold)" }}
           >
             <Settings2 size={15} />
           </motion.button>
@@ -176,7 +176,13 @@ export const PrayerTimesCard = () => {
       </div>
 
       {/* All times for the day */}
-      <div className="grid grid-cols-6 gap-1 rounded-2xl border border-[var(--line)]/60 bg-[var(--surface2)]/40 p-1.5">
+      <div
+        className="grid grid-cols-6 gap-1 rounded-2xl border p-1.5"
+        style={{
+          borderColor: "color-mix(in srgb, var(--primary) 18%, transparent)",
+          background: "color-mix(in srgb, var(--primary) 6%, transparent)",
+        }}
+      >
         {PRAYER_KEYS.map((key) => {
           const isNext = next.key === key && !next.tomorrow;
           const isCurrent = schedule.current.key === key && !schedule.current.yesterday;
