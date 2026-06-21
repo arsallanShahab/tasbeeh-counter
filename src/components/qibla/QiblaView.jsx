@@ -10,20 +10,28 @@ const dirText = (deg) => COMPASS_DIRS[Math.round(((deg % 360) / 22.5)) % 16];
 
 /* Turn a wrapping 0–360 angle (compass heading) into a continuous, ever-
    accumulating value so spring rotations always take the shortest path instead
-   of unwinding the long way around when crossing the 360°↔0° seam. */
+   of unwinding the long way around when crossing the 360°↔0° seam. State-driven
+   (updated in an effect) so it never reads refs during render. */
 function useContinuousAngle(target) {
-  const cont = useRef(null);
-  const last = useRef(null);
-  if (target != null) {
-    if (cont.current == null) {
-      cont.current = target;
-    } else if (target !== last.current) {
-      const delta = ((((target - last.current) % 360) + 540) % 360) - 180; // (-180, 180]
-      cont.current += delta;
+  const [cont, setCont] = useState(0);
+  const lastRef = useRef(null);
+  const contRef = useRef(0);
+  useEffect(() => {
+    if (target == null) return;
+    if (lastRef.current == null) {
+      lastRef.current = target;
+      contRef.current = target;
+      setCont(target);
+      return;
     }
-    last.current = target;
-  }
-  return cont.current ?? 0;
+    if (target !== lastRef.current) {
+      const delta = ((((target - lastRef.current) % 360) + 540) % 360) - 180; // (-180, 180]
+      lastRef.current = target;
+      contRef.current += delta;
+      setCont(contRef.current);
+    }
+  }, [target]);
+  return cont;
 }
 
 export const QiblaView = () => {
