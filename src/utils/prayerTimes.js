@@ -189,6 +189,29 @@ export function qiblaBearing(lat, lng) {
   return Qibla(new Coordinates(lat, lng));
 }
 
+/* The Islamic day begins at Maghrib (sunset), not midnight. After sunset the
+   Hijri date should already read the next day. This returns the extra day
+   offset (0 before sunset, 1 after) to fold into Hijri calculations. Needs the
+   saved location; with none it returns 0 and the date simply rolls at midnight. */
+export function hijriNightOffset(prayer, date = new Date()) {
+  const loc = prayer?.location;
+  if (!loc || loc.lat == null || loc.lng == null) return 0;
+  try {
+    const { times } = computePrayerTimes({
+      lat: loc.lat,
+      lng: loc.lng,
+      method: prayer.method,
+      madhhab: prayer.madhhab,
+      highLatRule: prayer.highLatRule,
+      offsets: prayer.offsets,
+      date,
+    });
+    return date.getTime() >= times.maghrib.getTime() ? 1 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 /* Great-circle distance to the Kaaba in km (Haversine) — shown on the Qibla
    screen for a little extra grounding. */
 export function distanceToKaaba(lat, lng) {

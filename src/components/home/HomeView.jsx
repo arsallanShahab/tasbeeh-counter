@@ -7,10 +7,8 @@ import {
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
-import { hijriShort } from "../../utils/hijri";
-import BrandMark from "../common/BrandMark";
+import HomeIntro from "./HomeIntro";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
-import OccasionCard from "../prayer/OccasionCard";
 import {
   ICONS, OCCASIONS, OCCASION_ICONS,
   DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
@@ -48,7 +46,6 @@ export const HomeView = () => {
   const hr = new Date().getHours();
   const suggestId = hr < 12 ? "morning" : hr >= 15 ? "evening" : "after-salah";
   const suggest = lists.find((l) => l.id === suggestId) || lists[0];
-  const greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 
   // Map pinned IDs to either lists (sets) or single dhikrs
   const pinnedItems = pinned.map((id) => {
@@ -84,12 +81,6 @@ export const HomeView = () => {
     // replaces the URL entirely.
     setSearchQuery("");
     navigate(catKey === "all" ? "/library" : `/library?occasion=${encodeURIComponent(catKey)}`);
-  };
-
-  // Format today's calendar date nicely
-  const getFormattedDate = () => {
-    const options = { weekday: "short", month: "short", day: "numeric" };
-    return new Date().toLocaleDateString("en-US", options);
   };
 
   // ───────── Section renderers (composed in user-defined order) ─────────
@@ -349,11 +340,8 @@ export const HomeView = () => {
       <PrayerTimesCard key="prayer" />
     ) : null;
 
-  const renderOccasion = () => <OccasionCard key="occasion" />;
-
   const sectionRenderers = {
     prayer: renderPrayer,
-    occasion: renderOccasion,
     streak: renderStreak,
     remedies: renderRemedies,
     asmaul_husna: renderNamesShortcut,
@@ -367,23 +355,8 @@ export const HomeView = () => {
 
   return (
     <div className="space-y-6 anim-fade pb-6">
-      {/* Redesigned Premium Greeting Header */}
-      <header className="flex items-center justify-between pt-2">
-        <div>
-          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[var(--gold)]">
-            {getFormattedDate()}
-            {(() => {
-              const h = hijriShort(new Date(), settings?.prayer?.hijriOffset || 0);
-              return h ? <span className="text-[var(--muted)] normal-case"> · {h}</span> : null;
-            })()}
-          </p>
-          <BrandMark className="mt-1 text-4xl" />
-        </div>
-        <div className="text-right">
-          <span className="text-xs text-[var(--muted)] block font-medium">{greet},</span>
-          <span className="text-sm font-bold text-[var(--text)]">Seeker</span>
-        </div>
-      </header>
+      {/* Merged transparent intro: date · Hijri · brand · greeting · occasion */}
+      <HomeIntro />
 
       {/* Continue Session — contextual, always above the configurable stack */}
       {session && !complete && session.counts.some(c => c > 0) && (() => {

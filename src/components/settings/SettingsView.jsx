@@ -17,7 +17,7 @@ import { BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_OR
 import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
 import {
   CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS,
-  prayerSchedule, fmtTime, methodName,
+  prayerSchedule, fmtTime, methodName, hijriNightOffset,
 } from "../../utils/prayerTimes";
 import { hijriFormatted } from "../../utils/hijri";
 
@@ -709,7 +709,7 @@ const PrayerSettings = () => {
         </div>
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 text-center">
           <p className="font-display text-lg font-bold text-[var(--text)]">
-            {hijriFormatted(new Date(), hijriOffset) || "Unavailable"}
+            {hijriFormatted(new Date(), hijriOffset + hijriNightOffset(p)) || "Unavailable"}
           </p>
         </div>
         <div className="flex items-center justify-between">

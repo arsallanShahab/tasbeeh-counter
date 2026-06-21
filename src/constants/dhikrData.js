@@ -1167,7 +1167,6 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 // independently above the configurable stack.
 export const HOME_SECTIONS = {
   prayer: { label: "Prayer Times" },
-  occasion: { label: "Occasion of the Day" },
   streak: { label: "Daily Streak & Goal" },
   remedies: { label: "Remedies for the Heart" },
   asmaul_husna: { label: "Asma-ul-Husna Mode" },
@@ -1177,7 +1176,6 @@ export const HOME_SECTIONS = {
 };
 export const DEFAULT_HOME_SECTIONS = [
   { key: "prayer", visible: true },
-  { key: "occasion", visible: true },
   { key: "streak", visible: true },
   { key: "remedies", visible: true },
   { key: "asmaul_husna", visible: true },
