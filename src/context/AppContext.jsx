@@ -45,6 +45,23 @@ export const AppProvider = ({ children }) => {
     counts: Array(99).fill(0),
     targets: Array(99).fill(100)
   }));
+
+  /* Live mirrors of the two counting sessions.
+
+     State updaters must be pure. React StrictMode invokes every queued updater
+     twice in development, so a setStats / vibe / setTimeout sitting inside one
+     runs twice — which is exactly how a single tap used to score two in the
+     stats, fire two haptics, and schedule two auto-advances. Everything derived
+     now happens in the callbacks below, which read the session from these refs.
+
+     A ref rather than the `session` closure because BeadRing's drag can fire
+     several increments inside one pointermove event: each needs to see the
+     previous one's result, and state won't have committed yet. */
+  const sessionRef = useRef(session);
+  const namesSessionRef = useRef(namesSession);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+  useEffect(() => { namesSessionRef.current = namesSession; }, [namesSession]);
+
   const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEditInternal] = useState(false);
@@ -395,87 +412,103 @@ export const AppProvider = ({ children }) => {
   }, [loaded, searchParams, dhikrs, lists, startDhikr, startList, setSearchParams]);
 
   const increment = useCallback(() => {
-    if (!session) return;
-    setSession((s) => {
-      const i = s.stepIndex;
-      const counts = [...s.counts];
-      const loops = [...s.loops];
-      const target = s.steps[i].target;
-      const reached = counts[i] + 1 >= target;
-      
-      counts[i] += 1;
-      const dId = s.steps[i].dhikr;
+    const s = sessionRef.current;
+    if (!s) return;
+    const i = s.stepIndex;
+    const step = s.steps[i];
+    if (!step) return;
 
-      // Stats update
-      setStats((st) => {
-        const k = dateKey();
-        return {
-          total: st.total + 1,
-          byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
-          perDhikr: { ...st.perDhikr, [dId]: (st.perDhikr[dId] || 0) + 1 }
-        };
-      });
+    const dId = step.dhikr;
+    const nextCount = s.counts[i] + 1;
+    const reached = nextCount === step.target;
 
-      if (reached && counts[i] === target) {
-        vibe([0, 38, 28, 38]);
-        click();
-        
-        if (s.steps.length > 1 && i < s.steps.length - 1 && settings.autoAdvance) {
-          setTimeout(() => {
-            setSession((cur) => {
-              if (!cur) return cur;
-              const nextIndex = cur.stepIndex + 1;
-              if (nextIndex >= cur.steps.length) return cur; // Boundary guard
-              return { ...cur, stepIndex: nextIndex };
-            });
-          }, 420);
-        } else if (s.steps.length === 1 && settings.loop) {
-          setTimeout(() => {
-            setSession((cur) => {
-              if (!cur) return cur;
-              const c = [...cur.counts];
-              const l = [...cur.loops];
-              l[0] += 1;
-              c[0] = 0;
-              return { ...cur, counts: c, loops: l };
-            });
-          }, 420);
-        } else if (i === s.steps.length - 1) {
-          setTimeout(() => setComplete(true), 250);
-        }
-      } else {
-        vibe(8);
-        click();
-      }
-      
-      bumpNum();
-      return { ...s, counts, loops };
+    // Advance the mirror first, so a burst of increments within one gesture
+    // each build on the last, then enqueue a pure state update.
+    const counts = [...s.counts];
+    counts[i] = nextCount;
+    sessionRef.current = { ...s, counts };
+
+    setSession((cur) => {
+      if (!cur) return cur;
+      const next = [...cur.counts];
+      next[cur.stepIndex] += 1;
+      return { ...cur, counts: next };
     });
-  }, [session, settings.autoAdvance, settings.loop, vibe, click]);
+
+    setStats((st) => {
+      const k = dateKey();
+      return {
+        total: st.total + 1,
+        byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
+        perDhikr: { ...st.perDhikr, [dId]: (st.perDhikr[dId] || 0) + 1 }
+      };
+    });
+
+    if (reached) {
+      vibe([0, 38, 28, 38]);
+      click();
+
+      if (s.steps.length > 1 && i < s.steps.length - 1 && settings.autoAdvance) {
+        setTimeout(() => {
+          setSession((cur) => {
+            if (!cur) return cur;
+            const nextIndex = cur.stepIndex + 1;
+            if (nextIndex >= cur.steps.length) return cur; // Boundary guard
+            return { ...cur, stepIndex: nextIndex };
+          });
+        }, 420);
+      } else if (s.steps.length === 1 && settings.loop) {
+        setTimeout(() => {
+          setSession((cur) => {
+            if (!cur) return cur;
+            const c = [...cur.counts];
+            const l = [...cur.loops];
+            l[0] += 1;
+            c[0] = 0;
+            return { ...cur, counts: c, loops: l };
+          });
+        }, 420);
+      } else if (i === s.steps.length - 1) {
+        setTimeout(() => setComplete(true), 250);
+      }
+    } else {
+      vibe(8);
+      click();
+    }
+
+    bumpNum();
+  }, [settings.autoAdvance, settings.loop, vibe, click]);
 
   const decrement = useCallback(() => {
-    if (!session) return;
-    setSession((s) => {
-      const i = s.stepIndex;
-      if (s.counts[i] <= 0) return s;
-      
-      const counts = [...s.counts];
-      counts[i] -= 1;
-      const dId = s.steps[i].dhikr;
+    const s = sessionRef.current;
+    if (!s) return;
+    const i = s.stepIndex;
+    const step = s.steps[i];
+    if (!step || s.counts[i] <= 0) return;
 
-      setStats((st) => {
-        const k = dateKey();
-        return {
-          total: Math.max(0, st.total - 1),
-          byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
-          perDhikr: { ...st.perDhikr, [dId]: Math.max(0, (st.perDhikr[dId] || 0) - 1) }
-        };
-      });
+    const dId = step.dhikr;
+    const counts = [...s.counts];
+    counts[i] -= 1;
+    sessionRef.current = { ...s, counts };
 
-      vibe(8);
-      return { ...s, counts };
+    setSession((cur) => {
+      if (!cur || cur.counts[cur.stepIndex] <= 0) return cur;
+      const next = [...cur.counts];
+      next[cur.stepIndex] -= 1;
+      return { ...cur, counts: next };
     });
-  }, [session, vibe]);
+
+    setStats((st) => {
+      const k = dateKey();
+      return {
+        total: Math.max(0, st.total - 1),
+        byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
+        perDhikr: { ...st.perDhikr, [dId]: Math.max(0, (st.perDhikr[dId] || 0) - 1) }
+      };
+    });
+
+    vibe(8);
+  }, [vibe]);
 
   const resetSession = useCallback(() => {
     setSession((s) => {
@@ -491,15 +524,15 @@ export const AppProvider = ({ children }) => {
   }, [vibe]);
 
   const goStep = useCallback((dir) => {
-    setSession((s) => {
-      if (!s) return s;
-      const nextIndex = Math.min(Math.max(s.stepIndex + dir, 0), s.steps.length - 1);
-      if (nextIndex !== s.stepIndex) {
-        vibe(8);
-      }
-      setComplete(false);
-      return { ...s, stepIndex: nextIndex };
-    });
+    const s = sessionRef.current;
+    if (!s) return;
+    const nextIndex = Math.min(Math.max(s.stepIndex + dir, 0), s.steps.length - 1);
+    if (nextIndex !== s.stepIndex) {
+      sessionRef.current = { ...s, stepIndex: nextIndex };
+      setSession((cur) => (cur ? { ...cur, stepIndex: nextIndex } : cur));
+      vibe(8);
+    }
+    setComplete(false);
   }, [vibe]);
 
   const applyTarget = useCallback((val) => {
@@ -899,57 +932,69 @@ export const AppProvider = ({ children }) => {
   }, [setView]);
 
   const incrementName = useCallback(() => {
-    setNamesSession((prev) => {
-      const counts = [...prev.counts];
-      const i = prev.index;
-      const target = prev.targets[i];
-      const activeName = SEED_NAMES_OF_ALLAH[i];
-      
-      counts[i] += 1;
-      
-      setStats((st) => {
-        const k = dateKey();
-        return {
-          total: st.total + 1,
-          byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
-          perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 }
-        };
-      });
+    const prev = namesSessionRef.current;
+    const i = prev.index;
+    const activeName = SEED_NAMES_OF_ALLAH[i];
+    if (!activeName) return;
 
-      if (counts[i] === target) {
-        vibe([0, 38, 28, 38]);
-        click();
-      } else {
-        vibe(8);
-        click();
-      }
-      
-      bumpNum();
-      return { ...prev, counts };
+    const nextCount = prev.counts[i] + 1;
+    const counts = [...prev.counts];
+    counts[i] = nextCount;
+    namesSessionRef.current = { ...prev, counts };
+
+    setNamesSession((cur) => {
+      const next = [...cur.counts];
+      next[cur.index] += 1;
+      return { ...cur, counts: next };
     });
+
+    setStats((st) => {
+      const k = dateKey();
+      return {
+        total: st.total + 1,
+        byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
+        perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 }
+      };
+    });
+
+    if (nextCount === prev.targets[i]) {
+      vibe([0, 38, 28, 38]);
+      click();
+    } else {
+      vibe(8);
+      click();
+    }
+
+    bumpNum();
   }, [vibe, click]);
 
   const decrementName = useCallback(() => {
-    setNamesSession((prev) => {
-      const counts = [...prev.counts];
-      const i = prev.index;
-      if (counts[i] <= 0) return prev;
-      
-      counts[i] -= 1;
-      const activeName = SEED_NAMES_OF_ALLAH[i];
+    const prev = namesSessionRef.current;
+    const i = prev.index;
+    const activeName = SEED_NAMES_OF_ALLAH[i];
+    if (!activeName || prev.counts[i] <= 0) return;
 
-      setStats((st) => {
-        const k = dateKey();
-        return {
-          total: Math.max(0, st.total - 1),
-          byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
-          perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) }
-        };
-      });
+    const counts = [...prev.counts];
+    counts[i] -= 1;
+    namesSessionRef.current = { ...prev, counts };
 
-      vibe(8);
-      return { ...prev, counts };
+    setNamesSession((cur) => {
+      if (cur.counts[cur.index] <= 0) return cur;
+      const next = [...cur.counts];
+      next[cur.index] -= 1;
+      return { ...cur, counts: next };
     });
+
+    setStats((st) => {
+      const k = dateKey();
+      return {
+        total: Math.max(0, st.total - 1),
+        byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
+        perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) }
+      };
+    });
+
+    vibe(8);
   }, [vibe]);
 
   const resetName = useCallback(() => {
