@@ -218,7 +218,7 @@ const OccasionGroup = ({ occKey, label, items, defaultOpen, renderItem }) => {
             transition={spring}
             className="overflow-hidden"
           >
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2 pt-1 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
               <AnimatePresence initial={false}>
                 {items.map(renderItem)}
               </AnimatePresence>
@@ -384,8 +384,8 @@ export const LibraryView = () => {
   return (
     <div className="space-y-5 relative">
       {/* Header */}
-      <header className="flex items-center justify-between pt-2">
-        <h1 className="font-display text-2xl text-[var(--text)]">Library</h1>
+      <header className="flex items-center justify-between pt-2 lg:pt-0">
+        <h1 className="font-display text-2xl lg:text-3xl text-[var(--text)]">Library</h1>
         <div className="flex gap-1.5 sm:gap-2">
           <motion.button
             whileTap={{ scale: 0.94 }}
@@ -405,9 +405,33 @@ export const LibraryView = () => {
         </div>
       </header>
 
+      {/* Desktop splits into a persistent category rail + a results column;
+          mobile keeps the single scrolling column with horizontal filter pills. */}
+      <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <aside className="hidden lg:block lg:sticky lg:top-6">
+          <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
+            Categories
+          </p>
+          <div className="max-h-[calc(100svh-9rem)] space-y-0.5 overflow-y-auto pr-1">
+            <RailButton active={activeOccasion === "all"} onClick={() => setActiveOccasion("all")}>
+              All
+            </RailButton>
+            {Object.entries(OCCASIONS).map(([k, v]) => (
+              <RailButton
+                key={k}
+                active={activeOccasion === k}
+                onClick={() => setActiveOccasion(k)}
+              >
+                {v}
+              </RailButton>
+            ))}
+          </div>
+        </aside>
+
+        <div className="min-w-0 space-y-5">
       {/* Sticky search + filter strip */}
       <div
-        className="sticky top-0 z-20 -mx-5 px-5 pt-0 pb-3 space-y-3"
+        className="sticky top-0 z-20 -mx-5 px-5 pt-0 pb-3 space-y-3 lg:mx-0 lg:px-0 lg:pt-1"
         style={{
           background: "",
           backdropFilter: "blur(20px)",
@@ -517,8 +541,8 @@ export const LibraryView = () => {
           </AnimatePresence>
         </div>
 
-        {/* Occasion filter pills */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+        {/* Occasion filter pills — the rail takes over on desktop */}
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth lg:hidden">
           {activeOccasion !== "all" && OCCASIONS[activeOccasion] && (
             <PillButton
               active={true}
@@ -550,7 +574,7 @@ export const LibraryView = () => {
           <h2 className="flex items-center gap-2 pl-1 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
             <Sparkles size={13} className="text-[var(--gold)]" /> Remedies for the Heart
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
               const RemIcon = rem.icon;
               return (
@@ -603,7 +627,7 @@ export const LibraryView = () => {
                 {pinnedItems.length}
               </span>
             </div>
-            <motion.div layout className="space-y-2">
+            <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
               <AnimatePresence initial={false}>
                 {pinnedItems.map(({ type, data }) =>
                   type === "list" ? (
@@ -669,7 +693,7 @@ export const LibraryView = () => {
                   {pinnedItems.some((p) => p.type === "list") && (
                     <SectionHeading label="All Sets" count={unpinnedLists.length} />
                   )}
-                  <motion.div layout className="space-y-2">
+                  <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
                     <AnimatePresence initial={false}>
                       {unpinnedLists.map((l) => (
                         <ListRow
@@ -730,7 +754,7 @@ export const LibraryView = () => {
                   ))}
                 </div>
               ) : (
-                <motion.div layout className="space-y-2">
+                <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
                   <AnimatePresence initial={false}>
                     {unpinnedDhikrs.map((d) => (
                       <DhikrRow
@@ -794,7 +818,7 @@ export const LibraryView = () => {
                   />
                 ) : null
               ) : (
-                <motion.div layout className="grid grid-cols-2 gap-3 pt-1">
+                <motion.div layout className="grid grid-cols-2 gap-3 pt-1 lg:grid-cols-4 xl:grid-cols-5">
                   <AnimatePresence initial={false}>
                     {unpinnedNames.map((n) => (
                       <NameCard
@@ -813,6 +837,8 @@ export const LibraryView = () => {
           )}
         </motion.section>
       </AnimatePresence>
+        </div>
+      </div>
 
       {/* Pin / Unpin feedback toast */}
       <AnimatePresence>
@@ -864,6 +890,25 @@ const SectionHeading = ({ label, count }) => (
       {count}
     </span>
   </div>
+);
+
+/* Desktop-only vertical equivalent of PillButton — the category rail. */
+const RailButton = ({ active, onClick, children }) => (
+  <button
+    onClick={onClick}
+    aria-current={active ? "true" : undefined}
+    className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold cursor-pointer transition-colors"
+    style={
+      active
+        ? {
+          background: "color-mix(in srgb, var(--primary) 14%, transparent)",
+          color: "var(--primary)",
+        }
+        : { color: "var(--muted)" }
+    }
+  >
+    {children}
+  </button>
 );
 
 const PillButton = ({ active, onClick, children }) => (

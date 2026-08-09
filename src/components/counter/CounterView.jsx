@@ -6,6 +6,7 @@ import {
   Pencil, Sparkles, Check, X, MousePointerClick
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { resolveBeadTheme } from "../../utils/theme";
 import BeadRing from "./BeadRing";
 import TransBlock from "./TransBlock";
@@ -119,6 +120,7 @@ export const CounterView = () => {
     setModal
   } = useApp();
 
+  const isDesktop = useIsDesktop();
   const readerOpen = modal === "reader";
   const setReaderOpen = useCallback((open) => {
     setModal(open ? "reader" : null);
@@ -251,7 +253,7 @@ export const CounterView = () => {
 
   return (
     <div
-      className="flex h-[calc(100svh-2.5rem)] flex-col"
+      className="flex h-[calc(100svh-2.5rem)] flex-col lg:h-[calc(100svh-3rem)]"
       onPointerDown={settings.fullScreenTap ? onDown : undefined}
       onPointerUp={settings.fullScreenTap ? onUp : undefined}
       onPointerCancel={settings.fullScreenTap ? () => { tapStart.current = null; } : undefined}
@@ -301,6 +303,10 @@ export const CounterView = () => {
         </div>
       </motion.header>
 
+      {/* Below `lg` this is a plain vertical stack (text above the ring, exactly
+          as on mobile); at `lg` it splits into reading pane | counting pane. */}
+      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-10">
+      <div className="flex min-w-0 flex-col lg:min-h-0 lg:justify-center lg:overflow-y-auto">
       {session.steps.length > 1 && (
         <div className="mt-6 flex justify-center">
           <div
@@ -343,7 +349,10 @@ export const CounterView = () => {
 
       {/* Absolutely positioned dhikr text — anchored near top, can expand over background */}
       <div className="relative mt-7 px-2" style={{ minHeight: "10rem" }}>
-        <div className="absolute inset-x-2 top-0 z-10">
+        {/* Absolute on mobile so long text can spill over the background
+            without pushing the ring down; the desktop pane has room, so it
+            goes back into normal flow there. */}
+        <div className="absolute inset-x-2 top-0 z-10 lg:static lg:inset-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={d?.id}
@@ -357,17 +366,20 @@ export const CounterView = () => {
                 lang={settings.lang}
                 fieldOrder={settings.dhikrFieldOrder}
                 fieldVisible={settings.dhikrFieldVisible}
+                collapsedMax={isDesktop ? 460 : undefined}
                 onOpenReader={settings.fullScreenTap ? undefined : () => setReaderOpen(true)}
               />
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
+      </div>
 
+      <div className="flex min-h-0 flex-1 flex-col lg:justify-center">
       {/* Ring placed below optical center for natural mobile balance.
           Extra bottom padding reserves room for the lap badge (-bottom-5 on the
           ring) so it doesn't overlap the hint line below. */}
-      <div className="flex flex-1 min-h-0 items-end justify-center pb-10 md:items-center md:pb-6">
+      <div className="flex flex-1 min-h-0 items-end justify-center pb-10 md:items-center md:pb-6 lg:flex-none">
         {beads ? (
           <BeadRing
             key={d?.id}
@@ -447,7 +459,9 @@ export const CounterView = () => {
         transition={{ delay: 0.2, duration: 0.4 }}
         className="mb-3 text-center text-[11px] text-[var(--muted)] px-6 leading-relaxed"
       >
-        {beads
+        {isDesktop
+          ? "Click or press Space to count · ⌫ undo · ← → switch dhikr · R reset"
+          : beads
           ? "Tap to count · drag the beads clockwise to count up"
           : "Tap to count · swipe ← → to change dhikr"
         }
@@ -459,7 +473,7 @@ export const CounterView = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...softSpring, delay: 0.1 }}
         data-tap-skip="true"
-        className="mx-auto mb-2 flex items-center gap-1 rounded-full p-1.5 backdrop-blur-2xl"
+        className="mx-auto mb-2 flex items-center gap-1 rounded-full p-1.5 backdrop-blur-2xl lg:self-center"
         style={{
           background: "color-mix(in srgb, var(--surface) 70%, transparent)",
           border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
@@ -500,6 +514,8 @@ export const CounterView = () => {
           <ChevronRight size={18} />
         </SoftPill>
       </motion.div>
+      </div>
+      </div>
 
       {/* Completion modal — sparkle burst + spring zoom */}
       <AnimatePresence>

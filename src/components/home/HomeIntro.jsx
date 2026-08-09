@@ -46,9 +46,9 @@ export const HomeIntro = () => {
   };
 
   return (
-    <header className="pt-2">
-      {/* Brand + greeting */}
-      <div className="flex items-start justify-between gap-3">
+    <header className="pt-2 lg:pt-0">
+      {/* Mobile: brand + greeting side by side, date underneath. */}
+      <div className="flex items-start justify-between gap-3 lg:hidden">
         <BrandMark className="text-4xl" />
         <div className="text-right shrink-0">
           <span className="text-xs text-[var(--muted)] block font-medium">{greet},</span>
@@ -57,12 +57,34 @@ export const HomeIntro = () => {
       </div>
 
       {/* Date — large and glanceable, Gregorian + Hijri */}
-      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 lg:hidden">
         <span className="font-display text-xl font-bold text-[var(--text)] leading-tight">
           {greg}
         </span>
         {hijri && (
           <span className="text-sm font-bold text-[var(--gold)] leading-tight">{hijri}</span>
+        )}
+      </div>
+
+      {/* Desktop: the brand already lives in the sidebar, so the page opens on
+          the greeting instead — a proper page title rather than a repeat logo. */}
+      <div className="hidden lg:flex lg:items-end lg:justify-between lg:gap-6">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--muted)]">{greet}, Seeker</p>
+          <h2 className="font-display mt-1 text-4xl font-bold leading-tight text-[var(--text)]">
+            {greg}
+          </h2>
+        </div>
+        {hijri && (
+          <span
+            className="shrink-0 rounded-2xl px-4 py-2 text-sm font-bold text-[var(--gold)]"
+            style={{
+              background: "color-mix(in srgb, var(--gold) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--gold) 26%, transparent)",
+            }}
+          >
+            {hijri}
+          </span>
         )}
       </div>
 

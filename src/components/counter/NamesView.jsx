@@ -7,6 +7,7 @@ import {
   LayoutGrid, X
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { SEED_NAMES_OF_ALLAH } from "../../constants/asmaUlHusna";
 
 const slideVariants = {
@@ -48,6 +49,7 @@ export const NamesView = () => {
     vibe,
   } = useApp();
 
+  const isDesktop = useIsDesktop();
   const [activeTab, setActiveTab] = useState("meaning");
   const [direction, setDirection] = useState(0); // -1 for previous, 1 for next
   const [overview, setOverview] = useState(false); // grid jump-to panel
@@ -125,7 +127,7 @@ export const NamesView = () => {
 
   return (
     <div
-      className="relative flex h-[calc(100svh-2.5rem)] flex-col justify-between"
+      className="relative flex h-[calc(100svh-2.5rem)] flex-col justify-between lg:h-[calc(100svh-3rem)]"
       style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
     >
       {/* Page H1 for SEO. sr-only so the immersive name carousel stays the
@@ -174,6 +176,46 @@ export const NamesView = () => {
         </motion.button>
       </motion.header>
 
+      {/* Desktop adds a permanent index rail beside the card — the same jump
+          targets as the overview overlay, always on screen. */}
+      <div className="flex min-h-0 flex-1 lg:gap-6">
+      <aside className="hidden lg:flex lg:w-52 lg:shrink-0 lg:flex-col lg:min-h-0 lg:pt-6">
+        <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
+          All 99 Names
+        </p>
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
+          {SEED_NAMES_OF_ALLAH.map((n, i) => {
+            const active = i === idx;
+            return (
+              <button
+                key={n.id}
+                onClick={() => jumpTo(i)}
+                aria-current={active ? "true" : undefined}
+                className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left cursor-pointer"
+                style={
+                  active
+                    ? { background: "color-mix(in srgb, var(--primary) 14%, transparent)" }
+                    : undefined
+                }
+              >
+                <span
+                  className="w-5 shrink-0 text-[9px] font-bold tabular-nums"
+                  style={{ color: active ? "var(--primary)" : "var(--muted)" }}
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[var(--text)]">
+                  {n.tr}
+                </span>
+                <span className="font-arabic shrink-0 text-sm text-[var(--gold)]" dir="rtl">
+                  {n.arabic}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
       <motion.div
         {...bindSwipe()}
         style={{ x: dragX, touchAction: "pan-y", overscrollBehaviorX: "contain" }}
@@ -188,23 +230,23 @@ export const NamesView = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex-1 flex flex-col min-h-0 space-y-5"
+              className="flex-1 flex flex-col min-h-0 space-y-5 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0"
             >
               {/* Calligraphy Card - with rotation animation linked to drag offset */}
-              <div className="px-2 overflow-visible relative">
+              <div className="px-2 overflow-visible relative lg:self-center">
                 <motion.div
                   style={{ rotate: cardRotate }}
                   className="w-full text-center space-y-4 py-2"
                 >
                   <div
-                    className="mx-auto max-w-[280px] rounded-3xl py-7 px-4 text-center border"
+                    className="mx-auto max-w-[280px] rounded-3xl py-7 px-4 text-center border lg:max-w-md lg:py-12"
                     style={{
                       borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
                       background: "color-mix(in srgb, var(--surface) 40%, transparent)",
                       boxShadow: "0 8px 32px -16px color-mix(in srgb, var(--primary) 20%, transparent)"
                     }}
                   >
-                    <p className="font-arabic text-[3.2rem] leading-normal text-[var(--text)] font-medium" dir="rtl">
+                    <p className="font-arabic text-[3.2rem] lg:text-[4.2rem] leading-normal text-[var(--text)] font-medium" dir="rtl">
                       {activeName.arabic}
                     </p>
                   </div>
@@ -219,6 +261,9 @@ export const NamesView = () => {
                 </motion.div>
               </div>
 
+              {/* Tabs + panel — grouped so the desktop grid sees exactly two
+                  panes: the calligraphy card and this reading column. */}
+              <div className="flex min-h-0 flex-1 flex-col space-y-5">
               {/* Tab Selector */}
               {(hasVirtues || hasStory) && (
                 <div
@@ -366,10 +411,12 @@ export const NamesView = () => {
                   </motion.div>
                 </AnimatePresence>
               </div>
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
       </motion.div>
+      </div>
 
       <motion.p
         initial={{ opacity: 0 }}
@@ -377,7 +424,9 @@ export const NamesView = () => {
         transition={{ delay: 0.2, duration: 0.4 }}
         className="mb-2 text-center text-[10px] text-[var(--muted)] px-6"
       >
-        Swipe/Drag left or right to change name
+        {isDesktop
+          ? "Use ← → or pick any name from the list"
+          : "Swipe/Drag left or right to change name"}
       </motion.p>
 
       {/* Floating Control Bar */}
@@ -441,7 +490,7 @@ export const NamesView = () => {
               </motion.button>
             </div>
             <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
                 {SEED_NAMES_OF_ALLAH.map((n, i) => {
                   const active = i === idx;
                   return (

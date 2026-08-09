@@ -21,11 +21,12 @@ export const AppHeader = () => {
   const streak = computeStreak(stats.byDate);
 
   return (
+    /* Mobile-only: on desktop the brand + live stats live in DesktopSidebar. */
     <motion.header
       initial={{ y: -30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
-      className="fixed top-3 left-1/2 z-30 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-full backdrop-blur-2xl"
+      className="fixed top-3 left-1/2 z-30 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-full backdrop-blur-2xl lg:hidden"
       style={{
         background: "color-mix(in srgb, var(--surface) 70%, transparent)",
         border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",

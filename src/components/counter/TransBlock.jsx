@@ -37,13 +37,14 @@ const FIELD_RENDERERS = {
   ),
 };
 
-const COLLAPSED_MAX = 200; // px
+const COLLAPSED_MAX = 200; // px — mobile default; desktop panes pass more room
 
 export const TransBlock = ({
   d,
   lang = "both",
   fieldOrder = DEFAULT_DHIKR_FIELD_ORDER,
   fieldVisible = DEFAULT_DHIKR_FIELD_VISIBLE,
+  collapsedMax = COLLAPSED_MAX,
   onOpenReader,
 }) => {
   const [overflowing, setOverflowing] = useState(false);
@@ -53,13 +54,13 @@ export const TransBlock = ({
     if (!innerRef.current) return;
     const measure = () => {
       const h = innerRef.current?.scrollHeight ?? 0;
-      setOverflowing(h > COLLAPSED_MAX + 4);
+      setOverflowing(h > collapsedMax + 4);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(innerRef.current);
     return () => ro.disconnect();
-  }, [d?.id, lang, fieldOrder, fieldVisible]);
+  }, [d?.id, lang, fieldOrder, fieldVisible, collapsedMax]);
 
   if (!d) return null;
 
@@ -88,7 +89,7 @@ export const TransBlock = ({
       {/* Text area — fade is anchored to this so it sits over the bottom of visible text */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ maxHeight: COLLAPSED_MAX }}
+        style={{ maxHeight: collapsedMax }}
       >
         <motion.div
           ref={innerRef}

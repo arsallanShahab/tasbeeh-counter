@@ -16,11 +16,12 @@ export const Navbar = () => {
   ];
 
   return (
+    /* Mobile-only: desktop swaps this bar for the persistent DesktopSidebar. */
     <motion.nav
       initial={{ y: 30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
-      className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-3xl px-1.5 py-1.5 backdrop-blur-2xl"
+      className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-3xl px-1.5 py-1.5 backdrop-blur-2xl lg:hidden"
       style={{
         background: "color-mix(in srgb, var(--surface) 70%, transparent)",
         border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",

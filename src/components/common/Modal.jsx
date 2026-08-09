@@ -26,7 +26,7 @@ export const Modal = ({ isOpen, onClose, children, contentClassName = "" }) => {
           transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
         >
           <motion.div
-            className={`max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 no-scrollbar shadow-2xl ${contentClassName}`}
+            className={`max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-6 no-scrollbar shadow-2xl lg:max-w-lg lg:p-7 ${contentClassName}`}
             onClick={(e) => e.stopPropagation()}
             initial={{ opacity: 0, scale: 0.92, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -5,6 +5,7 @@ import {
   ChevronUp, ChevronDown, Pencil, Check
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { useIsDesktop } from "../../hooks/useMediaQuery";
 import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
@@ -31,6 +32,7 @@ export const HomeView = () => {
     settings,
   } = useApp();
   const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
   const [editPinned, setEditPinned] = useState(false);
 
   const movePinned = (idx, dir) => {
@@ -159,7 +161,9 @@ export const HomeView = () => {
       <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">
         Remedies for the Heart
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {/* lg:grid-cols-1 — on desktop this section sits in the narrow side rail,
+          where two columns would squeeze the labels. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
         {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
           const RemIcon = rem.icon;
           return (
@@ -265,7 +269,7 @@ export const HomeView = () => {
           No pinned items yet. Pin sets or single dhikrs from the Library.
         </Card>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {pinnedItems.map((item, idx) => {
             const isList = item.type === "list";
             const data = item.data;
@@ -340,6 +344,42 @@ export const HomeView = () => {
       <PrayerTimesCard key="prayer" />
     ) : null;
 
+  const renderResume = () => {
+    if (!session || complete || !session.counts.some((c) => c > 0)) return null;
+    const idx = session.stepIndex;
+    const currentCount = session.counts[idx];
+    const currentTarget = session.steps[idx].target;
+    const totalSteps = session.steps.length;
+    return (
+      <Card
+        className="p-5 border-2 border-[var(--gold)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
+        onClick={() => setView("counter")}
+      >
+        <div className="space-y-1 min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--gold)] animate-ping" />
+            Active Session
+          </p>
+          <h3 className="font-display text-xl font-bold text-[var(--text)] truncate leading-tight">
+            {session.title}
+          </h3>
+          <p className="text-xs text-[var(--muted)] truncate mt-0.5">
+            {totalSteps > 1
+              ? `Recited: Step ${idx + 1} of ${totalSteps} (${currentCount} / ${currentTarget})`
+              : `Recited: ${currentCount} / ${currentTarget} times`
+            }
+          </p>
+        </div>
+        <button
+          className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer active:scale-[0.96] transition-all duration-300 flex items-center gap-1 shrink-0 shadow-sm"
+          style={{ background: "var(--gold)" }}
+        >
+          Resume →
+        </button>
+      </Card>
+    );
+  };
+
   const sectionRenderers = {
     prayer: renderPrayer,
     streak: renderStreak,
@@ -353,8 +393,20 @@ export const HomeView = () => {
     ? settings.homeSections
     : DEFAULT_HOME_SECTIONS;
 
-  return (
-    <div className="space-y-6 anim-fade pb-6">
+  const visibleSections = homeSections.filter((s) => s.visible && sectionRenderers[s.key]);
+  const renderSections = (keys) =>
+    visibleSections
+      .filter((s) => keys.includes(s.key))
+      .map((s) => sectionRenderers[s.key]());
+
+  /* On desktop the single mobile stack becomes a dashboard: the sections you
+     act on go in the wide main column, the glanceable ones into a side rail.
+     The user's configured order is preserved within each column. */
+  const DESKTOP_SIDE = ["prayer", "streak", "remedies"];
+  const DESKTOP_MAIN = ["pinned", "suggested", "quick", "asmaul_husna"];
+
+  const header = (
+    <>
       {/* Page H1 for SEO. Kept sr-only because the visual hero is the brand
           wordmark/greeting in HomeIntro; this gives crawlers a keyword-anchored
           heading without altering the dashboard layout. */}
@@ -364,47 +416,28 @@ export const HomeView = () => {
       <HomeIntro />
 
       {/* Continue Session — contextual, always above the configurable stack */}
-      {session && !complete && session.counts.some(c => c > 0) && (() => {
-        const idx = session.stepIndex;
-        const currentCount = session.counts[idx];
-        const currentTarget = session.steps[idx].target;
-        const totalSteps = session.steps.length;
-        return (
-          <Card 
-            className="p-5 border-2 border-[var(--gold)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
-            onClick={() => setView("counter")}
-          >
-            <div className="space-y-1 min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[var(--gold)] animate-ping" />
-                Active Session
-              </p>
-              <h3 className="font-display text-xl font-bold text-[var(--text)] truncate leading-tight">
-                {session.title}
-              </h3>
-              <p className="text-xs text-[var(--muted)] truncate mt-0.5">
-                {totalSteps > 1 
-                  ? `Recited: Step ${idx + 1} of ${totalSteps} (${currentCount} / ${currentTarget})`
-                  : `Recited: ${currentCount} / ${currentTarget} times`
-                }
-              </p>
-            </div>
-            <button 
-              className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer active:scale-[0.96] transition-all duration-300 flex items-center gap-1 shrink-0 shadow-sm"
-              style={{ background: "var(--gold)" }}
-            >
-              Resume →
-            </button>
-          </Card>
-        );
-      })()}
+      {renderResume()}
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <div className="anim-fade space-y-6 pb-4">
+        {header}
+        <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-6">
+          <div className="space-y-6">{renderSections(DESKTOP_MAIN)}</div>
+          <aside className="space-y-6">{renderSections(DESKTOP_SIDE)}</aside>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 anim-fade pb-6">
+      {header}
 
       {/* Configurable section stack — order/visibility from settings.homeSections */}
-      {homeSections.map((s) => {
-        if (!s.visible) return null;
-        const render = sectionRenderers[s.key];
-        return render ? render() : null;
-      })}
+      {visibleSections.map((s) => sectionRenderers[s.key]())}
     </div>
   );
 };

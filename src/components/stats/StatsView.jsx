@@ -207,10 +207,14 @@ export const StatsView = () => {
   const todayKey = dateKey();
 
   return (
-    <div className="space-y-5 anim-fade">
-      <h1 className="pt-2 font-display text-2xl text-[var(--text)]">Statistics</h1>
+    /* Desktop turns the mobile card stack into a three-column dashboard; the
+       col-span hints below describe each card's share of that grid. */
+    <div className="space-y-5 anim-fade lg:grid lg:grid-cols-3 lg:items-start lg:gap-5 lg:space-y-0">
+      <h1 className="pt-2 font-display text-2xl text-[var(--text)] lg:col-span-3 lg:pt-0 lg:text-3xl">
+        Statistics
+      </h1>
 
-      <Card className="p-5">
+      <Card className="p-5 lg:col-span-2">
         <div className="flex items-center gap-5">
           <GoalRing value={today} goal={goal} />
           <div className="flex flex-1 flex-col gap-2 min-w-0">
@@ -248,7 +252,7 @@ export const StatsView = () => {
         </div>
       </Card>
 
-      <Card className="relative overflow-hidden p-5">
+      <Card className="relative overflow-hidden p-5 lg:col-span-1">
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20 blur-2xl"
           style={{ background: streak > 0 ? "var(--gold)" : "var(--muted)" }}
@@ -290,22 +294,24 @@ export const StatsView = () => {
         )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-4">
+      {/* lg:contents dissolves this pair wrapper so both cards become direct
+          items of the desktop grid instead of a nested two-up row. */}
+      <div className="grid grid-cols-2 gap-3 lg:contents">
+        <Card className="p-4 lg:col-span-1">
           <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Active days</p>
           <p className="font-display text-2xl text-[var(--text)]">{fmt(activeDays)}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 lg:col-span-1">
           <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Avg / active day</p>
           <p className="font-display text-2xl text-[var(--text)]">{fmt(avg)}</p>
         </Card>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 lg:col-span-1">
         <MilestoneBar total={stats.total} />
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 lg:col-span-2">
         <p className="mb-4 font-display text-lg text-[var(--text)]">Last 7 days</p>
         <div className="flex h-36 items-end justify-between gap-2">
           {week.map((w) => {
@@ -340,7 +346,7 @@ export const StatsView = () => {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 lg:col-span-1">
         <div className="mb-4 flex items-center justify-between">
           <p className="font-display text-lg text-[var(--text)]">Activity</p>
           <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
@@ -365,14 +371,14 @@ export const StatsView = () => {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 lg:col-span-3">
         <p className="mb-4 font-display text-lg text-[var(--text)]">Most recited</p>
         {top.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">
             Start counting to see your breakdown.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-3 lg:space-y-0">
             {top.map(([id, n], idx) => {
               const d = dById(id);
               const mx = top[0][1];

@@ -167,14 +167,14 @@ export const QiblaView = () => {
   const needleAngle = useContinuousAngle(qiblaScreenAngle != null ? qiblaScreenAngle : kaabaAngle);
 
   return (
-    <div className="anim-fade min-h-svh flex flex-col">
+    <div className="anim-fade min-h-svh flex flex-col lg:min-h-0 lg:h-[calc(100svh-3rem)]">
       {/* Header */}
       <div className="flex items-center gap-2 pt-1 pb-6">
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={back}
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 cursor-pointer lg:hidden"
           style={{
             background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
             border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
@@ -185,7 +185,7 @@ export const QiblaView = () => {
         </motion.button>
         <div className="flex items-center gap-2">
           <Compass size={20} className="text-[var(--gold)]" />
-          <h1 className="font-display text-xl text-[var(--text)]">
+          <h1 className="font-display text-xl text-[var(--text)] lg:text-3xl">
             Qibla<span className="sr-only"> Direction Finder — live compass to the Kaaba in Makkah</span>
           </h1>
         </div>
@@ -219,10 +219,13 @@ export const QiblaView = () => {
           )}
         </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-7 pb-10">
+        /* Desktop places the dial in a left column and stacks the readout +
+           status opposite it; explicit row/col starts keep the DOM order
+           (readout → dial → status) that mobile relies on. */
+        <div className="flex flex-1 flex-col items-center justify-center gap-7 pb-10 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_auto] lg:items-center lg:gap-x-14 lg:pb-0">
           {/* Bearing readout */}
-          <div className="text-center">
-            <p className="font-display text-5xl font-bold" style={{ color: aligned ? "var(--primary)" : "var(--text)" }}>
+          <div className="text-center lg:col-start-2 lg:row-start-1 lg:self-end lg:text-left">
+            <p className="font-display text-5xl font-bold lg:text-7xl" style={{ color: aligned ? "var(--primary)" : "var(--text)" }}>
               {Math.round(bearing)}°
             </p>
             <p className="text-xs text-[var(--muted)] mt-1">
@@ -233,7 +236,7 @@ export const QiblaView = () => {
           {/* Compass dial — 288px (radius 144). Every radial element is placed
               with the clock-number pattern: translate to center, rotate to its
               angle, push outward, then counter-rotate the content upright. */}
-          <div className="relative h-72 w-72">
+          <div className="relative h-72 w-72 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:justify-self-center lg:scale-110">
             {/* Fixed top pointer — the direction the device is facing. Its tip
                 meets the rim and points inward. */}
             <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2.5">
@@ -353,7 +356,7 @@ export const QiblaView = () => {
           </div>
 
           {/* Status / actions */}
-          <div className="flex min-h-[3rem] flex-col items-center gap-2 px-6 text-center">
+          <div className="flex min-h-[3rem] flex-col items-center gap-2 px-6 text-center lg:col-start-2 lg:row-start-2 lg:items-start lg:self-start lg:px-0 lg:text-left">
             {sensor === "active" && heading != null ? (
               <p
                 className="text-sm font-bold"

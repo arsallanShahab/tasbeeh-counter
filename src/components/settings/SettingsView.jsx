@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
+import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { parseBackup, readFileAsText } from "../../utils/backup";
 import Card from "../common/Card";
 import Toggle from "../common/Toggle";
@@ -826,6 +827,7 @@ export const SettingsView = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isDesktop = useIsDesktop();
   const [searchParams, setSearchParams] = useSearchParams();
   const panel = searchParams.get("panel");
 
@@ -850,7 +852,10 @@ export const SettingsView = () => {
         next.set("panel", id);
         return next;
       },
-      { replace: false }
+      // Mobile pushes so hardware back closes the sub-screen. Desktop shows
+      // both panes at once, so switching category is a replace — otherwise
+      // Back would rewind through every category you glanced at.
+      { replace: isDesktop }
     );
     window.scrollTo({ top: 0 });
   };
@@ -1884,6 +1889,82 @@ export const SettingsView = () => {
   ];
 
   const active = CATEGORIES.find((c) => c.id === panel) || null;
+
+  /* Desktop: the drill-down menu becomes a permanent two-pane preferences
+     window — categories always visible on the left, the selected one open on
+     the right. With no ?panel in the URL the first category is shown, so the
+     pane is never empty. */
+  if (isDesktop) {
+    const current = active || CATEGORIES[0];
+    return (
+      <div className="anim-fade pb-6">
+        <h1 className="pb-5 font-display text-3xl text-[var(--text)]">Settings</h1>
+        <div className="grid grid-cols-[17rem_minmax(0,1fr)] items-start gap-6">
+          <nav className="sticky top-6 flex flex-col gap-1">
+            {CATEGORIES.map((c) => {
+              const Icon = c.icon;
+              const isActive = current.id === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => openPanel(c.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left cursor-pointer transition-colors"
+                  style={
+                    isActive
+                      ? {
+                        background: "color-mix(in srgb, var(--primary) 13%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--primary) 26%, transparent)",
+                      }
+                      : { border: "1px solid transparent" }
+                  }
+                >
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                    style={{
+                      background: isActive
+                        ? "var(--primary)"
+                        : "color-mix(in srgb, var(--surface2) 80%, transparent)",
+                      color: isActive ? "#fff" : "var(--muted)",
+                    }}
+                  >
+                    <Icon size={17} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className="block text-sm font-semibold"
+                      style={{ color: isActive ? "var(--primary)" : "var(--text)" }}
+                    >
+                      {c.label}
+                    </span>
+                    <span className="block truncate text-[11px] text-[var(--muted)]">{c.hint}</span>
+                  </span>
+                </button>
+              );
+            })}
+            <p className="pt-4 text-center font-mono text-[10px] text-[var(--muted)]">
+              Sabḥa v{appVersion}
+            </p>
+          </nav>
+
+          <div className="min-w-0 max-w-3xl">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={current.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <h2 className="pb-4 font-display text-xl text-[var(--text)]">{current.label}</h2>
+                {current.content}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="anim-fade pb-6 overflow-hidden">

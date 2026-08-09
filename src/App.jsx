@@ -15,6 +15,7 @@ import SettingsView from "./components/settings/SettingsView";
 import QiblaView from "./components/qibla/QiblaView";
 import Navbar from "./components/layout/Navbar";
 import AppHeader from "./components/layout/AppHeader";
+import DesktopSidebar from "./components/layout/DesktopSidebar";
 import NewDhikrModal from "./components/library/NewDhikrModal";
 import NewListModal from "./components/library/NewListModal";
 import UpdateBanner from "./components/common/UpdateBanner";
@@ -117,29 +118,41 @@ const AppContent = () => {
         <rect width="100%" height="100%" fill="url(#geo)" />
       </svg>
 
-      <div className={`relative mx-auto max-w-md px-5 transition-all duration-300 ${["counter", "names", "qibla"].includes(view) ? "pt-4 pb-6" : "pt-20 pb-28"}`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Routes location={location}>
-              <Route path="/" element={<HomeView />} />
-              <Route path="/library" element={<LibraryView />} />
-              <Route path="/counter" element={<CounterView />} />
-              <Route path="/names" element={<NamesView />} />
-              <Route path="/stats" element={<StatsView />} />
-              <Route path="/settings" element={<SettingsView />} />
-              <Route path="/qibla" element={<QiblaView />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
+      {/* Layout: mobile keeps the single narrow column under floating chrome;
+          desktop indents past the fixed sidebar and opens up to a wide canvas
+          that each view lays out for itself. */}
+      <div
+        className={`relative mx-auto max-w-md px-5 transition-all duration-300 lg:max-w-none lg:pr-8 lg:pl-[18.5rem] ${
+          ["counter", "names", "qibla"].includes(view)
+            ? "pt-4 pb-6 lg:pt-6 lg:pb-6"
+            : "pt-20 pb-28 lg:pt-8 lg:pb-12"
+        }`}
+      >
+        <div className="lg:mx-auto lg:w-full lg:max-w-[1180px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Routes location={location}>
+                <Route path="/" element={<HomeView />} />
+                <Route path="/library" element={<LibraryView />} />
+                <Route path="/counter" element={<CounterView />} />
+                <Route path="/names" element={<NamesView />} />
+                <Route path="/stats" element={<StatsView />} />
+                <Route path="/settings" element={<SettingsView />} />
+                <Route path="/qibla" element={<QiblaView />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
+      <DesktopSidebar />
       <AppHeader />
       <Navbar />
 

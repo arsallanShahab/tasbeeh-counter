@@ -16,7 +16,7 @@ const UpdateBanner = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -80, opacity: 0 }}
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
-          className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md"
+          className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md lg:left-auto lg:right-6 lg:bottom-6 lg:top-auto lg:w-[24rem] lg:translate-x-0"
           role="status"
           aria-live="polite"
         >
