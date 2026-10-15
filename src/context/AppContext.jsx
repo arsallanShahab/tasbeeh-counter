@@ -66,7 +66,6 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { namesSessionRef.current = namesSession; }, [namesSession]);
 
-  const [bump, setBump] = useState(false);
   const [complete, setComplete] = useState(false);
   const [targetEdit, setTargetEditInternal] = useState(false);
   const [customT, setCustomT] = useState("");
@@ -390,10 +389,6 @@ export const AppProvider = ({ children }) => {
     }
   }, [settings.sound]);
 
-  const bumpNum = () => {
-    setBump(true);
-    setTimeout(() => setBump(false), 130);
-  };
 
   /* Session controls */
   const openSession = useCallback((steps, title, occasion, sourceListId = null, navOpts) => {
@@ -517,7 +512,6 @@ export const AppProvider = ({ children }) => {
       click();
     }
 
-    bumpNum();
   }, [settings.autoAdvance, settings.loop, vibe, click]);
 
   const decrement = useCallback(() => {
@@ -1165,7 +1159,6 @@ export const AppProvider = ({ children }) => {
       click();
     }
 
-    bumpNum();
   }, [vibe, click]);
 
   const decrementName = useCallback(() => {
@@ -1413,7 +1406,6 @@ export const AppProvider = ({ children }) => {
         setModal,
         editId,
         openEditor,
-        bump,
         complete,
         setComplete,
         targetEdit,

@@ -159,8 +159,10 @@ button:disabled {
     background: var(--primary);
     color: var(--on-primary);
   }
-  .btn-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--primary) 86%, var(--text));
+  @media (hover: hover) {
+    .btn-primary:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--primary) 86%, var(--text));
+    }
   }
   .btn-primary:active:not(:disabled) {
     background: color-mix(in srgb, var(--primary) 78%, var(--text));
@@ -171,8 +173,10 @@ button:disabled {
     color: var(--text);
     border-color: var(--line-strong);
   }
-  .btn-secondary:hover:not(:disabled) {
-    background: var(--surface2);
+  @media (hover: hover) {
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface2);
+    }
   }
   .btn-secondary:active:not(:disabled) {
     background: color-mix(in srgb, var(--surface2) 80%, var(--line));
@@ -182,8 +186,10 @@ button:disabled {
     background: transparent;
     color: var(--text);
   }
-  .btn-ghost:hover:not(:disabled) {
-    background: var(--surface2);
+  @media (hover: hover) {
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--surface2);
+    }
   }
   .btn-ghost:active:not(:disabled) {
     background: color-mix(in srgb, var(--surface2) 80%, var(--line));
@@ -195,8 +201,10 @@ button:disabled {
     color: var(--primary);
     padding-inline: 0.5rem;
   }
-  .btn-link:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--primary) 8%, transparent);
+  @media (hover: hover) {
+    .btn-link:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--primary) 8%, transparent);
+    }
   }
 
   /* Every destructive action wears this one variant, in the trigger and in
@@ -206,8 +214,10 @@ button:disabled {
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 40%, transparent);
   }
-  .btn-danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  @media (hover: hover) {
+    .btn-danger:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+    }
   }
 
   .btn[aria-busy="true"] {
@@ -226,8 +236,10 @@ button:disabled {
       color var(--duration-fast) var(--ease-out),
       transform var(--duration-fast) var(--ease-out);
   }
-  .icon-btn:hover:not(:disabled) {
-    background: var(--surface2);
+  @media (hover: hover) {
+    .icon-btn:hover:not(:disabled) {
+      background: var(--surface2);
+    }
   }
   .icon-btn:active:not(:disabled) {
     transform: scale(0.94);
@@ -236,7 +248,9 @@ button:disabled {
   .icon-btn:disabled {
     opacity: 0.4;
   }
-  .icon-btn[aria-pressed="true"] {
+  /* Active wins over hover, so a toggled control always looks on. */
+  .icon-btn[aria-pressed="true"],
+  .icon-btn[aria-pressed="true"]:hover:not(:disabled) {
     background: color-mix(in srgb, var(--primary) 12%, transparent);
     color: var(--primary);
   }
@@ -260,8 +274,10 @@ button:disabled {
       border-color var(--duration-fast) var(--ease-out),
       color var(--duration-fast) var(--ease-out);
   }
-  .chip:hover {
-    border-color: var(--line-strong);
+  @media (hover: hover) {
+    .chip:hover {
+      border-color: var(--line-strong);
+    }
   }
   .chip[aria-pressed="true"],
   .chip[aria-checked="true"],
@@ -289,8 +305,10 @@ button:disabled {
     color: var(--muted);
     opacity: 0.8;
   }
-  .field-input:hover {
-    border-color: color-mix(in srgb, var(--line-strong) 70%, var(--text));
+  @media (hover: hover) {
+    .field-input:hover {
+      border-color: color-mix(in srgb, var(--line-strong) 70%, var(--text));
+    }
   }
   .field-input:focus {
     outline: none;
@@ -315,8 +333,10 @@ button:disabled {
   .row-interactive {
     transition: background-color var(--duration-fast) var(--ease-out);
   }
-  .row-interactive:hover {
-    background: color-mix(in srgb, var(--surface2) 70%, transparent);
+  @media (hover: hover) {
+    .row-interactive:hover {
+      background: color-mix(in srgb, var(--surface2) 70%, transparent);
+    }
   }
   .row-interactive:active {
     background: var(--surface2);

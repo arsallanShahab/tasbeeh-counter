@@ -28,7 +28,7 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={show}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[60] flex justify-center px-4 lg:bottom-8"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[60] grid justify-items-center px-4 lg:bottom-8"
         role="status"
         aria-live="polite"
       >
@@ -40,7 +40,7 @@ export const ToastProvider = ({ children }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-auto flex max-w-[min(28rem,calc(100vw-2rem))] items-center gap-3 rounded-xl bg-ink py-2 pl-4 pr-2 text-[0.9375rem] text-page shadow-[var(--shadow-float)]"
+              className="pointer-events-auto flex max-w-[min(28rem,calc(100vw-2rem))] items-center [grid-area:1/1] gap-3 rounded-xl bg-ink py-2 pl-4 pr-2 text-[0.9375rem] text-page shadow-[var(--shadow-float)]"
             >
               <span className="min-w-0 flex-1 py-1.5 [overflow-wrap:anywhere]">{toast.message}</span>
               {toast.action && (

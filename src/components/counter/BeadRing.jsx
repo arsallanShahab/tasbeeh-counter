@@ -1,57 +1,65 @@
-import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useId, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+
+// Beads on the ring, as on a real misbaha.
+export const BEADS = 33;
+
+// Shared bead shading: unlit, counted, and the bead under the thumb.
+export const BeadGradients = ({ id, theme }) => (
+  <defs>
+    <radialGradient id={`${id}-dark`} cx="0.35" cy="0.3" r="0.78">
+      <stop offset="0%" stopColor={theme.dark[0]} />
+      <stop offset="42%" stopColor={theme.dark[1]} />
+      <stop offset="100%" stopColor={theme.dark[2]} />
+    </radialGradient>
+    <radialGradient id={`${id}-gold`} cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0%" stopColor={theme.gold[0]} />
+      <stop offset="48%" stopColor={theme.gold[1]} />
+      <stop offset="100%" stopColor={theme.gold[2]} />
+    </radialGradient>
+    <radialGradient id={`${id}-front`} cx="0.35" cy="0.3" r="0.85">
+      <stop offset="0%" stopColor={theme.front[0]} />
+      <stop offset="42%" stopColor={theme.front[1]} />
+      <stop offset="100%" stopColor={theme.front[2]} />
+    </radialGradient>
+  </defs>
+);
 
 export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, onDec, children, label }) => {
-  const N = Math.max(1, Math.min(target, 33));
+  const N = BEADS;
   const STEP = (2 * Math.PI) / N;
   const STEP_DEG = 360 / N;
-  const R = 70;
-  const beadR = Math.max(4.5, Math.min(((2 * Math.PI * R) / N) * 0.42, 9));
+  const R = 72;
+  const beadR = ((2 * Math.PI * R) / N) * 0.4;
+  const gid = useId().replace(/:/g, "");
+  const reduced = useReducedMotion();
   const wrap = useRef(null);
   const drag = useRef(null);
 
-  // Ring rotation — the active (front) bead always sits at top-center.
-  // The component is keyed by dhikr id from the parent, so it remounts on
-  // dhikr switch and `ticks` starts at the current count. Within a dhikr we
-  // track cumulative ticks so an auto-lap (prev === N → count === 0) keeps
-  // rotating forward instead of snapping back through every bead.
+  // `ticks` = beads moved so far. It keeps going forward after a loop and only
+  // rewinds on a real reset, so the ring never spins backwards on its own.
   const [ticks, setTicks] = useState(count);
-  const lastCountRef = useRef(count);
-
-  useEffect(() => {
-    const prev = lastCountRef.current;
-    lastCountRef.current = count;
-    if (prev === count) return;
-    if (count === 0 && prev === N) {
-      setTicks((t) => t + N);
-      return;
-    }
-    if (count === 0) {
-      setTicks(0);
-      return;
-    }
-    setTicks((t) => Math.max(0, t + (count - prev)));
-  }, [count, N]);
+  const [prev, setPrev] = useState(count);
+  if (prev !== count) {
+    setPrev(count);
+    if (count === 0 && prev < target) setTicks(0); // reset or undo to zero
+    else if (count !== 0) setTicks((t) => Math.max(0, t + (count - prev))); // a loop (target -> 0) keeps ticks
+  }
 
   const ringDeg = ticks === 0 ? 0 : -(ticks - 1) * STEP_DEG;
 
-  const centerPt = () => {
-    if (!wrap.current) return { x: 0, y: 0 };
-    const r = wrap.current.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  };
-
   const angleOf = (e) => {
-    const c = centerPt();
-    return Math.atan2(e.clientY - c.y, e.clientX - c.x);
+    const r = wrap.current.getBoundingClientRect();
+    return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2));
   };
 
   const onDown = (e) => {
-    try { wrap.current.setPointerCapture(e.pointerId); } catch { /* noop */ }
-    drag.current = {
-      prevA: angleOf(e), acc: 0, steps: 0, moved: false,
-      sx: e.clientX, sy: e.clientY
-    };
+    try {
+      wrap.current.setPointerCapture(e.pointerId);
+    } catch {
+      /* unsupported */
+    }
+    drag.current = { prevA: angleOf(e), acc: 0, steps: 0, moved: false, sx: e.clientX, sy: e.clientY };
   };
 
   const onMove = (e) => {
@@ -63,36 +71,31 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
     if (dd < -Math.PI) dd += 2 * Math.PI;
     d.acc += dd;
     d.prevA = a;
-
-    if (Math.abs(e.clientX - d.sx) > 6 || Math.abs(e.clientY - d.sy) > 6) {
-      d.moved = true;
-    }
-
+    if (Math.abs(e.clientX - d.sx) > 6 || Math.abs(e.clientY - d.sy) > 6) d.moved = true;
     const steps = Math.round(d.acc / STEP);
     if (steps !== d.steps) {
       const diff = steps - d.steps;
-      for (let k = 0; k < Math.abs(diff); k++) {
-        if (diff > 0) onInc();
-        else onDec();
-      }
+      for (let k = 0; k < Math.abs(diff); k++) (diff > 0 ? onInc : onDec)();
       d.steps = steps;
     }
   };
 
   const onUp = () => {
-    const d = drag.current;
-    if (d && !d.moved) onInc();
+    if (drag.current && !drag.current.moved) onInc();
     drag.current = null;
   };
 
-  const lit = count === 0 ? 0 : count >= target ? N : (count % N === 0 ? N : count % N);
+  // Lit beads trail behind the front bead, which always sits at the top.
+  const lit = count === 0 ? 0 : count % N === 0 ? N : count % N;
+  const front = lit > 0 ? (((ticks - 1) % N) + N) % N : -1;
+  const isLit = (i) => lit > 0 && ((front - i + N) % N) < lit;
   const lap = Math.ceil(count / N);
   const totalLaps = Math.ceil(target / N);
   const p = Math.min(count / target, 1);
   const C = 2 * Math.PI * 92;
   const done = count >= target;
 
-  const beadSpring = { type: "spring", stiffness: 420, damping: 22, mass: 0.6 };
+  const settle = reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 26, mass: 0.6 };
 
   return (
     <motion.div
@@ -101,7 +104,7 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={onUp}
-      whileTap={{ scale: 0.985 }}
+      whileTap={{ scale: 0.99 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       className="relative flex aspect-square w-[min(20rem,82vw,46svh)] cursor-pointer select-none items-center justify-center lg:w-[min(24rem,60svh)]"
       style={{ touchAction: "none" }}
@@ -110,191 +113,98 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
       tabIndex={-1}
       aria-label={label}
     >
-      {/* Soft ambient halo that intensifies with progress (no scale pulse — keeps the ring grounded) */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={{
-          background: `radial-gradient(circle at center, ${theme.glow}1f 0%, transparent 62%)`,
-          filter: "blur(10px)",
-        }}
-        animate={{ opacity: 0.2 + p * 0.35 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      />
-
-      {/* Completion shockwave — staggered ripples that emerge from the ring and decay outward */}
       <AnimatePresence>
         {done &&
-          [0, 0.22, 0.44].map((delay, idx) => (
+          !reduced &&
+          [0, 0.24].map((delay, idx) => (
             <motion.div
               key={`sweep-${idx}`}
-              className="pointer-events-none absolute rounded-full"
-              style={{
-                left: "50%", top: "50%",
-                width: "92%", height: "92%",
-                marginLeft: "-46%", marginTop: "-46%",
-                border: `${1.8 - idx * 0.4}px solid ${theme.gold[1]}`,
-                zIndex: 0,
-              }}
-              initial={{ opacity: 0.55 - idx * 0.12, scale: 1 }}
-              animate={{ opacity: 0, scale: 2.1 + idx * 0.25 }}
+              className="pointer-events-none absolute inset-[4%] rounded-full"
+              style={{ border: `${1.5 - idx * 0.5}px solid ${theme.gold[1]}` }}
+              initial={{ opacity: 0.5, scale: 1 }}
+              animate={{ opacity: 0, scale: 1.5 + idx * 0.2 }}
               exit={{ opacity: 0 }}
-              transition={{
-                duration: 1.6,
-                delay,
-                ease: [0.16, 1, 0.3, 1], // quintic ease-out — natural decay
-              }}
+              transition={{ duration: 1.4, delay, ease: [0.16, 1, 0.3, 1] }}
             />
           ))}
       </AnimatePresence>
 
-      <svg viewBox="0 0 200 200" className="relative h-full w-full" style={{ zIndex: 1 }}>
-        <defs>
-          <radialGradient id="beadDark" cx="0.35" cy="0.3" r="0.78">
-            <stop offset="0%" stopColor={theme.dark[0]} />
-            <stop offset="42%" stopColor={theme.dark[1]} />
-            <stop offset="100%" stopColor={theme.dark[2]} />
-          </radialGradient>
-          <radialGradient id="beadGold" cx="0.35" cy="0.3" r="0.8">
-            <stop offset="0%" stopColor={theme.gold[0]} />
-            <stop offset="48%" stopColor={theme.gold[1]} />
-            <stop offset="100%" stopColor={theme.gold[2]} />
-          </radialGradient>
-          <radialGradient id="beadFront" cx="0.35" cy="0.3" r="0.85">
-            <stop offset="0%" stopColor={theme.front[0]} />
-            <stop offset="42%" stopColor={theme.front[1]} />
-            <stop offset="100%" stopColor={theme.front[2]} />
-          </radialGradient>
-        </defs>
-
-        {/* progress arc */}
-        <circle cx="100" cy="100" r="92" fill="none" stroke="var(--line)" strokeWidth="3" />
+      <svg viewBox="0 0 200 200" className="relative h-full w-full" aria-hidden="true">
+        <BeadGradients id={gid} theme={theme} />
+        <circle cx="100" cy="100" r="92" fill="none" stroke="var(--line)" strokeWidth="1.5" />
         <motion.circle
-          cx="100" cy="100" r="92"
+          cx="100"
+          cy="100"
+          r="92"
           fill="none"
           stroke={done ? theme.gold[1] : theme.arc}
-          strokeWidth="3"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray={C}
           transform="rotate(-90 100 100)"
           animate={{ strokeDashoffset: C * (1 - p) }}
-          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 24 }}
         />
+        <circle cx="100" cy="100" r={R} fill="none" stroke={theme.thread} strokeWidth="1.2" />
 
-        {/* thread */}
-        <circle cx="100" cy="100" r={R} fill="none" stroke={theme.thread} strokeWidth="1.5" />
-
-        {/* Rotating bead group — physical "thumb slides the bead" feel.
-            transform-box + transform-origin pin rotation to the ring center (100,100). */}
         <motion.g
           animate={{ rotate: ringDeg }}
-          transition={{ type: "spring", stiffness: 180, damping: 22, mass: 0.9 }}
+          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 24, mass: 0.85 }}
           style={{ transformBox: "view-box", transformOrigin: "100px 100px" }}
         >
-            {Array.from({ length: N }).map((_, idx) => {
-              const a = idx * STEP - Math.PI / 2;
-              const x = 100 + R * Math.cos(a);
-              const y = 100 + R * Math.sin(a);
-              const on = idx < lit;
-              const front = idx === lit - 1;
-              const grad = front ? "beadFront" : on ? "beadGold" : "beadDark";
-              const targetR = front ? beadR * 1.5 : on ? beadR * 1.05 : beadR * 0.92;
-
-              return (
-                <g key={idx}>
-                  {/* Active-style aura behind front bead — static halo so the bead
-                      feels anchored to the thread instead of hovering/breathing. */}
-                  {front && activeStyle === "glow" && (
-                    <motion.circle
-                      cx={x} cy={y}
-                      fill={theme.glow}
-                      initial={{ r: beadR * 1.4, opacity: 0 }}
-                      animate={{ r: beadR * 1.8, opacity: 0.18 }}
-                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                  )}
-                  {front && activeStyle === "pulse" && (
-                    <motion.circle
-                      cx={x} cy={y}
-                      fill={theme.glow}
-                      initial={{ r: beadR, opacity: 0.4 }}
-                      animate={{ r: beadR * 2.6, opacity: 0 }}
-                      transition={{ duration: 1.3, repeat: Infinity, ease: "easeOut" }}
-                    />
-                  )}
-                  {front && activeStyle === "ring" && (
-                    <motion.circle
-                      cx={x} cy={y}
-                      fill="none"
-                      stroke={theme.glow}
-                      strokeWidth="1.6"
-                      initial={{ r: beadR * 1.45 + 2.5, opacity: 0.9 }}
-                      animate={{ r: beadR * 1.7 + 3, opacity: [0.9, 0.4, 0.9] }}
-                      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  )}
-
-                  {/* The bead itself — pops with a brief overshoot when newly lit,
-                      settles with a softer spring on size changes. */}
+          {Array.from({ length: N }).map((_, i) => {
+            const a = i * STEP - Math.PI / 2;
+            const x = 100 + R * Math.cos(a);
+            const y = 100 + R * Math.sin(a);
+            const isFront = i === front;
+            const on = isLit(i);
+            const r = isFront ? beadR * 1.32 : on ? beadR * 1.02 : beadR * 0.94;
+            return (
+              <g key={i}>
+                {isFront && activeStyle === "glow" && (
+                  <circle cx={x} cy={y} r={beadR * 2} fill={theme.glow} opacity="0.16" />
+                )}
+                {isFront && activeStyle === "pulse" && !reduced && (
                   <motion.circle
-                    cx={x} cy={y}
-                    fill={`url(#${grad})`}
-                    stroke="#0007"
-                    strokeWidth="0.4"
-                    initial={false}
-                    animate={
-                      front
-                        ? { r: [targetR * 0.78, targetR * 1.12, targetR] }
-                        : { r: targetR }
-                    }
-                    transition={
-                      front
-                        ? { duration: 0.42, ease: [0.22, 1.4, 0.36, 1] }
-                        : beadSpring
-                    }
+                    cx={x}
+                    cy={y}
+                    fill={theme.glow}
+                    initial={{ r: beadR, opacity: 0.35 }}
+                    animate={{ r: beadR * 2.4, opacity: 0 }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
                   />
-
-                  {/* Subtle inner highlight to enhance dimensional feel */}
-                  {on && (
-                    <motion.circle
-                      cx={x - targetR * 0.28}
-                      cy={y - targetR * 0.32}
-                      fill="#fff"
-                      initial={false}
-                      animate={{ r: targetR * 0.22, opacity: front ? 0.55 : 0.32 }}
-                      transition={beadSpring}
-                    />
-                  )}
-                </g>
-              );
-            })}
+                )}
+                {isFront && activeStyle === "ring" && (
+                  <circle cx={x} cy={y} r={beadR * 1.75} fill="none" stroke={theme.glow} strokeWidth="1.2" opacity="0.8" />
+                )}
+                <motion.circle
+                  cx={x}
+                  cy={y}
+                  fill={`url(#${gid}-${isFront ? "front" : on ? "gold" : "dark"})`}
+                  stroke="#0006"
+                  strokeWidth="0.4"
+                  initial={false}
+                  animate={isFront && !reduced ? { r: [r * 0.86, r * 1.06, r] } : { r }}
+                  transition={isFront && !reduced ? { duration: 0.36, ease: [0.22, 1.2, 0.36, 1] } : settle}
+                />
+                {on && <circle cx={x - r * 0.3} cy={y - r * 0.34} r={r * 0.24} fill="#fff" opacity={isFront ? 0.5 : 0.28} />}
+              </g>
+            );
+          })}
         </motion.g>
-
       </svg>
 
-      <div
-        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-        style={{ zIndex: 2 }}
-      >
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center" style={{ zIndex: 2 }}>
         {children}
       </div>
 
-      <AnimatePresence>
-        {totalLaps > 1 && (
-          <motion.div
-            key={`lap-${Math.max(lap, 1)}`}
-            className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-5 text-center"
-            style={{ zIndex: 3 }}
-            initial={{ opacity: 0, y: 6, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          >
-            <span className="numerals whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-muted">
-              Round {Math.max(lap, 1)} of {totalLaps}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {totalLaps > 1 && (
+        <div className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2" style={{ zIndex: 3 }}>
+          <span className="numerals whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-muted">
+            Round {Math.max(lap, 1)} of {totalLaps}
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { Navigate } from "react-router-dom";
 import {
-  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, Hand, BookOpen,
+  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, Hand, BookOpen, Palette,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -11,21 +11,33 @@ import { Sheet } from "../common/Modal";
 import { Button, IconButton } from "../common/Button";
 import { TextInput } from "../common/Field";
 import BeadRing from "./BeadRing";
+import BeadStrand from "./BeadStrand";
 import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
+import CounterStylePicker from "./CounterStylePicker";
+import { useToast } from "../common/toastContext";
 
 const PRESETS = [33, 100, 300, 1000];
 
 export const CounterView = () => {
   const {
-    view, setView, session, setSession, settings, setSettings, bump, complete, setComplete,
+    view, setView, session, setSession, settings, setSettings, complete, setComplete,
     targetEdit, setTargetEdit, customT, setCustomT, dById, increment, decrement, resetSession,
     goStep, applyTarget, vibe,
   } = useApp();
 
   const isDesktop = useIsDesktop();
   const [readerOpen, setReaderOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const toast = useToast();
   const tapStart = useRef(null);
+
+  // Pulse the number on each count, locally, without re-rendering the app.
+  const [numRef, animateNum] = useAnimate();
+  const liveCount = session?.counts?.[session?.stepIndex] ?? 0;
+  useEffect(() => {
+    if (liveCount && numRef.current) animateNum(numRef.current, { scale: [1.06, 1] }, { duration: 0.22, ease: [0.22, 1, 0.36, 1] });
+  }, [liveCount, animateNum, numRef]);
 
   // Close the reader when the dhikr changes underneath it.
   const stepIndex = session?.stepIndex;
@@ -95,22 +107,22 @@ export const CounterView = () => {
     else if (Math.abs(dx) < 16 && Math.abs(dy) < 16 && dt < 600) increment();
   };
 
-  const beads = settings.counterStyle !== "ring";
+  const style = settings.counterStyle === "ring" ? "ring" : settings.counterStyle === "strand" ? "strand" : "beads";
+  const beads = style !== "ring";
   const bt = resolveBeadTheme(settings);
   const C = 2 * Math.PI * 88;
   const label = `Count ${d?.tr || "dhikr"}. ${count} of ${target}.`;
 
   const center = (
     <>
-      <motion.span
-        className="numerals font-display text-[4.5rem] leading-none text-ink lg:text-[5.5rem]"
-        animate={{ scale: bump ? 1.06 : 1 }}
-        transition={{ type: "spring", stiffness: 600, damping: 22 }}
+      <span
+        ref={numRef}
+        className="numerals inline-block font-display text-[4.5rem] leading-none text-ink lg:text-[5.5rem]"
         aria-live="polite"
         aria-atomic="true"
       >
         {count}
-      </motion.span>
+      </span>
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
@@ -156,7 +168,11 @@ export const CounterView = () => {
     </>
   );
 
-  const counter = beads ? (
+  const counter = style === "strand" ? (
+    <BeadStrand key={d?.id} count={count} target={target} theme={bt} activeStyle={settings.activeStyle} onInc={increment} onDec={decrement} label={label}>
+      {center}
+    </BeadStrand>
+  ) : beads ? (
     <BeadRing
       key={d?.id}
       count={count}
@@ -201,11 +217,15 @@ export const CounterView = () => {
     </motion.div>
   );
 
-  const hint = isDesktop
+  const hint = settings.fullScreenTap
+    ? "Tap anywhere on the screen to count. Swipe sideways to change dhikr."
+    : isDesktop
     ? "Click the beads or press Space to count. Backspace undoes, arrows change dhikr, R resets."
-    : beads
-      ? "Tap to count, or slide the beads clockwise."
-      : "Tap to count. Swipe sideways to change dhikr.";
+    : style === "strand"
+      ? "Tap to count, or pull the beads to the right. Pull left to undo."
+      : beads
+        ? "Tap to count, or slide the beads clockwise."
+        : "Tap to count. Swipe sideways to change dhikr.";
 
   const toolbar = (
     <div data-tap-skip="true" className="flex items-center justify-center gap-1.5" role="toolbar" aria-label="Counter controls">
@@ -218,8 +238,13 @@ export const CounterView = () => {
         icon={Hand}
         label={settings.fullScreenTap ? "Tap anywhere: on" : "Tap anywhere: off"}
         pressed={!!settings.fullScreenTap}
-        onClick={() => setSettings((s) => ({ ...s, fullScreenTap: !s.fullScreenTap }))}
+        onClick={() => {
+          const on = !settings.fullScreenTap;
+          setSettings((s) => ({ ...s, fullScreenTap: on }));
+          toast(on ? "Tap anywhere on the screen to count" : "Tap the beads to count");
+        }}
       />
+      <IconButton icon={Palette} label="Counter style" onClick={() => setStyleOpen(true)} />
       {multi && (
         <IconButton
           icon={ChevronRight}
@@ -327,7 +352,7 @@ export const CounterView = () => {
 
         {/* Counting */}
         <div className="flex flex-1 flex-col items-center justify-end gap-5 pb-2 pt-6 lg:justify-center lg:pt-0">
-          <div className="flex flex-1 items-center justify-center lg:flex-none">{counter}</div>
+          <div className={`flex flex-1 justify-center lg:flex-none ${style === "strand" ? "items-stretch" : "items-center"}`}>{counter}</div>
           <p className="max-w-[36ch] text-center text-[0.8125rem] leading-relaxed text-muted">{hint}</p>
           {toolbar}
         </div>
@@ -420,6 +445,10 @@ export const CounterView = () => {
           </Button>
         </form>
         <p className="mt-3 text-[0.8125rem] text-muted">Applies to this session only. Edit the set to change it for good.</p>
+      </Sheet>
+
+      <Sheet open={styleOpen} onClose={() => setStyleOpen(false)} title="Counter style" description="Changes apply straight away.">
+        <CounterStylePicker />
       </Sheet>
 
       <DhikrReader open={readerOpen} onClose={() => setReaderOpen(false)} d={d} lang={settings.lang} />

@@ -16,11 +16,12 @@ import { Sheet } from "../common/Modal";
 import { useToast } from "../common/toastContext";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
+import CounterStylePicker from "../counter/CounterStylePicker";
 import {
-  BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
+  THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
   OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS,
 } from "../../constants/dhikrData";
-import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
+import { useEffectiveAppearance } from "../../utils/theme";
 import {
   CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS, prayerSchedule, fmtTime, methodName,
   hijriDisplayOffset,
@@ -630,8 +631,6 @@ export const SettingsView = () => {
     </div>
   );
 
-  const allBeads = [...BEAD_THEMES, buildCustom(settings.customBead.dark, settings.customBead.gold)];
-
   const sectionAppearance = (
     <div className="space-y-10">
       <Group title="Light or dark">
@@ -677,91 +676,8 @@ export const SettingsView = () => {
       </Group>
 
       <Group title="Counter">
-        <Seg
-          label="Counter style"
-          value={settings.counterStyle}
-          onChange={(v) => set("counterStyle", v)}
-          options={[
-            { v: "beads", l: "Beads" },
-            { v: "ring", l: "Ring" },
-          ]}
-        />
+        <CounterStylePicker />
       </Group>
-
-      {settings.counterStyle !== "ring" && (
-        <Group title="Beads">
-          <div className="scroll-fade-x -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none" role="radiogroup" aria-label="Bead style">
-            {allBeads.map((t) => {
-              const on = settings.beadTheme === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => set("beadTheme", t.id)}
-                  className="flex shrink-0 flex-col items-center gap-1.5"
-                >
-                  <span className={`rounded-xl border p-1.5 transition-colors ${on ? "border-ink" : "border-line"}`}>
-                    <svg viewBox="0 0 64 64" className="h-14 w-14" aria-hidden="true">
-                      <circle cx="32" cy="32" r="22" fill="none" stroke={t.thread} strokeWidth="1" />
-                      {Array.from({ length: 9 }).map((_, k) => {
-                        const a = k * ((2 * Math.PI) / 9) - Math.PI / 2;
-                        return (
-                          <circle
-                            key={k}
-                            cx={32 + 22 * Math.cos(a)}
-                            cy={32 + 22 * Math.sin(a)}
-                            r={k === 3 ? 5.5 : 4.5}
-                            fill={k === 3 ? t.front[1] : k < 4 ? t.gold[1] : t.dark[1]}
-                          />
-                        );
-                      })}
-                    </svg>
-                  </span>
-                  <span className={`text-[0.8125rem] ${on ? "font-medium text-ink" : "text-muted"}`}>{t.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          {settings.beadTheme === "custom" && (
-            <Panel className="flex flex-wrap items-center gap-6 p-4">
-              <label className="flex items-center gap-3 text-[0.9375rem] font-medium text-ink">
-                Beads
-                <input
-                  type="color"
-                  value={settings.customBead.dark}
-                  onChange={(e) => set("customBead", { ...settings.customBead, dark: e.target.value })}
-                  className="h-9 w-12 cursor-pointer rounded-lg border border-line-strong bg-transparent"
-                />
-              </label>
-              <label className="flex items-center gap-3 text-[0.9375rem] font-medium text-ink">
-                Counted
-                <input
-                  type="color"
-                  value={settings.customBead.gold}
-                  onChange={(e) => set("customBead", { ...settings.customBead, gold: e.target.value })}
-                  className="h-9 w-12 cursor-pointer rounded-lg border border-line-strong bg-transparent"
-                />
-              </label>
-            </Panel>
-          )}
-          <div>
-            <p className="mb-2 text-sm font-medium text-ink">Current bead</p>
-            <Seg
-              label="Current bead highlight"
-              value={settings.activeStyle}
-              onChange={(v) => set("activeStyle", v)}
-              options={[
-                { v: "glow", l: "Glow" },
-                { v: "ring", l: "Ring" },
-                { v: "pulse", l: "Pulse" },
-                { v: "plain", l: "Plain" },
-              ]}
-            />
-          </div>
-        </Group>
-      )}
     </div>
   );
 

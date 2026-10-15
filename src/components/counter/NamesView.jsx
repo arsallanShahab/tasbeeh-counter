@@ -73,7 +73,7 @@ export const NamesView = () => {
     ro.observe(deckRef.current);
     return () => ro.disconnect();
   }, []);
-  const cardW = Math.min(deckW * 0.82, isDesktop ? 460 : 380);
+  const cardW = Math.min(deckW * 0.78, isDesktop ? 460 : 380);
   const step = cardW + GAP;
   const stepRef = useRef(step);
   useLayoutEffect(() => {
