@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, Moon, Sun, Sparkles, Mountain, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
@@ -6,17 +5,9 @@ import { BrandMark } from "../common/BrandMark";
 import { Button } from "../common/Button";
 import { hijriFormatted, topOccasion } from "../../utils/hijri";
 import { hijriDisplayOffset } from "../../utils/prayerTimes";
+import { useNow } from "../../hooks/useNow";
 
 const ICON_MAP = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
-
-export const useNow = (ms = 30000) => {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(id);
-  }, [ms]);
-  return now;
-};
 
 /* The top of Today: the date in both calendars, a greeting set large, and,
    on a special day, the occasion folded in underneath. Open on the page, no

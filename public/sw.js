@@ -1,6 +1,5 @@
-// __APP_VERSION__ is replaced at build time by vite.config.js → versionPlugin.
-// In dev (no build step), it stays as the literal string, which is fine — the
-// dev server bypasses the SW for HMR anyway.
+// __APP_VERSION__ is replaced at build time by vite.config.js (versionPlugin).
+// The worker is only registered in production builds (see src/main.jsx).
 const APP_VERSION = "__APP_VERSION__";
 const CACHE_NAME = `sabha-v${APP_VERSION}`;
 const ALERT_CACHE = "sabha-alerts";
@@ -16,11 +15,12 @@ const ASSETS = [
 ];
 
 // ─── Install ─────────────────────────────────────────────────────────
+// A new version installs alongside the old one and then WAITS. It only takes
+// over when the person taps "Reload" (the page posts SKIP_WAITING), so an
+// update never reloads the page in the middle of a count. A first install has
+// nothing to wait for and activates straight away.
 self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
 // ─── Activate ────────────────────────────────────────────────────────

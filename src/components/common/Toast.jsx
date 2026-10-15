@@ -1,8 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
-
-const ToastContext = createContext(() => {});
+import { ToastContext } from "./toastContext";
 
 /* One toast at a time, bottom-centre, above the tab bar. A toast may carry a
    single action, which is how deletions offer Undo instead of a blocking
@@ -71,7 +70,5 @@ export const ToastProvider = ({ children }) => {
     </ToastContext.Provider>
   );
 };
-
-export const useToast = () => useContext(ToastContext);
 
 export default ToastProvider;

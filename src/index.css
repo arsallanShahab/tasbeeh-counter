@@ -49,6 +49,8 @@
 /* ─── Base ─────────────────────────────────────────────────────────────── */
 html {
   -webkit-text-size-adjust: 100%;
+  /* Reserve the scrollbar so locking scroll for a sheet never shifts the page. */
+  scrollbar-gutter: stable;
   text-rendering: optimizeLegibility;
 }
 

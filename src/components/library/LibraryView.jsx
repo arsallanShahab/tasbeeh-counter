@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronUp, Pencil, ArrowRight, FolderPlus, BookPlus,
 } from "lucide-react";
@@ -9,7 +9,7 @@ import { fmt } from "../../utils/stats";
 import { PageHeader, SectionHeader, ListGroup, ListRow, IconTile, GlyphTile, EmptyState } from "../common/Layout";
 import { Button, IconButton } from "../common/Button";
 import { Seg } from "../common/Seg";
-import { useToast } from "../common/Toast";
+import { useToast } from "../common/toastContext";
 import ItemSheet from "./ItemSheet";
 
 const TABS = [
@@ -39,14 +39,10 @@ export const LibraryView = () => {
     settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion, setView,
   } = useApp();
   const toast = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get("tab");
   const tab = TABS.some((t) => t.v === tabParam) ? tabParam : "sets";
-  const itemId = searchParams.get("item");
-  const itemKind = searchParams.get("kind") === "dhikr" ? "dhikr" : "list";
 
   const [reorder, setReorder] = useState(false);
   const [openGroups, setOpenGroups] = useState(() => new Set(["morning", "evening"]));
@@ -69,27 +65,10 @@ export const LibraryView = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOccasion]);
 
-  const openItem = (kind, id) =>
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("item", id);
-      next.set("kind", kind);
-      return next;
-    });
-
-  const closeItem = () => {
-    if (location.key && location.key !== "default") navigate(-1);
-    else
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("item");
-          next.delete("kind");
-          return next;
-        },
-        { replace: true }
-      );
-  };
+  // The detail sheet is local state; the Sheet handles the back gesture.
+  const [item, setItem] = useState(null); // { kind, id } | null
+  const openItem = (kind, id) => setItem({ kind, id });
+  const closeItem = useCallback(() => setItem(null), []);
 
   const onPin = (id, label) => {
     const was = pinned.includes(id);
@@ -604,7 +583,7 @@ export const LibraryView = () => {
         </div>
       </div>
 
-      <ItemSheet item={itemId ? { kind: itemKind, id: itemId } : null} onClose={closeItem} />
+      <ItemSheet item={item} onClose={closeItem} />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES, ARABIC_FONTS } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
 import { useGoogleFonts, URDU_FONT } from "./utils/fonts";
+import { useBootScreen } from "./utils/boot";
 import { useDocumentSeo } from "./utils/seo";
 import { store } from "./utils/storage";
 import HomeView from "./components/home/HomeView";
@@ -19,7 +20,6 @@ import DesktopSidebar from "./components/layout/DesktopSidebar";
 import DhikrEditor from "./components/library/NewDhikrModal";
 import SetEditor from "./components/library/NewListModal";
 import UpdateBanner from "./components/common/UpdateBanner";
-import { BrandMark } from "./components/common/BrandMark";
 import { ToastProvider } from "./components/common/Toast";
 
 /* Views that take the whole screen: no tab bar, their own top bar. */
@@ -30,6 +30,7 @@ const AppContent = () => {
   const location = useLocation();
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
   useDocumentSeo();
+  useBootScreen(loaded);
 
   const theme = THEMES[settings.theme] || THEMES.qalam;
   const themeVars = theme[effectiveAppearance];
@@ -46,7 +47,7 @@ const AppContent = () => {
   // Applied to <html> too, so overscroll and the area behind sheets match.
   useEffect(() => {
     if (!loaded || !themeVars) return;
-    store.set("paint", { bg: themeVars["--bg"], bg2: themeVars["--bg2"], text: themeVars["--text"] });
+    store.set("paint", { bg: themeVars["--bg"], bg2: themeVars["--bg2"], text: themeVars["--text"], primary: themeVars["--primary"] });
     const root = document.documentElement;
     root.style.background = themeVars["--bg"];
     root.style.colorScheme = effectiveAppearance;
@@ -54,15 +55,8 @@ const AppContent = () => {
     if (meta) meta.setAttribute("content", themeVars["--bg"]);
   }, [loaded, themeVars, effectiveAppearance]);
 
-  if (!loaded) {
-    return (
-      <div className="flex min-h-svh items-center justify-center">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-          <BrandMark size="lg" />
-        </motion.div>
-      </div>
-    );
-  }
+  // The boot screen in index.html covers this until the app is ready.
+  if (!loaded) return <div className="min-h-svh" aria-hidden="true" />;
 
   const immersive = IMMERSIVE.includes(view);
 

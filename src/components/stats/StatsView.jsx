@@ -204,7 +204,7 @@ export const StatsView = () => {
         </dl>
       </section>
 
-      <div className="grid gap-12 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
         <section aria-labelledby="week-h" className="space-y-5">
           <SectionHeader id="week-h" title="The last seven days" />
           <div className="flex h-44 items-end gap-2" role="list">
@@ -237,7 +237,7 @@ export const StatsView = () => {
         </section>
       </div>
 
-      <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section aria-labelledby="top-h" className="space-y-4">
           <SectionHeader id="top-h" title="Most recited" />
           <ol className="divide-y divide-line border-y border-line">

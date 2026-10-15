@@ -5,7 +5,7 @@ import { OCCASIONS, ICONS } from "../../constants/dhikrData";
 import { Sheet } from "../common/Modal";
 import { Button, IconButton } from "../common/Button";
 import { Field, TextInput, Select } from "../common/Field";
-import { useToast } from "../common/Toast";
+import { useToast } from "../common/toastContext";
 import { fmt } from "../../utils/stats";
 
 const EMPTY = { name: "", occasion: "custom", icon: "sparkles", steps: [] };
@@ -123,7 +123,7 @@ export const SetEditor = ({ isOpen, onClose }) => {
       }
     >
       <form id="set-form" onSubmit={save} className="space-y-6" noValidate>
-        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-start">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-start">
           <Field label="Name" error={show("name")}>
             <TextInput
               value={form.name}

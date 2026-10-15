@@ -206,15 +206,11 @@ export const NamesView = () => {
           </AnimatePresence>
 
           <div className="mt-8 flex items-center justify-between gap-2 pb-1">
-            <Button variant="secondary" icon={ChevronLeft} onClick={() => go(-1)} disabled={idx === 0} aria-label="Previous Name">
-              <span className="hidden sm:inline">Previous</span>
+            <IconButton icon={ChevronLeft} label="Previous Name" onClick={() => go(-1)} disabled={idx === 0} className="border border-line-strong" />
+            <Button variant="ghost" icon={Play} onClick={() => startDhikr(countable)} className="min-w-0 px-3">
+              <span className="truncate">Count this Name</span>
             </Button>
-            <Button variant="ghost" icon={Play} onClick={() => startDhikr(countable)}>
-              Count this Name
-            </Button>
-            <Button variant="secondary" iconRight={ChevronRight} onClick={() => go(1)} disabled={idx === 98} aria-label="Next Name">
-              <span className="hidden sm:inline">Next</span>
-            </Button>
+            <IconButton icon={ChevronRight} label="Next Name" onClick={() => go(1)} disabled={idx === 98} className="border border-line-strong" />
           </div>
         </div>
       </div>

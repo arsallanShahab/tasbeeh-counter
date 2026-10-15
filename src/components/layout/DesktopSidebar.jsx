@@ -2,7 +2,7 @@ import { Sparkles, Compass, Plus, Play } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { BrandMark } from "../common/BrandMark";
 import { Button } from "../common/Button";
-import { NAV_ITEMS } from "./Navbar";
+import { NAV_ITEMS } from "./navItems";
 import { computeStreak, dateKey, fmt } from "../../utils/stats";
 
 const EXPLORE = [

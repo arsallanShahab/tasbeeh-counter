@@ -29,8 +29,11 @@ export const AppProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const view = pathToView(location.pathname);
-  const modal = searchParams.get("modal") || null;
-  const editId = searchParams.get("edit") || null;
+  /* Editor sheets are plain state, not URL params. The Sheet itself adds a
+     history entry while open, so the back gesture still closes it. */
+  const [editor, setEditor] = useState(null); // { kind: "dhikr" | "list", id } | null
+  const modal = editor?.kind || null;
+  const editId = editor?.id || null;
   const activeOccasion = searchParams.get("occasion") || "all";
 
   const [loaded, setLoaded] = useState(false);
@@ -92,47 +95,17 @@ export const AppProvider = ({ children }) => {
     );
   });
 
-  // Router-based navigation helpers (replace legacy hash-routing)
+  // Router-based navigation. Pass { replace: true } when leaving from a sheet,
+  // so the sheet's own history entry is replaced rather than left behind.
   const setView = useCallback(
-    (newView) => {
-      navigate(viewToPath(newView));
+    (newView, opts) => {
+      navigate(viewToPath(newView), opts);
     },
     [navigate]
   );
 
-  const setModal = useCallback(
-    (newModal) => {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (newModal) next.set("modal", newModal);
-          else {
-            next.delete("modal");
-            next.delete("edit");
-          }
-          return next;
-        },
-        { replace: !newModal }
-      );
-    },
-    [setSearchParams]
-  );
-
-  /* Editors live in the URL like every other sheet (?modal=dhikr|list), with
-     ?edit=<id> when an existing item is being changed, so the hardware back
-     button closes them. */
-  const openEditor = useCallback(
-    (kind, id = null) => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("modal", kind);
-        if (id) next.set("edit", id);
-        else next.delete("edit");
-        return next;
-      });
-    },
-    [setSearchParams]
-  );
+  const setModal = useCallback((kind) => setEditor(kind ? { kind, id: null } : null), []);
+  const openEditor = useCallback((kind, id = null) => setEditor({ kind, id }), []);
 
   const setActiveOccasion = useCallback(
     (newOccasion) => {
@@ -309,6 +282,34 @@ export const AppProvider = ({ children }) => {
     return () => clearTimeout(saveTimer.current);
   }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession, loaded]);
 
+  /* Write everything now, skipping the debounce. Runs when the page is hidden
+     or closed, and before an update reload, so the last taps are never lost. */
+  const flushRef = useRef(null);
+  useEffect(() => {
+    if (!loaded) return;
+    flushRef.current = () => {
+      store.set("dhikrs", dhikrs);
+      store.set("lists", lists);
+      store.set("pinned", pinned);
+      store.set("stats", stats);
+      store.set("settings", settings);
+      store.set("session", session);
+      store.set("complete", complete);
+      store.set("names_session", namesSession);
+    };
+  }, [loaded, dhikrs, lists, pinned, stats, settings, session, complete, namesSession]);
+
+  useEffect(() => {
+    const flush = () => flushRef.current?.();
+    const onVis = () => document.visibilityState === "hidden" && flush();
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
   /* Utility functions */
   const dById = useCallback((id) => dhikrs.find((d) => d.id === id), [dhikrs]);
 
@@ -395,7 +396,7 @@ export const AppProvider = ({ children }) => {
   };
 
   /* Session controls */
-  const openSession = useCallback((steps, title, occasion, sourceListId = null) => {
+  const openSession = useCallback((steps, title, occasion, sourceListId = null, navOpts) => {
     setSession({
       title,
       occasion,
@@ -406,15 +407,15 @@ export const AppProvider = ({ children }) => {
       stepIndex: 0
     });
     setComplete(false);
-    setView("counter");
+    setView("counter", navOpts);
   }, [setView]);
 
-  const startList = useCallback((list) => {
-    openSession(list.steps.map((s) => ({ ...s })), list.name, list.occasion, list.id);
+  const startList = useCallback((list, navOpts) => {
+    openSession(list.steps.map((s) => ({ ...s })), list.name, list.occasion, list.id, navOpts);
   }, [openSession]);
 
-  const startDhikr = useCallback((d) => {
-    openSession([{ dhikr: d.id, target: d.target }], d.tr, "general");
+  const startDhikr = useCallback((d, navOpts) => {
+    openSession([{ dhikr: d.id, target: d.target }], d.tr, "general", null, navOpts);
   }, [openSession]);
 
   /* Deep-link query parameter scanner — handles notification deep links like /counter?dhikr=ID */
@@ -629,7 +630,9 @@ export const AppProvider = ({ children }) => {
   // when the SW updatefound event doesn't fire (iOS standalone, long-lived tabs).
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (APP_VERSION === "0.0.0-dev") return; // skip in dev
+    // Vite injects the real version in dev too, while public/version.json says
+    // 0.0.0-dev, so without this the banner would show permanently in dev.
+    if (import.meta.env.DEV || APP_VERSION === "0.0.0-dev") return;
 
     let cancelled = false;
     const check = async () => {
@@ -676,29 +679,60 @@ export const AppProvider = ({ children }) => {
     }
   }, [installPrompt]);
 
-  const applyUpdate = useCallback(() => {
-    const reg = swRegistrationRef.current;
-    if (reg?.waiting) {
-      reg.waiting.postMessage({ type: "SKIP_WAITING" });
-      // controllerchange handler in main.jsx will reload the page
-    } else {
-      window.location.reload();
+  /* Resolve once the registration has a waiting worker, or give up after
+     `ms`. An update found by the version poll may still be downloading. */
+  const waitForWaiting = (reg, ms = 10000) =>
+    new Promise((resolve) => {
+      if (reg.waiting) return resolve(reg.waiting);
+      const done = () => {
+        clearTimeout(timer);
+        resolve(reg.waiting || null);
+      };
+      const timer = setTimeout(done, ms);
+      const watch = (w) => w && w.addEventListener("statechange", () => w.state === "installed" && done());
+      watch(reg.installing);
+      reg.addEventListener("updatefound", () => watch(reg.installing), { once: true });
+    });
+
+  const applyUpdate = useCallback(async () => {
+    flushRef.current?.();
+    // main.jsx reloads on controllerchange only when this flag is set.
+    window.__tgUpdateRequested = true;
+    try {
+      const reg = swRegistrationRef.current || (await navigator.serviceWorker?.getRegistration?.());
+      if (reg) {
+        if (!reg.waiting) {
+          await reg.update().catch(() => {});
+          await waitForWaiting(reg);
+        }
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          // Fallback in case controllerchange never arrives.
+          setTimeout(() => window.location.reload(), 4000);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Applying update failed:", e);
     }
+    window.location.reload();
   }, []);
 
+  /* Settings > Check for updates. Returns true when a newer version is ready
+     to apply (it is then announced the same way as an automatic find). */
   const checkForUpdates = useCallback(async () => {
-    if (!("serviceWorker" in navigator)) {
-      window.location.reload();
-      return false;
-    }
+    if (!("serviceWorker" in navigator)) return false;
     try {
       const reg = await navigator.serviceWorker.getRegistration();
-      if (!reg) {
-        window.location.reload();
-        return false;
-      }
+      if (!reg) return false;
       await reg.update();
-      return !!reg.waiting;
+      const waiting = reg.installing ? await waitForWaiting(reg) : reg.waiting;
+      if (waiting && navigator.serviceWorker.controller) {
+        swRegistrationRef.current = reg;
+        setUpdateAvailable(true);
+        return true;
+      }
+      return false;
     } catch (e) {
       console.warn("Update check failed:", e);
       return false;

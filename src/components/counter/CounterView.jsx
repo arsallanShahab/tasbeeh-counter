@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Navigate } from "react-router-dom";
 import {
@@ -20,20 +20,20 @@ export const CounterView = () => {
   const {
     view, setView, session, setSession, settings, setSettings, bump, complete, setComplete,
     targetEdit, setTargetEdit, customT, setCustomT, dById, increment, decrement, resetSession,
-    goStep, applyTarget, vibe, modal, setModal,
+    goStep, applyTarget, vibe,
   } = useApp();
 
   const isDesktop = useIsDesktop();
-  const readerOpen = modal === "reader";
-  const setReaderOpen = useCallback((open) => setModal(open ? "reader" : null), [setModal]);
+  const [readerOpen, setReaderOpen] = useState(false);
   const tapStart = useRef(null);
 
   // Close the reader when the dhikr changes underneath it.
   const stepIndex = session?.stepIndex;
-  useEffect(() => {
+  const [readerStep, setReaderStep] = useState(stepIndex);
+  if (readerStep !== stepIndex) {
+    setReaderStep(stepIndex);
     if (readerOpen) setReaderOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIndex]);
+  }
 
   useEffect(() => {
     if (view !== "counter") return;
@@ -356,7 +356,7 @@ export const CounterView = () => {
               block
               onClick={() => {
                 setComplete(false);
-                setView("home");
+                setView("home", { replace: true });
               }}
             >
               Done

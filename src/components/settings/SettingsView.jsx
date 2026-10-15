@@ -13,7 +13,7 @@ import { PageHeader, Panel, ListGroup, ListRow, IconTile } from "../common/Layou
 import { Button, IconButton } from "../common/Button";
 import { Field, TextInput, Select, Stepper } from "../common/Field";
 import { Sheet } from "../common/Modal";
-import { useToast } from "../common/Toast";
+import { useToast } from "../common/toastContext";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
 import {
@@ -916,7 +916,7 @@ export const SettingsView = () => {
 
           <Group title="Add a reminder">
             <Panel as="form" onSubmit={addAlert} noValidate className="space-y-4 p-4">
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
                 <Field label="Name" error={alertError}>
                   <TextInput value={newAlert.title} onChange={(e) => setNewAlert((n) => ({ ...n, title: e.target.value }))} placeholder="Duha" />
                 </Field>

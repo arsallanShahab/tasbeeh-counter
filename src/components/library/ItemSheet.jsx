@@ -3,7 +3,7 @@ import { Play, Pin, PinOff, Pencil, Copy, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Sheet } from "../common/Modal";
 import { Button } from "../common/Button";
-import { useToast } from "../common/Toast";
+import { useToast } from "../common/toastContext";
 import { OCCASIONS } from "../../constants/dhikrData";
 import { fmt } from "../../utils/stats";
 
@@ -66,7 +66,9 @@ export const ItemSheet = ({ item, onClose }) => {
     openEditor("list", id);
   };
 
-  const begin = () => (kind === "list" ? startList(data) : startDhikr(data));
+  // replace: the counter takes over this sheet history entry, so Back from
+  // the counter returns to the library rather than to a closed sheet.
+  const begin = () => (kind === "list" ? startList(data, { replace: true }) : startDhikr(data, { replace: true }));
 
   if (!data) return <Sheet open={false} onClose={onClose} title="" />;
 

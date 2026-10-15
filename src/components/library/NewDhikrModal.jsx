@@ -3,7 +3,7 @@ import { useApp } from "../../context/AppContext";
 import { Sheet } from "../common/Modal";
 import { Button } from "../common/Button";
 import { Field, TextInput } from "../common/Field";
-import { useToast } from "../common/Toast";
+import { useToast } from "../common/toastContext";
 
 const PRESETS = [33, 100, 300, 1000];
 const EMPTY = { tr: "", arabic: "", en: "", ur: "", target: 33 };
