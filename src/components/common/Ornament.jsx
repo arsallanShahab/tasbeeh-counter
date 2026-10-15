@@ -1,15 +1,3 @@
-// Eight-pointed star (khatam): two squares at 45 degrees with inner rings.
-export const StarRosette = ({ className = "" }) => (
-  <svg viewBox="0 0 100 100" className={className} aria-hidden="true" focusable="false">
-    <g fill="none" stroke="currentColor" strokeWidth="0.6">
-      <rect x="20" y="20" width="60" height="60" />
-      <rect x="20" y="20" width="60" height="60" transform="rotate(45 50 50)" />
-      <circle cx="50" cy="50" r="26" />
-      <circle cx="50" cy="50" r="44" strokeWidth="0.35" />
-    </g>
-  </svg>
-);
-
 // Small star medallion holding a number, as on a manuscript verse marker.
 export const StarNumber = ({ n, className = "" }) => (
   <span className={`relative inline-flex h-11 w-11 items-center justify-center text-gold ${className}`}>

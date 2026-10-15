@@ -8,7 +8,6 @@ import { useNow } from "../../hooks/useNow";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
 import { Panel, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, ProgressBar } from "../common/Layout";
 import { Button } from "../common/Button";
-import { StarRosette } from "../common/Ornament";
 import {
   ICONS,
   OCCASIONS,
@@ -274,14 +273,13 @@ export const HomeView = () => {
       >
         {/* Inner rule: a manuscript-style double border. */}
         <div className="relative overflow-hidden rounded-[0.875rem] border border-[color-mix(in_srgb,var(--gold)_38%,var(--line))] px-6 pb-7 pt-8 text-center">
-          <StarRosette className="pointer-events-none absolute left-1/2 top-28 h-56 w-56 -translate-x-1/2 -translate-y-1/2 text-gold opacity-[0.16]" />
           <div className="relative">
             <p className="eyebrow flex items-center justify-center gap-2 text-gold">
               <span>Name of the day</span>
               <span className="h-px w-4 bg-current opacity-60" aria-hidden="true" />
               <span className="numerals">{idx + 1} of 99</span>
             </p>
-            <p dir="rtl" lang="ar" className="mt-5 font-arabic text-[3.75rem] leading-[1.45] text-ink">
+            <p dir="rtl" lang="ar" className="mt-7 font-arabic text-[3.75rem] leading-[1.45] text-ink">
               {name.arabic}
             </p>
             <h2 id="name-h" className="mt-2 font-display text-[1.75rem] leading-tight text-ink">

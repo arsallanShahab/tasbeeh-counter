@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { useDrag } from "@use-gesture/react";
 import { Navigate } from "react-router-dom";
@@ -10,16 +9,23 @@ import { SEED_NAMES_OF_ALLAH } from "../../constants/asmaUlHusna";
 import { Button, IconButton } from "../common/Button";
 import { Seg } from "../common/Seg";
 import { Sheet } from "../common/Modal";
-import { StarRosette, StarNumber } from "../common/Ornament";
+import { StarNumber } from "../common/Ornament";
 
 const LAST = SEED_NAMES_OF_ALLAH.length - 1;
 const GAP = 14;
 const SNAP = { type: "spring", stiffness: 320, damping: 36, mass: 0.9 };
 
-// Scale and fade a card by its distance from the centre of the deck.
-const useCardMotion = (x, o, stepRef) => {
-  const d = useTransform(x, (v) => Math.min(1, Math.abs((v + o * stepRef.current) / stepRef.current)));
-  return { scale: useTransform(d, (t) => 1 - t * 0.07), opacity: useTransform(d, (t) => 1 - t * 0.5) };
+// A card at a fixed place in the deck (index `i`), shrinking and fading by its
+// distance from the centre. Fixed places mean nothing re-lays out after a swipe.
+const DeckCard = ({ i, x, stepRef, step, cardW, onSelect, children }) => {
+  const d = useTransform(x, (v) => Math.min(1, Math.abs((v + i * stepRef.current) / stepRef.current)));
+  const scale = useTransform(d, (t) => 1 - t * 0.06);
+  const opacity = useTransform(d, (t) => 1 - t * 0.55);
+  return (
+    <motion.div className="absolute inset-y-0" style={{ width: cardW, left: i * step - cardW / 2, scale, opacity }} onClick={onSelect}>
+      {children}
+    </motion.div>
+  );
 };
 
 // One Name as an illuminated card. `lang` picks the meaning shown.
@@ -28,7 +34,6 @@ const NameCard = ({ name, index, lang, large }) => {
   return (
     <article className="h-full rounded-[1.375rem] border border-line bg-surface p-1.5 shadow-(--shadow-raise)">
       <div className="relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--gold)_38%,var(--line))] px-5 pb-7 pt-5 text-center">
-        <StarRosette className="pointer-events-none absolute left-1/2 top-[44%] h-[19rem] w-[19rem] -translate-x-1/2 -translate-y-1/2 text-gold opacity-[0.13]" />
         <StarNumber n={index + 1} className="relative" />
         <div className="relative flex flex-1 flex-col items-center justify-center py-4">
           <p dir="rtl" lang="ar" className={`font-arabic leading-[1.6] text-ink ${large ? "text-[6rem]" : "text-[4.75rem]"}`}>
@@ -80,21 +85,23 @@ export const NamesView = () => {
     stepRef.current = step;
   }, [step]);
 
-  const x = useMotionValue(0);
+  // The track sits at -index * step; a swipe just slides it.
+  const x = useMotionValue(-idx * step);
   const busy = useRef(false);
+  useLayoutEffect(() => {
+    if (!busy.current) x.jump(-idx * stepRef.current);
+  }, [idx, step, x]);
 
-  // Slide the deck one card, then commit the new index in the same frame
-  // the track resets, so the swap is invisible.
   const slide = (dir) => {
     if (busy.current) return;
+    const base = -idx * step;
     if ((dir === 1 && idx >= LAST) || (dir === -1 && idx <= 0)) {
-      animate(x, 0, SNAP);
+      animate(x, base, SNAP);
       return;
     }
     busy.current = true;
-    animate(x, -dir * step, SNAP).then(() => {
-      flushSync(() => navigateNames(dir));
-      x.set(0);
+    navigateNames(dir);
+    animate(x, base - dir * step, SNAP).then(() => {
       busy.current = false;
     });
   };
@@ -104,7 +111,6 @@ export const NamesView = () => {
       startNamesSession(target);
       vibe(8);
     }
-    x.set(0);
     setOverview(false);
   };
 
@@ -112,22 +118,20 @@ export const NamesView = () => {
     ({ down, movement: [mx], velocity: [vx], tap, last }) => {
       if (tap || busy.current) return;
       const atEdge = (mx > 0 && idx === 0) || (mx < 0 && idx === LAST);
+      const base = -idx * step;
       if (down) {
-        x.set(atEdge ? mx * 0.25 : mx);
+        x.set(base + (atEdge ? mx * 0.25 : mx));
         return;
       }
       if (last) {
         const commit = !atEdge && (Math.abs(mx) > step * 0.22 || (vx > 0.35 && Math.abs(mx) > 24));
         if (commit) slide(mx < 0 ? 1 : -1);
-        else animate(x, 0, SNAP);
+        else animate(x, base, SNAP);
       }
     },
     { axis: "x", filterTaps: true, pointer: { touch: true } }
   );
 
-  const sPrev = useCardMotion(x, -1, stepRef);
-  const sCur = useCardMotion(x, 0, stepRef);
-  const sNext = useCardMotion(x, 1, stepRef);
 
   useEffect(() => {
     if (view !== "names") return;
@@ -156,11 +160,9 @@ export const NamesView = () => {
   const countable = dById(name.id) || name;
   const pct = ((idx + 1) / SEED_NAMES_OF_ALLAH.length) * 100;
 
-  const cards = [
-    { o: -1, i: idx - 1, s: sPrev },
-    { o: 0, i: idx, s: sCur },
-    { o: 1, i: idx + 1, s: sNext },
-  ].filter((c) => c.i >= 0 && c.i <= LAST);
+  // Two either side, so a card leaving the edge never pops out mid-slide.
+  const cards = [];
+  for (let i = Math.max(0, idx - 2); i <= Math.min(LAST, idx + 2); i++) cards.push(i);
 
   return (
     <div className="flex min-h-[calc(100svh-1.5rem)] flex-col lg:min-h-[calc(100svh-3rem)]">
@@ -222,16 +224,20 @@ export const NamesView = () => {
               aria-label={`Name ${idx + 1} of 99, ${name.tr}`}
             >
               <motion.div className="absolute inset-y-0 left-1/2" style={{ x }}>
-                {cards.map(({ o, i, s }) => (
-                  <motion.div
+                {cards.map((i) => (
+                  <DeckCard
                     key={SEED_NAMES_OF_ALLAH[i].id}
-                    className="absolute inset-y-0"
-                    style={{ width: cardW, left: o * step - cardW / 2, scale: s.scale, opacity: s.opacity }}
-                    onClick={o !== 0 ? () => slide(o) : undefined}
-                    aria-hidden={o !== 0}
+                    i={i}
+                    x={x}
+                    stepRef={stepRef}
+                    step={step}
+                    cardW={cardW}
+                    onSelect={i !== idx ? () => slide(i > idx ? 1 : -1) : undefined}
                   >
-                    <NameCard name={SEED_NAMES_OF_ALLAH[i]} index={i} lang={settings.lang} large={isDesktop} />
-                  </motion.div>
+                    <div aria-hidden={i !== idx} className="h-full">
+                      <NameCard name={SEED_NAMES_OF_ALLAH[i]} index={i} lang={settings.lang} large={isDesktop} />
+                    </div>
+                  </DeckCard>
                 ))}
               </motion.div>
             </div>
