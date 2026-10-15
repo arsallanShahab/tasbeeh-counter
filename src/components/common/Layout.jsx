@@ -1,5 +1,4 @@
 import { ChevronRight } from "lucide-react";
-import { BeadMark } from "./BrandMark";
 
 const cx = (...parts) => parts.filter(Boolean).join(" ");
 
@@ -117,10 +116,15 @@ export const IconTile = ({ icon: Icon, tone = "neutral", size = 40 }) => (
   </span>
 );
 
-// Leading tile for a single dhikr: the brand bead mark.
+// Leading tile for a single dhikr: three beads on a string.
 export const DhikrTile = ({ size = 40 }) => (
   <span className="flex items-center justify-center rounded-xl bg-sunken text-ink" style={{ width: size, height: size }} aria-hidden="true">
-    <BeadMark size={Math.round(size * 0.5)} />
+    <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M2 13 Q10 6 18 13" fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1" />
+      <circle cx="5" cy="10.6" r="2.2" fill="currentColor" />
+      <circle cx="10" cy="9.4" r="2.6" fill="var(--primary)" />
+      <circle cx="15" cy="10.6" r="2.2" fill="currentColor" />
+    </svg>
   </span>
 );
 

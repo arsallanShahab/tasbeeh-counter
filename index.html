@@ -47,11 +47,8 @@
         transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.4s;
       }
       #boot.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
-      #boot .boot-ring { opacity: 0.3; }
-      #boot .boot-step {
-        transform-origin: 12px 12px;
-        animation: boot-step 1.8s steps(9, jump-none) infinite;
-      }
+      /* A gold bead steps around the ring, one bead per beat. */
+      #boot .boot-step { transform-origin: 24px 24px; animation: boot-step 1.8s steps(9, jump-none) infinite; }
       @keyframes boot-step { from { transform: rotate(0deg); } to { transform: rotate(320deg); } }
       #boot .boot-word {
         font-family: "Newsreader", Georgia, serif; font-weight: 500;
@@ -103,9 +100,9 @@
       content="Free online tasbeeh counter — count dhikr right in your browser, no app download. Track daily adhkar, build custom dua routines, see streaks, and read the 99 Names of Allah."
     />
     <meta property="og:url" content="https://tasbeehgo.vercel.app/" />
-    <meta property="og:image" content="https://tasbeehgo.vercel.app/icon-512.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:image" content="https://tasbeehgo.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Tasbeeh Go — digital tasbeeh and dhikr counter" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="ar_AR" />
@@ -117,7 +114,7 @@
       name="twitter:description"
       content="Free online tasbeeh counter — count dhikr in your browser, no app download. Daily adhkar, custom dua routines, streaks, and the 99 Names of Allah."
     />
-    <meta name="twitter:image" content="https://tasbeehgo.vercel.app/icon-512.png" />
+    <meta name="twitter:image" content="https://tasbeehgo.vercel.app/og-image.png" />
     <meta name="twitter:image:alt" content="Tasbeeh Go — digital tasbeeh and dhikr counter" />
 
     <!-- Structured data: the app itself -->
@@ -278,11 +275,11 @@
   </head>
   <body>
     <div id="boot" role="status" aria-label="Loading Tasbeeh Go">
-      <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <circle class="boot-ring" cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="0.6" />
-        <g class="boot-ring"><circle cx="12" cy="3.6" r="1.75" fill="currentColor" /><circle cx="17.399" cy="5.565" r="1.75" fill="currentColor" /><circle cx="20.272" cy="10.541" r="1.75" fill="currentColor" /><circle cx="19.275" cy="16.2" r="1.75" fill="currentColor" /><circle cx="14.873" cy="19.893" r="1.75" fill="currentColor" /><circle cx="9.127" cy="19.893" r="1.75" fill="currentColor" /><circle cx="4.725" cy="16.2" r="1.75" fill="currentColor" /><circle cx="3.728" cy="10.541" r="1.75" fill="currentColor" /><circle cx="6.601" cy="5.565" r="1.75" fill="currentColor" /></g>
-        <g class="boot-step"><circle cx="12" cy="3.6" r="2.6" fill="var(--primary, #2c5a46)" /></g>
-      </svg>
+      <svg width="80" height="80" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs>
+    <radialGradient id="btp" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#86a898"/><stop offset="0.5" stop-color="#2c5a46"/><stop offset="1" stop-color="#1a3529"/></radialGradient>
+    <radialGradient id="btg" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#f8df9f"/><stop offset="0.5" stop-color="#d6a33f"/><stop offset="1" stop-color="#8c6318"/></radialGradient>
+    <radialGradient id="bts" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#fbefcf"/><stop offset="0.55" stop-color="#e0c486"/><stop offset="1" stop-color="#a58546"/></radialGradient>
+    <radialGradient id="btsh"><stop offset="0" stop-color="#000" stop-opacity="0.28"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs><g transform="translate(0 0) scale(1)"><ellipse cx="24.00" cy="10.59" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="24.00" cy="8.80" r="3.25" fill="url(#btp)"/><circle cx="22.93" cy="7.57" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="33.77" cy="14.14" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="33.77" cy="12.36" r="3.25" fill="url(#btp)"/><circle cx="32.70" cy="11.12" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="38.97" cy="23.15" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="38.97" cy="21.36" r="3.25" fill="url(#btp)"/><circle cx="37.90" cy="20.13" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="37.16" cy="33.39" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="37.16" cy="31.60" r="3.25" fill="url(#btp)"/><circle cx="36.09" cy="30.36" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="29.20" cy="40.07" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="29.20" cy="38.28" r="3.25" fill="url(#btp)"/><circle cx="28.13" cy="37.05" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="18.80" cy="40.07" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="18.80" cy="38.28" r="3.25" fill="url(#btp)"/><circle cx="17.73" cy="37.05" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="10.84" cy="33.39" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="10.84" cy="31.60" r="3.25" fill="url(#btp)"/><circle cx="9.76" cy="30.37" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="9.03" cy="23.15" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="9.03" cy="21.36" r="3.25" fill="url(#btp)"/><circle cx="7.96" cy="20.13" r="0.71" fill="#fff" opacity="0.6"/><ellipse cx="14.23" cy="14.14" rx="3.41" ry="1.95" fill="url(#btsh)"/><circle cx="14.23" cy="12.36" r="3.25" fill="url(#btp)"/><circle cx="13.16" cy="11.12" r="0.71" fill="#fff" opacity="0.6"/><polygon points="24,24 24.00,16.60 25.95,19.29" fill="#ebc366"/><polygon points="24,24 25.95,19.29 29.23,18.77" fill="#b98a2c"/><polygon points="24,24 29.23,18.77 28.71,22.05" fill="#ebc366"/><polygon points="24,24 28.71,22.05 31.40,24.00" fill="#b98a2c"/><polygon points="24,24 31.40,24.00 28.71,25.95" fill="#ebc366"/><polygon points="24,24 28.71,25.95 29.23,29.23" fill="#b98a2c"/><polygon points="24,24 29.23,29.23 25.95,28.71" fill="#ebc366"/><polygon points="24,24 25.95,28.71 24.00,31.40" fill="#b98a2c"/><polygon points="24,24 24.00,31.40 22.05,28.71" fill="#ebc366"/><polygon points="24,24 22.05,28.71 18.77,29.23" fill="#b98a2c"/><polygon points="24,24 18.77,29.23 19.29,25.95" fill="#ebc366"/><polygon points="24,24 19.29,25.95 16.60,24.00" fill="#b98a2c"/><polygon points="24,24 16.60,24.00 19.29,22.05" fill="#ebc366"/><polygon points="24,24 19.29,22.05 18.77,18.77" fill="#b98a2c"/><polygon points="24,24 18.77,18.77 22.05,19.29" fill="#ebc366"/><polygon points="24,24 22.05,19.29 24.00,16.60" fill="#b98a2c"/></g><g class="boot-step"><ellipse cx="24" cy="11.12" rx="4.44" ry="2.54" fill="url(#btsh)"/><circle cx="24" cy="8.80" r="4.23" fill="url(#btg)"/><circle cx="22.61" cy="7.19" r="0.93" fill="#fff" opacity="0.6"/></g></svg>
       <div class="boot-word" aria-hidden="true">tasbeeh<span style="font-style:italic;color:var(--primary,#2c5a46)">go</span></div>
     </div>
     <script>
