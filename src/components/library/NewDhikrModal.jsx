@@ -1,142 +1,136 @@
-import React, { useState } from "react";
-import { X, Type, Languages, Target } from "lucide-react";
+import { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import Modal from "../common/Modal";
+import { Sheet } from "../common/Modal";
+import { Button } from "../common/Button";
+import { Field, TextInput } from "../common/Field";
+import { useToast } from "../common/Toast";
 
-export const NewDhikrModal = ({ isOpen, onClose }) => {
-  const { saveDhikr, vibe } = useApp();
-  const [nd, setNd] = useState({ tr: "", arabic: "", en: "", ur: "", target: 33 });
+const PRESETS = [33, 100, 300, 1000];
+const EMPTY = { tr: "", arabic: "", en: "", ur: "", target: 33 };
 
-  const handleSave = () => {
-    if (!nd.tr.trim() || !nd.arabic.trim()) return;
-    saveDhikr(nd, setNd);
+/* Create or edit a dhikr of your own. Opened with ?modal=dhikr, plus
+   &edit=<id> to change an existing custom one. Errors appear only after a
+   save attempt, beside the field they belong to. */
+export const DhikrEditor = ({ isOpen, onClose }) => {
+  const { editId, dById, createDhikr, updateDhikr, startDhikr } = useApp();
+  const toast = useToast();
+
+  const editing = isOpen && editId ? dById(editId) : null;
+  const [form, setForm] = useState(EMPTY);
+  const [tried, setTried] = useState(false);
+
+  // Reset the form each time the sheet opens, prefilled when editing.
+  const sessionKey = isOpen ? editId || "new" : null;
+  const [loadedKey, setLoadedKey] = useState(null);
+  if (sessionKey !== loadedKey) {
+    setLoadedKey(sessionKey);
+    if (sessionKey) {
+      setForm(editing ? { tr: editing.tr, arabic: editing.arabic, en: editing.en || "", ur: editing.ur || "", target: editing.target } : EMPTY);
+      setTried(false);
+    }
+  }
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const errors = {
+    arabic: !form.arabic.trim() ? "Add the Arabic text. This is what you'll read while counting." : null,
+    tr: !form.tr.trim() ? "Add a transliteration, so you can find this dhikr by name." : null,
+    target: !(Number(form.target) >= 1) ? "Enter a count of 1 or more." : null,
+  };
+  const valid = !errors.arabic && !errors.tr && !errors.target;
+
+  const save = (e) => {
+    e?.preventDefault();
+    setTried(true);
+    if (!valid) return;
+    if (editing) {
+      updateDhikr(editing.id, {
+        tr: form.tr.trim(),
+        arabic: form.arabic.trim(),
+        en: form.en.trim(),
+        ur: form.ur.trim(),
+        target: form.target,
+      });
+      toast("Changes saved");
+    } else {
+      const id = createDhikr(form);
+      const label = form.tr.trim();
+      toast(`Added “${label}” to your library`, {
+        action: { label: "Begin", onClick: () => startDhikr({ id, tr: label, target: Math.max(1, Math.round(Number(form.target))) }) },
+      });
+    }
     onClose();
   };
 
-  const isValid = nd.tr.trim() && nd.arabic.trim();
-
-  const handleQuickTarget = (v) => {
-    setNd(prev => ({ ...prev, target: v }));
-    vibe(8);
-  };
+  const show = (k) => (tried ? errors[k] : null);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-2xl text-[var(--text)]">New Dhikr</h2>
-            <p className="text-xs text-[var(--muted)] mt-0.5">Create a custom single tasbeeh prayer</p>
-          </div>
-          <button 
-            onClick={onClose} 
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--line)] transition-all cursor-pointer"
-          >
-            <X size={20} />
-          </button>
+    <Sheet
+      open={isOpen}
+      onClose={onClose}
+      title={editing ? "Edit dhikr" : "New dhikr"}
+      description={editing ? undefined : "Add a dhikr or du‘a that isn't in the library."}
+      initialFocus="textarea"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="dhikr-form">
+            {editing ? "Save changes" : "Add dhikr"}
+          </Button>
         </div>
-
-        <div className="space-y-5">
-          {/* Section 1: Calligraphy */}
-          <div className="space-y-3">
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--gold)]">
-              <Type size={14} /> Calligraphy & Transliteration
-            </p>
-            
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-[var(--muted)] pl-1">Arabic Text (required)</label>
-              <input 
-                className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-4 text-center font-arabic text-3xl text-[var(--text)] outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 placeholder:font-sans placeholder:text-base placeholder:text-zinc-500/70 transition-all font-semibold"
-                dir="rtl" 
-                placeholder="سُبْحَانَ ٱللَّٰهِ" 
-                value={nd.arabic} 
-                onChange={(e) => setNd({ ...nd, arabic: e.target.value })} 
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-[var(--muted)] pl-1">Pronunciation / Translit (required)</label>
-              <input 
-                className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-[var(--text)] text-sm outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 placeholder:text-zinc-500/70 transition-all font-semibold" 
-                placeholder="e.g. SubhanAllah" 
-                value={nd.tr} 
-                onChange={(e) => setNd({ ...nd, tr: e.target.value })} 
-              />
-            </div>
-          </div>
-
-          {/* Section 2: Meanings */}
-          <div className="space-y-3">
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--gold)]">
-              <Languages size={14} /> Translations
-            </p>
-            
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-[var(--muted)] pl-1">English Meaning</label>
-              <input 
-                className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-[var(--text)] text-sm outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 transition-all font-medium" 
-                placeholder="Glory be to Allah" 
-                value={nd.en} 
-                onChange={(e) => setNd({ ...nd, en: e.target.value })} 
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-[var(--muted)] pl-1">Urdu Meaning</label>
-              <input 
-                className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-right font-urdu text-[var(--text)] text-base outline-none focus:border-[var(--primary)] placeholder:font-sans placeholder:text-sm placeholder:text-zinc-500/70 transition-all font-semibold" 
-                dir="rtl" 
-                placeholder="اللہ پاک ہے" 
-                value={nd.ur} 
-                onChange={(e) => setNd({ ...nd, ur: e.target.value })} 
-              />
-            </div>
-          </div>
-
-          {/* Section 3: Target Count */}
-          <div className="space-y-3">
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--gold)]">
-              <Target size={14} /> Default Target
-            </p>
-            
-            <div className="flex gap-2">
-              {[33, 100, 300, 1000].map((val) => (
+      }
+    >
+      <form id="dhikr-form" onSubmit={save} className="space-y-5" noValidate>
+        <Field label="Arabic" error={show("arabic")}>
+          <textarea
+            dir="rtl"
+            lang="ar"
+            rows={2}
+            value={form.arabic}
+            onChange={set("arabic")}
+            placeholder="سُبْحَانَ اللّٰهِ"
+            className="field-input h-auto min-h-22 py-3 text-center font-arabic text-[1.75rem] leading-[1.8]"
+          />
+        </Field>
+        <Field label="Transliteration" error={show("tr")}>
+          <TextInput value={form.tr} onChange={set("tr")} placeholder="SubhanAllah" autoComplete="off" />
+        </Field>
+        <Field label="English meaning" optional>
+          <TextInput value={form.en} onChange={set("en")} placeholder="Glory be to Allah" autoComplete="off" />
+        </Field>
+        <Field label="Urdu meaning" optional>
+          <TextInput dir="rtl" lang="ur" value={form.ur} onChange={set("ur")} placeholder="اللہ پاک ہے" className="font-urdu text-lg" />
+        </Field>
+        <Field label="Count" hint="How many times to recite it in one sitting." error={show("target")}>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Common counts">
+              {PRESETS.map((v) => (
                 <button
-                  key={val}
+                  key={v}
                   type="button"
-                  onClick={() => handleQuickTarget(val)}
-                  className="flex-1 rounded-xl border py-2 text-xs font-bold transition-all cursor-pointer active:scale-95 duration-200"
-                  style={Number(nd.target) === val ? { background: "linear-gradient(135deg, var(--primary), var(--primary-dim))", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--line)", color: "var(--muted)", background: "var(--bg2)" }}
+                  className="chip numerals"
+                  aria-pressed={Number(form.target) === v}
+                  onClick={() => setForm((f) => ({ ...f, target: v }))}
                 >
-                  {val}
+                  {v}
                 </button>
               ))}
             </div>
-
-            <div className="flex items-center gap-3">
-              <input 
-                type="number" 
-                inputMode="numeric"
-                className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-4 py-3 text-center text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--primary)] transition-all" 
-                placeholder="Custom target count…"
-                value={nd.target} 
-                onChange={(e) => setNd({ ...nd, target: e.target.value })} 
-              />
-            </div>
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={form.target}
+              onChange={set("target")}
+              aria-label="Custom count"
+              className="numerals h-9 w-24 text-center text-[0.9375rem]"
+            />
           </div>
-
-          {/* Save Button */}
-          <button 
-            onClick={handleSave} 
-            disabled={!isValid}
-            className="w-full rounded-2xl py-4 font-semibold text-white cursor-pointer active:scale-[0.96] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 mt-2 shadow-sm" 
-            style={{ background: "var(--primary)" }}
-          >
-            {isValid ? "Save & Add Dhikr" : "Fill Required Fields"}
-          </button>
-        </div>
-      </Modal>
+        </Field>
+      </form>
+    </Sheet>
   );
 };
 
-export default NewDhikrModal;
+export default DhikrEditor;

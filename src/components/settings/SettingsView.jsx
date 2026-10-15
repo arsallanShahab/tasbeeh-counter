@@ -1,437 +1,137 @@
-import React, { useState, useRef, useMemo } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
-  Globe, Moon, Sun, Monitor, Disc, Palette, Vibrate, Volume2,
-  ChevronRight, RotateCcw, Hand, Keyboard, Sparkles, MousePointerClick,
-  Bell, Trash2, Plus, Check, Link, ChevronUp, ChevronDown, Eye, EyeOff, GripVertical, LayoutGrid,
-  RefreshCw, Download, Smartphone, DatabaseBackup, Upload, AlertTriangle, ArrowLeft, Type,
-  Compass, MapPin, Minus, Navigation, CalendarDays, Clock, AlertCircle, Pencil
+  BookOpenText, Palette, Hand, Compass, Bell, DatabaseBackup, ArrowLeft, Check, ChevronUp, ChevronDown,
+  Eye, EyeOff, Plus, Trash2, MapPin, Download, Upload, RefreshCw, RotateCcw, Smartphone, Link2, CircleAlert,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { parseBackup, readFileAsText } from "../../utils/backup";
-import Card from "../common/Card";
+import { useGoogleFonts } from "../../utils/fonts";
+import { PageHeader, Panel, ListGroup, ListRow, IconTile } from "../common/Layout";
+import { Button, IconButton } from "../common/Button";
+import { Field, TextInput, Select, Stepper } from "../common/Field";
+import { Sheet } from "../common/Modal";
+import { useToast } from "../common/Toast";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
-import { BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE, OCCASIONS, OCCASION_ICONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../../constants/dhikrData";
+import {
+  BEAD_THEMES, THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
+  OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS,
+} from "../../constants/dhikrData";
 import { buildCustom, useEffectiveAppearance } from "../../utils/theme";
 import {
-  CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS,
-  prayerSchedule, fmtTime, methodName, hijriDisplayOffset,
+  CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS, prayerSchedule, fmtTime, methodName,
+  hijriDisplayOffset,
 } from "../../utils/prayerTimes";
 import { hijriFormatted } from "../../utils/hijri";
 
-const HomeSectionsEditor = ({ value, onChange }) => {
-  // Normalize: merge stored order with any newly-introduced section keys so
-  // upgrades don't drop new defaults the user has never seen.
-  const stored = Array.isArray(value) && value.length ? value : DEFAULT_HOME_SECTIONS;
-  const knownKeys = Object.keys(HOME_SECTIONS);
-  const list = [
-    ...stored.filter((s) => HOME_SECTIONS[s.key]),
-    ...knownKeys
-      .filter((k) => !stored.some((s) => s.key === k))
-      .map((k) => ({ key: k, visible: true })),
-  ];
+/* ─── Building blocks ──────────────────────────────────────────────────── */
 
-  const move = (idx, dir) => {
-    const j = idx + dir;
-    if (j < 0 || j >= list.length) return;
-    const next = [...list];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    onChange(next);
-  };
-  const toggle = (idx) => {
-    const next = list.map((s, i) => i === idx ? { ...s, visible: !s.visible } : s);
-    onChange(next);
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      {list.map((s, idx) => (
-        <motion.div
-          key={s.key}
-          layout
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className="flex items-center gap-2 rounded-2xl border px-3 py-2"
-          style={{
-            borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-            background: "color-mix(in srgb, var(--surface2) 60%, transparent)",
-            opacity: s.visible ? 1 : 0.55,
-          }}
-        >
-          <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
-          <span className="flex-1 text-sm font-medium text-[var(--text)] truncate">
-            {HOME_SECTIONS[s.key].label}
-          </span>
-          <div className="flex items-center gap-1">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => move(idx, -1)}
-              disabled={idx === 0}
-              className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-              style={{ color: "var(--muted)" }}
-              aria-label="Move up"
-            >
-              <ChevronUp size={15} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => move(idx, 1)}
-              disabled={idx === list.length - 1}
-              className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-              style={{ color: "var(--muted)" }}
-              aria-label="Move down"
-            >
-              <ChevronDown size={15} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => toggle(idx)}
-              className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
-              style={{
-                background: s.visible
-                  ? "color-mix(in srgb, var(--primary) 14%, transparent)"
-                  : "color-mix(in srgb, var(--surface) 80%, transparent)",
-                color: s.visible ? "var(--primary)" : "var(--muted)",
-              }}
-              aria-label={s.visible ? "Hide section" : "Show section"}
-            >
-              {s.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-            </motion.button>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-const QuickCollectionsEditor = ({ value, onChange }) => {
-  const [picking, setPicking] = useState(false);
-  const list = (value && value.length > 0 ? value : []).filter((k) => OCCASIONS[k]);
-  const remaining = Object.keys(OCCASIONS).filter((k) => !list.includes(k));
-
-  const move = (idx, dir) => {
-    const j = idx + dir;
-    if (j < 0 || j >= list.length) return;
-    const next = [...list];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    onChange(next);
-  };
-
-  const remove = (key) => onChange(list.filter((k) => k !== key));
-  const add = (key) => {
-    onChange([...list, key]);
-    setPicking(false);
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <AnimatePresence initial={false}>
-        {list.map((key, idx) => {
-          const Icon = OCCASION_ICONS[key] || Sparkles;
-          return (
-            <motion.div
-              key={key}
-              layout
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ type: "spring", stiffness: 320, damping: 28 }}
-              className="flex items-center gap-2 rounded-2xl border px-3 py-2"
-              style={{
-                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                background: "color-mix(in srgb, var(--surface2) 60%, transparent)",
-              }}
-            >
-              <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
-              <div
-                className="flex h-7 w-7 items-center justify-center rounded-xl shrink-0"
-                style={{
-                  background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                  color: "var(--primary)",
-                }}
-              >
-                <Icon size={15} />
-              </div>
-              <span className="flex-1 text-sm font-medium text-[var(--text)] truncate">{OCCASIONS[key]}</span>
-              <div className="flex items-center gap-1">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => move(idx, -1)}
-                  disabled={idx === 0}
-                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-                  style={{ color: "var(--muted)" }}
-                  aria-label="Move up"
-                >
-                  <ChevronUp size={15} />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => move(idx, 1)}
-                  disabled={idx === list.length - 1}
-                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-                  style={{ color: "var(--muted)" }}
-                  aria-label="Move down"
-                >
-                  <ChevronDown size={15} />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => remove(key)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
-                  style={{
-                    background: "color-mix(in srgb, var(--danger) 14%, transparent)",
-                    color: "var(--danger)",
-                  }}
-                  aria-label="Remove"
-                >
-                  <Trash2 size={13} />
-                </motion.button>
-              </div>
-            </motion.div>
-          );
-        })}
-      </AnimatePresence>
-
-      {list.length === 0 && (
-        <p className="text-center text-xs text-[var(--muted)] py-2 font-medium">
-          No quick collections — the Home grid will be hidden.
-        </p>
-      )}
-
-      {/* Add picker */}
-      {remaining.length > 0 && (
-        <div className="mt-1">
-          {!picking ? (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setPicking(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed px-3 py-2.5 text-xs font-bold cursor-pointer"
-              style={{
-                borderColor: "color-mix(in srgb, var(--primary) 40%, transparent)",
-                color: "var(--primary)",
-                background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-              }}
-            >
-              <Plus size={14} /> Add a collection
-            </motion.button>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border p-2"
-              style={{
-                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                background: "color-mix(in srgb, var(--bg2) 50%, transparent)",
-              }}
-            >
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Choose one</span>
-                <button
-                  onClick={() => setPicking(false)}
-                  className="text-[11px] font-bold text-[var(--muted)] cursor-pointer hover:text-[var(--text)]"
-                >
-                  Cancel
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {remaining.map((key) => {
-                  const Icon = OCCASION_ICONS[key] || Sparkles;
-                  return (
-                    <motion.button
-                      key={key}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => add(key)}
-                      className="flex items-center gap-2 rounded-xl border px-2.5 py-2 text-left cursor-pointer"
-                      style={{
-                        borderColor: "color-mix(in srgb, var(--line) 60%, transparent)",
-                        background: "color-mix(in srgb, var(--surface) 70%, transparent)",
-                      }}
-                    >
-                      <Icon size={14} className="text-[var(--gold)] shrink-0" />
-                      <span className="text-[11px] font-semibold text-[var(--text)] truncate">{OCCASIONS[key]}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DhikrFieldList = ({ order, visible, onOrderChange, onVisibleChange }) => {
-  // Make sure list shows all known fields; appends any missing from defaults
-  const fullOrder = [...order, ...DEFAULT_DHIKR_FIELD_ORDER.filter((k) => !order.includes(k))];
-  const visibleCount = fullOrder.filter((k) => visible[k] !== false).length;
-
-  const move = (idx, dir) => {
-    const j = idx + dir;
-    if (j < 0 || j >= fullOrder.length) return;
-    const next = [...fullOrder];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    onOrderChange(next);
-  };
-
-  const toggle = (key) => {
-    const isOn = visible[key] !== false;
-    // Don't allow hiding the last visible field
-    if (isOn && visibleCount <= 1) return;
-    onVisibleChange({ ...visible, [key]: !isOn });
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <AnimatePresence initial={false}>
-        {fullOrder.map((key, idx) => {
-          const meta = DHIKR_FIELDS[key];
-          if (!meta) return null;
-          const on = visible[key] !== false;
-          const lastVisible = on && visibleCount <= 1;
-          return (
-            <motion.div
-              key={key}
-              layout
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ type: "spring", stiffness: 320, damping: 28 }}
-              className="flex items-center gap-2 rounded-2xl border px-3 py-2"
-              style={{
-                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                background: on
-                  ? "color-mix(in srgb, var(--surface2) 60%, transparent)"
-                  : "transparent",
-              }}
-            >
-              <GripVertical size={15} className="text-[var(--muted)] shrink-0" />
-              <div className="flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-bold"
-                style={{
-                  background: "color-mix(in srgb, var(--gold) 18%, transparent)",
-                  color: "var(--gold)",
-                }}
-              >
-                {idx + 1}
-              </div>
-              <span className="flex-1 text-sm font-medium text-[var(--text)]">{meta.label}</span>
-              <div className="flex items-center gap-1">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => move(idx, -1)}
-                  disabled={idx === 0}
-                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-                  style={{ color: "var(--muted)" }}
-                  aria-label="Move up"
-                >
-                  <ChevronUp size={15} />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => move(idx, 1)}
-                  disabled={idx === fullOrder.length - 1}
-                  className="flex h-7 w-7 items-center justify-center rounded-full disabled:opacity-30 cursor-pointer"
-                  style={{ color: "var(--muted)" }}
-                  aria-label="Move down"
-                >
-                  <ChevronDown size={15} />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => toggle(key)}
-                  disabled={lastVisible}
-                  title={lastVisible ? "At least one field must remain visible" : on ? "Hide" : "Show"}
-                  className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    background: on
-                      ? "color-mix(in srgb, var(--primary) 18%, transparent)"
-                      : "color-mix(in srgb, var(--surface2) 60%, transparent)",
-                    color: on ? "var(--primary)" : "var(--muted)",
-                  }}
-                  aria-label={on ? "Hide field" : "Show field"}
-                >
-                  {on ? <Eye size={14} /> : <EyeOff size={14} />}
-                </motion.button>
-              </div>
-            </motion.div>
-          );
-        })}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-/* Small −/＋ stepper used for prayer offsets, minutes-before, and Hijri adjust. */
-const Stepper = ({ value, onDec, onInc, min, max, display }) => (
-  <div className="flex items-center gap-1">
-    <motion.button
-      whileTap={{ scale: 0.88 }}
-      onClick={onDec}
-      disabled={min != null && value <= min}
-      className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30"
-      style={{ background: "color-mix(in srgb, var(--surface2) 70%, transparent)", color: "var(--text)" }}
-      aria-label="Decrease"
-    >
-      <Minus size={13} />
-    </motion.button>
-    <span className="w-14 text-center text-sm font-semibold tabular-nums text-[var(--text)]">
-      {display}
-    </span>
-    <motion.button
-      whileTap={{ scale: 0.88 }}
-      onClick={onInc}
-      disabled={max != null && value >= max}
-      className="flex h-7 w-7 items-center justify-center rounded-full cursor-pointer disabled:opacity-30"
-      style={{ background: "color-mix(in srgb, var(--surface2) 70%, transparent)", color: "var(--text)" }}
-      aria-label="Increase"
-    >
-      <Plus size={13} />
-    </motion.button>
-  </div>
+/* A titled group of settings sharing one hairline panel. */
+const Group = ({ title, description, children, className = "" }) => (
+  <section className={`space-y-3 ${className}`}>
+    {(title || description) && (
+      <div>
+        {title && <h2 className="font-display text-xl leading-tight text-ink">{title}</h2>}
+        {description && <p className="mt-1 max-w-[60ch] text-sm leading-relaxed text-muted">{description}</p>}
+      </div>
+    )}
+    {children}
+  </section>
 );
 
-const selectClass =
-  "w-full appearance-none rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3.5 py-2.5 text-sm font-medium text-[var(--text)] cursor-pointer";
+/* One setting: label and hint on the left, its control on the right. The
+   label is wired to the control so a screen reader announces both. */
+const Row = ({ label, hint, children, control }) => {
+  const id = useId();
+  return (
+    <div className="flex items-center gap-4 px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <p id={id} className="text-[0.9375rem] font-medium text-ink">
+          {label}
+        </p>
+        {hint && <p className="mt-0.5 text-sm leading-snug text-muted">{hint}</p>}
+      </div>
+      {control ? control(id) : children}
+    </div>
+  );
+};
 
-/* ── Prayer Times & Qibla settings ──────────────────────────────────────── */
+const ToggleRow = ({ label, hint, on, onChange }) => (
+  <Row label={label} hint={hint} control={(id) => <Toggle on={on} onClick={onChange} labelledBy={id} />} />
+);
+
+/* Reorderable list with a per-row visibility switch. */
+const OrderList = ({ items, onMove, renderLabel, isOn, onToggle, canToggle = () => true }) => (
+  <ListGroup>
+    {items.map((key, idx) => {
+      const on = isOn(key);
+      return (
+        <div key={key} className={`flex items-center gap-2 py-1.5 pl-4 pr-2 ${on ? "" : "text-muted"}`}>
+          <span className="numerals w-5 font-display text-base text-muted">{idx + 1}</span>
+          <span className={`min-w-0 flex-1 truncate text-[0.9375rem] ${on ? "font-medium text-ink" : "text-muted line-through decoration-line-strong"}`}>
+            {renderLabel(key)}
+          </span>
+          <IconButton icon={ChevronUp} label={`Move ${renderLabel(key)} up`} size="sm" disabled={idx === 0} onClick={() => onMove(idx, -1)} />
+          <IconButton
+            icon={ChevronDown}
+            label={`Move ${renderLabel(key)} down`}
+            size="sm"
+            disabled={idx === items.length - 1}
+            onClick={() => onMove(idx, 1)}
+          />
+          {onToggle && (
+            <IconButton
+              icon={on ? Eye : EyeOff}
+              label={`${on ? "Hide" : "Show"} ${renderLabel(key)}`}
+              size="sm"
+              pressed={on}
+              disabled={!canToggle(key)}
+              onClick={() => onToggle(key)}
+            />
+          )}
+        </div>
+      );
+    })}
+  </ListGroup>
+);
+
+const swap = (arr, i, dir) => {
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) return arr;
+  const next = [...arr];
+  [next[i], next[j]] = [next[j], next[i]];
+  return next;
+};
+
+/* ─── Prayer times & Qibla ─────────────────────────────────────────────── */
 const PrayerSettings = () => {
   const { settings, setSettings, requestPrayerLocation } = useApp();
   const navigate = useNavigate();
+  const toast = useToast();
   const p = settings.prayer || {};
   const loc = p.location || {};
   const hasLoc = loc.lat != null && loc.lng != null;
 
-  const [locState, setLocState] = useState("idle"); // idle | loading | done | error
+  const [locState, setLocState] = useState("idle");
   const [locError, setLocError] = useState("");
   const [manual, setManual] = useState(false);
-  const [manualVals, setManualVals] = useState({
-    lat: loc.lat ?? "",
-    lng: loc.lng ?? "",
-    label: loc.label ?? "",
-  });
+  const [manualVals, setManualVals] = useState({ lat: loc.lat ?? "", lng: loc.lng ?? "", label: loc.label ?? "" });
+  const [manualError, setManualError] = useState("");
 
-  const setP = (patch) =>
-    setSettings((s) => ({ ...s, prayer: { ...s.prayer, ...patch } }));
+  const setP = (patch) => setSettings((s) => ({ ...s, prayer: { ...s.prayer, ...patch } }));
   const setOffset = (key, delta) =>
     setSettings((s) => ({
       ...s,
       prayer: {
         ...s.prayer,
-        offsets: {
-          ...s.prayer.offsets,
-          [key]: Math.max(-60, Math.min(60, (s.prayer.offsets?.[key] || 0) + delta)),
-        },
+        offsets: { ...s.prayer.offsets, [key]: Math.max(-60, Math.min(60, (s.prayer.offsets?.[key] || 0) + delta)) },
       },
     }));
   const setReminders = (patch) =>
-    setSettings((s) => ({
-      ...s,
-      prayer: { ...s.prayer, reminders: { ...s.prayer.reminders, ...patch } },
-    }));
+    setSettings((s) => ({ ...s, prayer: { ...s.prayer, reminders: { ...s.prayer.reminders, ...patch } } }));
   const togglePrayerReminder = (key) =>
     setSettings((s) => ({
       ...s,
@@ -439,56 +139,50 @@ const PrayerSettings = () => {
         ...s.prayer,
         reminders: {
           ...s.prayer.reminders,
-          prayers: {
-            ...s.prayer.reminders.prayers,
-            [key]: !(s.prayer.reminders.prayers?.[key] ?? true),
-          },
+          prayers: { ...s.prayer.reminders.prayers, [key]: !(s.prayer.reminders.prayers?.[key] ?? true) },
         },
       },
     }));
 
-  const handleUseLocation = async () => {
+  const locateMe = async () => {
     setLocState("loading");
     setLocError("");
     try {
       const r = await requestPrayerLocation();
       setManualVals({ lat: r.lat, lng: r.lng, label: r.label });
-      setLocState("done");
-      setTimeout(() => setLocState("idle"), 1600);
+      setLocState("idle");
+      toast(r.label ? `Location set to ${r.label}` : "Location updated");
     } catch (e) {
-      setLocState("error");
+      setLocState("idle");
       setLocError(
         e?.code === 1
-          ? "Permission denied. Allow location for this app, or enter it manually below."
-          : "Couldn't get your location. Enter it manually below."
+          ? "Location access is blocked for this site. Allow it in your browser, or enter coordinates below."
+          : "Your location couldn't be found. Try again, or enter coordinates below."
       );
+      setManual(true);
     }
   };
 
-  const saveManual = () => {
+  const saveManual = (e) => {
+    e.preventDefault();
     const lat = parseFloat(manualVals.lat);
     const lng = parseFloat(manualVals.lng);
     if (Number.isNaN(lat) || Number.isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      setLocError("Enter a valid latitude (−90…90) and longitude (−180…180).");
+      setManualError("Latitude must be between -90 and 90, and longitude between -180 and 180.");
       return;
     }
     setP({ location: { mode: "manual", lat, lng, label: manualVals.label?.trim() || "Custom location" } });
     setManual(false);
+    setManualError("");
     setLocError("");
+    toast("Location saved");
   };
 
   const offsetsKey = JSON.stringify(p.offsets);
   const preview = useMemo(() => {
     if (!hasLoc) return null;
     try {
-      return prayerSchedule({
-        lat: loc.lat,
-        lng: loc.lng,
-        method: p.method,
-        madhhab: p.madhhab,
-        highLatRule: p.highLatRule,
-        offsets: p.offsets,
-      });
+      return prayerSchedule({ lat: loc.lat, lng: loc.lng, method: p.method, madhhab: p.madhhab, highLatRule: p.highLatRule, offsets: p.offsets });
     } catch {
       return null;
     }
@@ -498,353 +192,238 @@ const PrayerSettings = () => {
   const hijriOffset = p.hijriOffset || 0;
 
   return (
-    <div className="space-y-6">
-      {/* Master enable */}
-      <Card className="px-5 py-1">
-        <div className="flex items-center gap-3 py-3.5">
-          <Clock size={19} className="text-[var(--gold)] shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[var(--text)] text-sm font-medium">Prayer times</p>
-            <p className="text-[var(--muted)] text-[11px] leading-snug mt-0.5">
-              Calculated on your device, fully offline.
-            </p>
-          </div>
-          <Toggle on={!!p.enabled} onClick={() => setP({ enabled: !p.enabled })} />
-        </div>
-        <div className="border-t border-[var(--line)]" />
-        <div className="flex items-center gap-3 py-3.5">
-          <LayoutGrid size={19} className="text-[var(--gold)] shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[var(--text)] text-sm font-medium">Show on Home</p>
-          </div>
-          <Toggle on={!!p.showOnHome} onClick={() => setP({ showOnHome: !p.showOnHome })} />
-        </div>
-        <div className="border-t border-[var(--line)]" />
-        <button
-          onClick={() => navigate("/qibla")}
-          className="flex w-full items-center gap-3 py-3.5 text-left cursor-pointer"
-        >
-          <Compass size={19} className="text-[var(--gold)] shrink-0" />
-          <span className="flex-1 text-sm font-medium text-[var(--text)]">Open Qibla compass</span>
-          <ChevronRight size={18} className="text-[var(--muted)]" />
-        </button>
-      </Card>
+    <div className="space-y-10">
+      <Group>
+        <Panel className="divide-y divide-line">
+          <ToggleRow label="Prayer times" hint="Worked out on this device. Nothing is sent anywhere." on={!!p.enabled} onChange={() => setP({ enabled: !p.enabled })} />
+          <ToggleRow label="Show on Today" on={!!p.showOnHome} onChange={() => setP({ showOnHome: !p.showOnHome })} />
+          <ListRow title="Qibla compass" chevron onClick={() => navigate("/qibla")} leading={<IconTile icon={Compass} size={32} />} />
+        </Panel>
+      </Group>
 
-      {/* Location */}
-      <Card className="px-5 py-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <MapPin size={17} className="text-[var(--gold)]" /> Location
-        </div>
-        {hasLoc && (
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--text)] truncate">
-                {loc.label || "Saved location"}
-              </p>
-              <p className="text-[11px] text-[var(--muted)] tabular-nums">
-                {Number(loc.lat).toFixed(3)}, {Number(loc.lng).toFixed(3)} ·{" "}
-                {loc.mode === "manual" ? "Manual" : "Auto"}
-              </p>
-            </div>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--primary)] bg-[var(--primary)]/10 px-2 py-1 rounded-full shrink-0">
-              <Check size={11} strokeWidth={3} /> Set
-            </span>
-          </div>
-        )}
-        <button
-          onClick={handleUseLocation}
-          disabled={locState === "loading"}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold text-white cursor-pointer active:scale-[0.97] hover:brightness-105 transition-all shadow-sm disabled:opacity-60"
-          style={{ background: "var(--primary)" }}
-        >
-          <Navigation size={14} />
-          {locState === "loading" ? "Locating…" : locState === "done" ? "Updated" : hasLoc ? "Update location" : "Use my location"}
-        </button>
-
-        <button
-          onClick={() => { setManual((v) => !v); setLocError(""); }}
-          className="flex w-full items-center justify-center gap-1.5 text-[11px] font-bold text-[var(--muted)] cursor-pointer hover:text-[var(--text)] transition-colors"
-        >
-          <Pencil size={11} /> {manual ? "Cancel manual entry" : "Enter coordinates manually"}
-        </button>
-
-        {manual && (
-          <div className="space-y-2 anim-fade">
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                inputMode="decimal"
-                placeholder="Latitude"
-                value={manualVals.lat}
-                onChange={(e) => setManualVals((v) => ({ ...v, lat: e.target.value }))}
-                className="rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
-              />
-              <input
-                inputMode="decimal"
-                placeholder="Longitude"
-                value={manualVals.lng}
-                onChange={(e) => setManualVals((v) => ({ ...v, lng: e.target.value }))}
-                className="rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
-              />
-            </div>
-            <input
-              placeholder="Label (e.g. Lahore)"
-              value={manualVals.label}
-              onChange={(e) => setManualVals((v) => ({ ...v, label: e.target.value }))}
-              className="w-full rounded-2xl border border-[var(--line)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--text)]"
-            />
-            <button
-              onClick={saveManual}
-              className="w-full rounded-2xl px-4 py-2.5 text-xs font-bold text-white cursor-pointer active:scale-[0.97] shadow-sm"
-              style={{ background: "var(--gold)", color: "#1a1206" }}
-            >
-              Save coordinates
-            </button>
-          </div>
-        )}
-
-        {locError && (
-          <p className="flex items-start gap-1.5 text-[11px] text-[var(--danger)] leading-snug">
-            <AlertCircle size={13} className="mt-0.5 shrink-0" /> {locError}
-          </p>
-        )}
-      </Card>
-
-      {/* Calculation conventions */}
-      <Card className="px-5 py-4 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Globe size={17} className="text-[var(--gold)]" /> Calculation method
-        </div>
-        <div>
-          <select
-            value={p.method}
-            onChange={(e) => setP({ method: e.target.value })}
-            className={selectClass}
-          >
-            {CALC_METHODS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}{m.note ? ` — ${m.note}` : ""}
-              </option>
-            ))}
-          </select>
-          {p.method === "auto" && preview && (
-            <p className="mt-2 text-[11px] text-[var(--muted)]">
-              Auto-selected: <span className="font-semibold text-[var(--text)]">{methodName(preview.methodId)}</span> for your region.
-            </p>
-          )}
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-[var(--muted)]">Asr calculation (madhhab)</p>
-          <Seg
-            value={p.madhhab}
-            onChange={(v) => setP({ madhhab: v })}
-            options={[{ v: "shafi", l: "Standard" }, { v: "hanafi", l: "Hanafi" }]}
-          />
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-[var(--muted)]">High-latitude rule</p>
-          <select
-            value={p.highLatRule}
-            onChange={(e) => setP({ highLatRule: e.target.value })}
-            className={selectClass}
-          >
-            {HIGH_LAT_RULES.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
-          <p className="mt-1.5 text-[10px] text-[var(--muted)] leading-snug">
-            Only affects Fajr/Isha in far-northern/southern regions where twilight is extreme.
-          </p>
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-[var(--muted)]">Time format</p>
-          <Seg
-            value={p.hour12 ? "12" : "24"}
-            onChange={(v) => setP({ hour12: v === "12" })}
-            options={[{ v: "12", l: "12-hour" }, { v: "24", l: "24-hour" }]}
-          />
-        </div>
-      </Card>
-
-      {/* Fine-tune offsets */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Pencil size={16} className="text-[var(--gold)]" /> Fine-tune times
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Nudge any time by ±minutes to match your local mosque's printed timetable.
-        </p>
-        <div className="space-y-1">
-          {PRAYER_KEYS.map((key, i) => (
-            <div key={key}>
-              {i > 0 && <div className="border-t border-[var(--line)]/60" />}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-[var(--text)]">{PRAYER_LABELS[key]}</span>
-                <div className="flex items-center gap-3">
-                  {preview && (
-                    <span className="text-[11px] text-[var(--muted)] tabular-nums w-16 text-right">
-                      {fmtTime(preview.today[key], p.hour12)}
-                    </span>
-                  )}
-                  <Stepper
-                    value={p.offsets?.[key] || 0}
-                    min={-60}
-                    max={60}
-                    onDec={() => setOffset(key, -1)}
-                    onInc={() => setOffset(key, 1)}
-                    display={`${(p.offsets?.[key] || 0) > 0 ? "+" : ""}${p.offsets?.[key] || 0} min`}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Hijri calendar */}
-      <Card className="px-5 py-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <CalendarDays size={17} className="text-[var(--gold)]" /> Hijri date
-        </div>
-        <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 text-center">
-          <p className="font-display text-lg font-bold text-[var(--text)]">
-            {hijriFormatted(new Date(), hijriDisplayOffset(p)) || "Unavailable"}
-          </p>
-        </div>
-        <p className="text-[11px] text-[var(--muted)] leading-relaxed">
-          Based on the Umm al-Qura (Saudi) calendar, which can run a day ahead of
-          local moon-sighting — e.g. in the subcontinent it's typically one day
-          behind. We pre-set this for your region; nudge it if your local date differs.
-        </p>
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-[var(--text)]">Adjust by days</p>
-            <p className="text-[11px] text-[var(--muted)] leading-snug">
-              Align with your local moon-sighting.
-            </p>
-          </div>
-          <Stepper
-            value={hijriOffset}
-            min={-2}
-            max={2}
-            onDec={() => setP({ hijriOffset: Math.max(-2, hijriOffset - 1) })}
-            onInc={() => setP({ hijriOffset: Math.min(2, hijriOffset + 1) })}
-            display={`${hijriOffset > 0 ? "+" : ""}${hijriOffset} d`}
-          />
-        </div>
-      </Card>
-
-      {/* Prayer reminders */}
-      <Card className="px-5 py-4 space-y-4">
-        <div className="flex items-center justify-between font-semibold text-sm">
-          <div className="flex items-center gap-2">
-            <Bell size={17} className="text-[var(--gold)]" />
-            <span className="text-[var(--text)]">Prayer reminders</span>
-          </div>
-          <Toggle
-            on={!!p.reminders?.enabled}
-            onClick={() => setReminders({ enabled: !p.reminders?.enabled })}
-          />
-        </div>
-        {p.reminders?.enabled && (
-          <div className="space-y-4 anim-fade">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[var(--text)]">Notify before</p>
-                <p className="text-[11px] text-[var(--muted)] leading-snug">
-                  Lead time before each adhan.
+      <Group title="Location">
+        <Panel className="space-y-4 p-4">
+          {hasLoc ? (
+            <div className="flex items-start gap-3">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.9375rem] font-medium text-ink">{loc.label || "Saved location"}</p>
+                <p className="numerals text-sm text-muted">
+                  {Number(loc.lat).toFixed(3)}, {Number(loc.lng).toFixed(3)} · {loc.mode === "manual" ? "Entered by hand" : "From this device"}
                 </p>
               </div>
+            </div>
+          ) : (
+            <p className="text-[0.9375rem] text-muted">No location yet. Prayer times and the Qibla need one.</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" icon={MapPin} loading={locState === "loading"} onClick={locateMe}>
+              {hasLoc ? "Update from this device" : "Use my location"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setManual((v) => !v)} aria-expanded={manual}>
+              {manual ? "Cancel" : "Enter coordinates"}
+            </Button>
+          </div>
+          {locError && (
+            <p className="flex items-start gap-1.5 text-sm text-danger" role="alert">
+              <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              {locError}
+            </p>
+          )}
+          {manual && (
+            <form onSubmit={saveManual} className="space-y-3 border-t border-line pt-4" noValidate>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Latitude">
+                  <TextInput inputMode="decimal" value={manualVals.lat} onChange={(e) => setManualVals((v) => ({ ...v, lat: e.target.value }))} placeholder="31.5204" />
+                </Field>
+                <Field label="Longitude">
+                  <TextInput inputMode="decimal" value={manualVals.lng} onChange={(e) => setManualVals((v) => ({ ...v, lng: e.target.value }))} placeholder="74.3587" />
+                </Field>
+              </div>
+              <Field label="Place name" optional error={manualError}>
+                <TextInput value={manualVals.label} onChange={(e) => setManualVals((v) => ({ ...v, label: e.target.value }))} placeholder="Lahore" />
+              </Field>
+              <Button type="submit" size="sm">
+                Save location
+              </Button>
+            </form>
+          )}
+        </Panel>
+      </Group>
+
+      <Group title="Calculation" description="Choose the convention your local mosque or authority follows.">
+        <Panel className="space-y-5 p-4">
+          <Field
+            label="Method"
+            hint={p.method === "auto" && preview ? `Using ${methodName(preview.methodId)} for your region.` : undefined}
+          >
+            <Select value={p.method} onChange={(e) => setP({ method: e.target.value })}>
+              {CALC_METHODS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.note ? `, ${m.note}` : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div>
+            <p className="mb-2 text-sm font-medium text-ink">Asr time</p>
+            <Seg
+              label="Asr calculation"
+              value={p.madhhab}
+              onChange={(v) => setP({ madhhab: v })}
+              options={[{ v: "shafi", l: "Standard" }, { v: "hanafi", l: "Hanafi" }]}
+            />
+          </div>
+          <Field label="High-latitude rule" hint="Only changes Fajr and Isha far north or south, where twilight lasts all night.">
+            <Select value={p.highLatRule} onChange={(e) => setP({ highLatRule: e.target.value })}>
+              {HIGH_LAT_RULES.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div>
+            <p className="mb-2 text-sm font-medium text-ink">Clock</p>
+            <Seg
+              label="Time format"
+              value={p.hour12 ? "12" : "24"}
+              onChange={(v) => setP({ hour12: v === "12" })}
+              options={[{ v: "12", l: "12-hour" }, { v: "24", l: "24-hour" }]}
+            />
+          </div>
+        </Panel>
+      </Group>
+
+      <Group title="Adjust times" description="Move any time by a few minutes to match your mosque's printed timetable.">
+        <ListGroup>
+          {PRAYER_KEYS.map((key) => (
+            <div key={key} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="flex-1 text-[0.9375rem] font-medium text-ink">{PRAYER_LABELS[key]}</span>
+              {preview && <span className="numerals w-20 text-right text-sm text-muted">{fmtTime(preview.today[key], p.hour12)}</span>}
               <Stepper
-                value={p.reminders?.before || 0}
-                min={0}
+                label={`${PRAYER_LABELS[key]} offset`}
+                value={p.offsets?.[key] || 0}
+                min={-60}
                 max={60}
-                onDec={() => setReminders({ before: Math.max(0, (p.reminders?.before || 0) - 5) })}
-                onInc={() => setReminders({ before: Math.min(60, (p.reminders?.before || 0) + 5) })}
-                display={(p.reminders?.before || 0) === 0 ? "At time" : `${p.reminders.before} min`}
+                onDec={() => setOffset(key, -1)}
+                onInc={() => setOffset(key, 1)}
+                display={`${(p.offsets?.[key] || 0) > 0 ? "+" : ""}${p.offsets?.[key] || 0} min`}
               />
             </div>
-            <div>
-              <p className="mb-2 text-xs font-medium text-[var(--muted)]">Which prayers</p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {SALAH_KEYS.map((key) => {
-                  const on = p.reminders?.prayers?.[key] ?? true;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => togglePrayerReminder(key)}
-                      className="flex flex-col items-center gap-1 rounded-xl border py-2 cursor-pointer transition-all active:scale-[0.95]"
-                      style={{
-                        borderColor: on ? "var(--primary)" : "var(--line)",
-                        background: on ? "color-mix(in srgb, var(--primary) 14%, transparent)" : "transparent",
-                        color: on ? "var(--primary)" : "var(--muted)",
-                      }}
-                    >
-                      <span className="text-[10px] font-bold">{PRAYER_LABELS[key]}</span>
-                      {on ? <Check size={12} strokeWidth={3} /> : <Plus size={12} className="rotate-45" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <p className="text-[10px] text-[var(--muted)] leading-relaxed">
-              Reminders use the same notification system as your daily alerts and refresh each day. On iOS, keep the app open or in the background for them to fire.
-            </p>
-          </div>
-        )}
-      </Card>
+          ))}
+        </ListGroup>
+      </Group>
 
-      <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed">
-        Times are computed from the sun's position for your coordinates. The convention you pick should match your local mosque or authority.
-      </p>
+      <Group
+        title="Hijri date"
+        description="Based on the Umm al-Qura calendar, which can differ from local moon-sighting by a day. It is pre-set for your region; adjust it if your local date differs."
+      >
+        <Panel className="divide-y divide-line">
+          <div className="px-4 py-4">
+            <p className="text-sm text-muted">Today</p>
+            <p className="mt-0.5 font-display text-xl text-ink">{hijriFormatted(new Date(), hijriDisplayOffset(p)) || "Unavailable"}</p>
+          </div>
+          <Row label="Adjust by days">
+            <Stepper
+              label="Hijri adjustment"
+              value={hijriOffset}
+              min={-2}
+              max={2}
+              onDec={() => setP({ hijriOffset: Math.max(-2, hijriOffset - 1) })}
+              onInc={() => setP({ hijriOffset: Math.min(2, hijriOffset + 1) })}
+              display={`${hijriOffset > 0 ? "+" : ""}${hijriOffset} ${Math.abs(hijriOffset) === 1 ? "day" : "days"}`}
+            />
+          </Row>
+        </Panel>
+      </Group>
+
+      <Group title="Prayer reminders">
+        <Panel className="divide-y divide-line">
+          <ToggleRow
+            label="Remind me before each prayer"
+            on={!!p.reminders?.enabled}
+            onChange={() => setReminders({ enabled: !p.reminders?.enabled })}
+          />
+          {p.reminders?.enabled && (
+            <>
+              <Row label="How early">
+                <Stepper
+                  label="Minutes before adhan"
+                  value={p.reminders?.before || 0}
+                  min={0}
+                  max={60}
+                  onDec={() => setReminders({ before: Math.max(0, (p.reminders?.before || 0) - 5) })}
+                  onInc={() => setReminders({ before: Math.min(60, (p.reminders?.before || 0) + 5) })}
+                  display={(p.reminders?.before || 0) === 0 ? "On time" : `${p.reminders.before} min`}
+                />
+              </Row>
+              <div className="px-4 py-4">
+                <p className="mb-3 text-[0.9375rem] font-medium text-ink">Which prayers</p>
+                <div className="flex flex-wrap gap-2">
+                  {SALAH_KEYS.map((key) => {
+                    const on = p.reminders?.prayers?.[key] ?? true;
+                    return (
+                      <button key={key} type="button" className="chip" aria-pressed={on} onClick={() => togglePrayerReminder(key)}>
+                        {on && <Check size={14} aria-hidden="true" />}
+                        {PRAYER_LABELS[key]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">
+                  On iPhone, reminders only arrive while the app is open or in the background.
+                </p>
+              </div>
+            </>
+          )}
+        </Panel>
+      </Group>
     </div>
   );
 };
 
+/* ─── Theme swatch: a tiny page in that theme's own colours ─────────────── */
+const ThemeSwatch = ({ vars }) => (
+  <span
+    className="relative flex h-14 w-full flex-col justify-end overflow-hidden rounded-lg border p-2"
+    style={{ background: vars["--bg"], borderColor: vars["--line"] }}
+    aria-hidden="true"
+  >
+    <span className="mb-1.5 block h-1.5 w-3/5 rounded-full" style={{ background: vars["--text"] }} />
+    <span className="mb-1.5 block h-1 w-2/5 rounded-full" style={{ background: vars["--muted"] }} />
+    <span className="absolute right-2 top-2 h-4 w-4 rounded-full" style={{ background: vars["--primary"] }} />
+  </span>
+);
+
+/* ─── View ─────────────────────────────────────────────────────────────── */
 export const SettingsView = () => {
   const {
-    settings,
-    setSettings,
-    setStats,
-    notifyPermission,
-    requestNotificationPermission,
-    dhikrs,
-    lists,
-    resyncLibrary,
-    appVersion,
-    updateAvailable,
-    applyUpdate,
-    checkForUpdates,
-    installPrompt,
-    promptInstall,
-    isInstalled,
-    cleanUpApp,
-    exportData,
-    importData,
+    settings, setSettings, setStats, notifyPermission, requestNotificationPermission, dhikrs, lists, resyncLibrary,
+    appVersion, updateAvailable, applyUpdate, checkForUpdates, installPrompt, promptInstall, isInstalled, cleanUpApp,
+    exportData, importData,
   } = useApp();
-
+  const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const isDesktop = useIsDesktop();
   const [searchParams, setSearchParams] = useSearchParams();
   const panel = searchParams.get("panel");
-
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
 
-  const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", targetType: "none", targetId: "" });
-  const [syncState, setSyncState] = useState("idle"); // idle | syncing | done
-  const [updateState, setUpdateState] = useState("idle"); // idle | checking | upToDate
-
-  const fileInputRef = useRef(null);
-  const [exportState, setExportState] = useState("idle"); // idle | done
-  const [restoreState, setRestoreState] = useState("idle"); // idle | working | done
+  const [newAlert, setNewAlert] = useState({ title: "", time: "09:00", target: "none" });
+  const [alertError, setAlertError] = useState("");
+  const [syncState, setSyncState] = useState("idle");
+  const [updateState, setUpdateState] = useState("idle");
+  const [restoreState, setRestoreState] = useState("idle");
   const [restoreError, setRestoreError] = useState("");
+  const [pendingRestore, setPendingRestore] = useState(null);
+  const [confirm, setConfirm] = useState(null); // { title, body, action, onConfirm }
+  const fileInputRef = useRef(null);
 
-  /* ── Sub-screen (panel) navigation ──────────────────────────────────────
-     Each category opens as its own screen, native-settings style. The active
-     panel lives in the URL (?panel=…) so hardware/browser back closes it. */
+  const set = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
+
   const openPanel = (id) => {
     setSearchParams(
       (prev) => {
@@ -852,20 +431,13 @@ export const SettingsView = () => {
         next.set("panel", id);
         return next;
       },
-      // Mobile pushes so hardware back closes the sub-screen. Desktop shows
-      // both panes at once, so switching category is a replace — otherwise
-      // Back would rewind through every category you glanced at.
       { replace: isDesktop }
     );
     window.scrollTo({ top: 0 });
   };
-
   const closePanel = () => {
-    // Pop history when we have an entry to pop (so the pushed panel state is
-    // removed cleanly); otherwise (deep-link / refresh) just clear the param.
-    if (location.key && location.key !== "default") {
-      navigate(-1);
-    } else {
+    if (location.key && location.key !== "default") navigate(-1);
+    else
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -874,1183 +446,758 @@ export const SettingsView = () => {
         },
         { replace: true }
       );
-    }
   };
 
+  /* ── Data actions ── */
   const handleExport = () => {
     try {
       exportData();
-      setExportState("done");
-      setTimeout(() => setExportState("idle"), 2200);
-    } catch (e) {
-      setRestoreError("Couldn't create a backup file. Please try again.");
+      toast("Backup saved to your downloads");
+    } catch {
+      setRestoreError("The backup file couldn't be created. Please try again.");
     }
   };
 
   const handleRestoreFile = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
     setRestoreError("");
     setRestoreState("working");
     try {
       const text = await readFileAsText(file);
       const { data } = parseBackup(text);
-      if (
-        !window.confirm(
-          "Restore this backup? It will replace your current settings, stats, custom dhikrs and any active session with the backed-up data."
-        )
-      ) {
-        setRestoreState("idle");
-        return;
-      }
-      importData(data);
-      setRestoreState("done");
-      setTimeout(() => setRestoreState("idle"), 2600);
+      setPendingRestore(data);
     } catch (err) {
-      setRestoreError(err?.message || "That backup couldn't be restored.");
-      setRestoreState("idle");
+      setRestoreError(err?.message || "That file isn't a Tasbeeh Go backup, or it is damaged.");
     }
+    setRestoreState("idle");
   };
 
-  const handleResync = async () => {
+  const handleResync = () => {
     if (syncState === "syncing") return;
     setSyncState("syncing");
     const res = resyncLibrary();
-    setTimeout(() => setSyncState("done"), 400);
-    setTimeout(() => setSyncState("idle"), 2200);
-    return res;
+    setTimeout(() => {
+      setSyncState("idle");
+      toast(`Library refreshed: ${res.dhikrs} dhikr, ${res.lists} sets`);
+    }, 400);
   };
 
   const handleCheckUpdates = async () => {
     if (updateState === "checking") return;
     setUpdateState("checking");
     const hasWaiting = await checkForUpdates();
-    if (hasWaiting || updateAvailable) {
-      // The banner / applyUpdate path will handle reload
-      setUpdateState("idle");
-    } else {
-      setUpdateState("upToDate");
-      setTimeout(() => setUpdateState("idle"), 2200);
-    }
+    setUpdateState("idle");
+    if (!hasWaiting && !updateAvailable) toast("You have the latest version");
   };
 
-  const Row = ({ icon: Ico, label, hint, children }) => (
-    <div className="flex items-center gap-3 py-3.5">
-      <Ico size={19} className="text-[var(--gold)] shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[var(--text)] text-sm font-medium">{label}</p>
-        {hint && <p className="text-[var(--muted)] text-[11px] leading-snug mt-0.5">{hint}</p>}
-      </div>
-      {children}
-    </div>
-  );
+  const toggleAlerts = async () => {
+    const enabling = !settings.alertsEnabled;
+    set("alertsEnabled", enabling);
+    if (enabling && notifyPermission === "default") await requestNotificationPermission();
+  };
 
-  const set = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
+  const addAlert = (e) => {
+    e.preventDefault();
+    if (!newAlert.title.trim()) {
+      setAlertError("Give the reminder a name, for example “Duha”.");
+      return;
+    }
+    const [targetType, targetId] = newAlert.target === "none" ? ["none", ""] : newAlert.target.split(":");
+    set("alerts", [
+      ...(settings.alerts || []),
+      {
+        id: "a_" + Date.now(),
+        title: newAlert.title.trim(),
+        body: targetType !== "none" ? "Tap to begin your recitation." : "It's time for your dhikr.",
+        time: newAlert.time,
+        enabled: true,
+        custom: true,
+        targetType,
+        targetId,
+      },
+    ]);
+    setNewAlert({ title: "", time: "09:00", target: "none" });
+    setAlertError("");
+    toast("Reminder added");
+  };
 
-  /* ── Category sections ──────────────────────────────────────────────── */
-  const sectionDisplay = (
-    <div className="space-y-6">
-      <Card className="px-5 py-1">
-        <div className="py-3.5">
-          <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
-            <Globe size={19} className="text-[var(--gold)]" />
-            <span className="text-[var(--text)]">Translation</span>
-          </div>
-          <Seg
-            value={settings.lang}
-            onChange={(v) => set("lang", v)}
-            options={[{ v: "en", l: "English" }, { v: "ur", l: "اردو" }, { v: "both", l: "Both" }]}
-          />
-        </div>
-      </Card>
+  /* ── Sections ── */
+  const fieldOrder = (() => {
+    const order = settings.dhikrFieldOrder || DEFAULT_DHIKR_FIELD_ORDER;
+    return [...order, ...DEFAULT_DHIKR_FIELD_ORDER.filter((k) => !order.includes(k))].filter((k) => DHIKR_FIELDS[k]);
+  })();
+  const fieldVisible = settings.dhikrFieldVisible || DEFAULT_DHIKR_FIELD_VISIBLE;
+  const visibleFieldCount = fieldOrder.filter((k) => fieldVisible[k] !== false).length;
 
-      {/* Arabic Font — typeface for the Arabic script across the app */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <Type size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Arabic Font</span>
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Choose the typeface used for Arabic text on the counter, library, and 99 Names. Includes Naskh, Indo-Pak (Nastaliq), and Kufi styles.
-        </p>
-        <div className="grid grid-cols-2 gap-2">
+  const homeSections = (() => {
+    const stored = Array.isArray(settings.homeSections) && settings.homeSections.length ? settings.homeSections : DEFAULT_HOME_SECTIONS;
+    return [
+      ...stored.filter((s) => HOME_SECTIONS[s.key]),
+      ...Object.keys(HOME_SECTIONS).filter((k) => !stored.some((s) => s.key === k)).map((k) => ({ key: k, visible: true })),
+    ];
+  })();
+  const quick = (settings.quickCollections && settings.quickCollections.length ? settings.quickCollections : DEFAULT_QUICK_COLLECTIONS).filter((k) => OCCASIONS[k]);
+
+  const sectionReading = (
+    <div className="space-y-10">
+      <ReadingFonts />
+      <Group title="Translation">
+        <Seg
+          label="Translation language"
+          value={settings.lang}
+          onChange={(v) => set("lang", v)}
+          options={[
+            { v: "en", l: "English" },
+            { v: "ur", l: "اردو", dir: "rtl" },
+            { v: "both", l: "Both" },
+          ]}
+        />
+      </Group>
+
+      <Group title="Arabic typeface" description="Used for Arabic everywhere: the counter, the library and the 99 Names.">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Arabic typeface">
           {ARABIC_FONTS.map((f) => {
-            const isSel = (settings.arabicFont || "amiri") === f.id;
+            const on = (settings.arabicFont || "amiri") === f.id;
             return (
               <button
                 key={f.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
                 onClick={() => set("arabicFont", f.id)}
-                className="flex flex-col gap-1.5 rounded-2xl border p-3 text-left cursor-pointer transition-all active:scale-[0.97]"
-                style={{
-                  borderColor: isSel ? "var(--primary)" : "var(--line)",
-                  background: isSel ? "var(--surface2)" : "transparent",
-                }}
+                className={`flex flex-col gap-1 rounded-xl border p-3 text-left transition-colors ${
+                  on ? "border-ink bg-surface" : "border-line hover:border-line-strong"
+                }`}
               >
-                <span
-                  dir="rtl"
-                  className="block w-full truncate text-[1.55rem] leading-[1.7] text-[var(--text)]"
-                  style={{ fontFamily: f.stack }}
-                >
-                  بِسْمِ اللّٰه
+                <span dir="rtl" lang="ar" className="block w-full truncate text-[1.6rem] leading-[1.7] text-ink" style={{ fontFamily: f.stack }}>
+                  بِسْمِ اللّٰهِ
                 </span>
-                <span className="flex items-center justify-between gap-2 min-w-0">
-                  <span className="text-[11px] font-semibold text-[var(--text)] truncate">{f.name}</span>
-                  {isSel && <Check size={13} className="text-[var(--primary)] shrink-0" />}
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-ink">{f.name}</span>
+                  {on && <Check size={15} className="shrink-0 text-accent" aria-hidden="true" />}
                 </span>
-                <span className="text-[9px] text-[var(--muted)] truncate">{f.sub}</span>
+                <span className="truncate text-[0.8125rem] text-muted">{f.sub}</span>
               </button>
             );
           })}
         </div>
-      </Card>
+      </Group>
 
-      {/* Dhikr Display — priority order + visibility */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <Sparkles size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Dhikr Display</span>
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Reorder priority and toggle visibility. Top items show first on the counter page. At least one must remain visible.
-        </p>
-        <DhikrFieldList
-          order={settings.dhikrFieldOrder || DEFAULT_DHIKR_FIELD_ORDER}
-          visible={settings.dhikrFieldVisible || DEFAULT_DHIKR_FIELD_VISIBLE}
-          onOrderChange={(next) => set("dhikrFieldOrder", next)}
-          onVisibleChange={(next) => set("dhikrFieldVisible", next)}
+      <Group title="While counting" description="What appears above the counter, in this order. Keep at least one.">
+        <OrderList
+          items={fieldOrder}
+          renderLabel={(k) => DHIKR_FIELDS[k].label}
+          onMove={(i, dir) => set("dhikrFieldOrder", swap(fieldOrder, i, dir))}
+          isOn={(k) => fieldVisible[k] !== false}
+          canToggle={(k) => !(fieldVisible[k] !== false && visibleFieldCount <= 1)}
+          onToggle={(k) => set("dhikrFieldVisible", { ...fieldVisible, [k]: !(fieldVisible[k] !== false) })}
         />
-      </Card>
+      </Group>
 
-      {/* Home Layout — section order + visibility */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <LayoutGrid size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Home Layout</span>
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Reorder or hide sections on Home. The date &amp; occasion intro and the
-          Continue Session widget always stay pinned to the top. The discovery
-          sections — Suggested, Quick Collections, Remedies and Asma-ul-Husna —
-          now live in the Library and are off here by default; switch any back on
-          to also surface it on Home.
-        </p>
-        <HomeSectionsEditor
-          value={settings.homeSections || DEFAULT_HOME_SECTIONS}
-          onChange={(next) => set("homeSections", next)}
+      <Group title="Today page" description="Reorder or hide the sections on Today. The greeting and any session in progress always stay at the top.">
+        <OrderList
+          items={homeSections.map((s) => s.key)}
+          renderLabel={(k) => HOME_SECTIONS[k].label}
+          onMove={(i, dir) => set("homeSections", swap(homeSections, i, dir))}
+          isOn={(k) => homeSections.find((s) => s.key === k)?.visible}
+          onToggle={(k) => set("homeSections", homeSections.map((s) => (s.key === k ? { ...s, visible: !s.visible } : s)))}
         />
-      </Card>
+      </Group>
 
-      {/* Quick Collections — Home grid configuration (only when enabled above) */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <LayoutGrid size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Quick Collections</span>
+      <Group title="Collections on Today" description="Shortcuts on Today that open the library at one category.">
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(OCCASIONS)
+            .filter(([k]) => k !== "names-of-allah")
+            .map(([k, v]) => {
+              const on = quick.includes(k);
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  className="chip"
+                  aria-pressed={on}
+                  onClick={() => set("quickCollections", on ? quick.filter((x) => x !== k) : [...quick, k])}
+                >
+                  {on && <Check size={14} aria-hidden="true" />}
+                  {v}
+                </button>
+              );
+            })}
         </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Occasion shortcuts for the optional Quick Collections section. They only
-          appear on Home if you enable that section in Home Layout above — tapping
-          one opens the Library filtered to that category.
-        </p>
-        <QuickCollectionsEditor
-          value={settings.quickCollections || DEFAULT_QUICK_COLLECTIONS}
-          onChange={(next) => set("quickCollections", next)}
-        />
-      </Card>
+      </Group>
     </div>
   );
 
+  const allBeads = [...BEAD_THEMES, buildCustom(settings.customBead.dark, settings.customBead.gold)];
+
   const sectionAppearance = (
-    <div className="space-y-6">
-      <Card className="px-5 py-4">
-        <div className="mb-3 flex items-center justify-between gap-3 font-semibold text-sm">
-          <div className="flex items-center gap-3">
-            {settings.appearance === "system" ? (
-              <Monitor size={19} className="text-[var(--gold)]" />
-            ) : effectiveAppearance === "light" ? (
-              <Sun size={19} className="text-[var(--gold)]" />
-            ) : (
-              <Moon size={19} className="text-[var(--gold)]" />
-            )}
-            <span className="text-[var(--text)]">Appearance</span>
-          </div>
-          <div className="w-48">
-            <Seg
-              value={settings.appearance || "dark"}
-              onChange={(v) => set("appearance", v)}
-              options={[
-                { v: "dark", l: "Dark" },
-                { v: "light", l: "Light" },
-                { v: "system", l: "System" },
-              ]}
-            />
-          </div>
-        </div>
+    <div className="space-y-10">
+      <Group title="Light or dark">
+        <Seg
+          label="Appearance"
+          value={settings.appearance || "system"}
+          onChange={(v) => set("appearance", v)}
+          options={[
+            { v: "light", l: "Light" },
+            { v: "dark", l: "Dark" },
+            { v: "system", l: "Match device" },
+          ]}
+        />
+      </Group>
 
-        <div className="border-t border-[var(--line)] my-3" />
-
-        <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
-          <Palette size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Theme Preset</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {Object.entries(THEMES).map(([key, value]) => {
-            const isSel = settings.theme === key;
-            const previewVars = value[effectiveAppearance];
+      <Group title="Theme">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Theme">
+          {Object.entries(THEMES).map(([key, t]) => {
+            const on = (settings.theme || "qalam") === key;
             return (
               <button
                 key={key}
+                type="button"
+                role="radio"
+                aria-checked={on}
                 onClick={() => set("theme", key)}
-                className="flex items-center gap-2.5 rounded-2xl border p-2.5 text-left cursor-pointer transition-all active:scale-[0.97]"
-                style={{
-                  borderColor: isSel ? "var(--primary)" : "var(--line)",
-                  background: isSel ? "var(--surface2)" : "transparent"
-                }}
+                className={`flex flex-col gap-2.5 rounded-xl border p-2.5 text-left transition-colors ${
+                  on ? "border-ink bg-surface" : "border-line hover:border-line-strong"
+                }`}
               >
-                <div
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-black/10 shadow-sm"
-                  style={{ background: previewVars["--primary"] }}
-                >
-                  <span className="font-arabic text-[9px] text-white" dir="rtl">س</span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-[var(--text)] truncate">{value.name}</p>
-                  <p className="text-[9px] text-[var(--muted)] truncate">
-                    {key === "classic" ? "Sandstone Sage" :
-                     key === "emerald" ? "Forest Mint" :
-                     key === "sage" ? "Oatmeal Sage" :
-                     key === "clay" ? "Warm Terracotta" :
-                     key === "olive" ? "Olive Grove" :
-                     key === "slate" ? "Misty Slate" :
-                     key === "mocha" ? "Warm Stone" :
-                     key === "rose" ? "Velvet Ruby" : "Obsidian Mono"}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="border-t border-[var(--line)] my-4" />
-
-        <div>
-          <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
-            <Disc size={19} className="text-[var(--gold)]" />
-            <span className="text-[var(--text)]">Counter style</span>
-          </div>
-          <Seg
-            value={settings.counterStyle}
-            onChange={(v) => set("counterStyle", v)}
-            options={[{ v: "beads", l: "Beads" }, { v: "ring", l: "Ring" }]}
-          />
-        </div>
-      </Card>
-
-      <Card className="px-5 py-4">
-        <div className="mb-3 flex items-center gap-3 font-semibold text-sm">
-          <Palette size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Bead style</span>
-        </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1.5 scroll-smooth">
-          {[...BEAD_THEMES, buildCustom(settings.customBead.dark, settings.customBead.gold)].map((t) => {
-            const sel = settings.beadTheme === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => set("beadTheme", t.id)}
-                className="flex shrink-0 flex-col items-center gap-1.5 cursor-pointer"
-              >
-                <div
-                  className="rounded-2xl border p-1.5 transition-all"
-                  style={{
-                    borderColor: sel ? "var(--primary)" : "var(--line)",
-                    background: "var(--bg2)"
-                  }}
-                >
-                  <svg viewBox="0 0 64 64" className="h-14 w-14">
-                    <circle cx="32" cy="32" r="22" fill="none" stroke={t.thread} strokeWidth="1" />
-                    {Array.from({ length: 9 }).map((_, k) => {
-                      const a = k * ((2 * Math.PI) / 9) - Math.PI / 2;
-                      const x = 32 + 22 * Math.cos(a);
-                      const y = 32 + 22 * Math.sin(a);
-                      const front = k === 3;
-                      const on = k < 4;
-                      return (
-                        <circle
-                          key={k}
-                          cx={x}
-                          cy={y}
-                          r={front ? 5.5 : 4.5}
-                          fill={front ? t.front[1] : on ? t.gold[1] : t.dark[1]}
-                        />
-                      );
-                    })}
-                  </svg>
-                </div>
-                <span
-                  className="text-[10px] font-medium"
-                  style={{ color: sel ? "var(--text)" : "var(--muted)" }}
-                >
-                  {t.name}
+                <ThemeSwatch vars={t[effectiveAppearance]} />
+                <span className="flex items-center justify-between gap-2 px-0.5">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-ink">{t.name}</span>
+                    <span className="block truncate text-[0.8125rem] text-muted">{t.sub}</span>
+                  </span>
+                  {on && <Check size={15} className="shrink-0 text-accent" aria-hidden="true" />}
                 </span>
               </button>
             );
           })}
         </div>
+      </Group>
 
-        {settings.beadTheme === "custom" && (
-          <div className="mt-4 flex items-center gap-5 rounded-2xl border border-[var(--line)] bg-[var(--bg2)] p-3 anim-fade">
-            <label className="flex items-center gap-2 text-sm text-[var(--text)] font-medium">
-              Bead
-              <input
-                type="color"
-                value={settings.customBead.dark}
-                onChange={(e) => set("customBead", { ...settings.customBead, dark: e.target.value })}
-                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[var(--text)] font-medium">
-              Active
-              <input
-                type="color"
-                value={settings.customBead.gold}
-                onChange={(e) => set("customBead", { ...settings.customBead, gold: e.target.value })}
-                className="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
-              />
-            </label>
+      <Group title="Counter">
+        <Seg
+          label="Counter style"
+          value={settings.counterStyle}
+          onChange={(v) => set("counterStyle", v)}
+          options={[
+            { v: "beads", l: "Beads" },
+            { v: "ring", l: "Ring" },
+          ]}
+        />
+      </Group>
+
+      {settings.counterStyle !== "ring" && (
+        <Group title="Beads">
+          <div className="scroll-fade-x -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none" role="radiogroup" aria-label="Bead style">
+            {allBeads.map((t) => {
+              const on = settings.beadTheme === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => set("beadTheme", t.id)}
+                  className="flex shrink-0 flex-col items-center gap-1.5"
+                >
+                  <span className={`rounded-xl border p-1.5 transition-colors ${on ? "border-ink" : "border-line"}`}>
+                    <svg viewBox="0 0 64 64" className="h-14 w-14" aria-hidden="true">
+                      <circle cx="32" cy="32" r="22" fill="none" stroke={t.thread} strokeWidth="1" />
+                      {Array.from({ length: 9 }).map((_, k) => {
+                        const a = k * ((2 * Math.PI) / 9) - Math.PI / 2;
+                        return (
+                          <circle
+                            key={k}
+                            cx={32 + 22 * Math.cos(a)}
+                            cy={32 + 22 * Math.sin(a)}
+                            r={k === 3 ? 5.5 : 4.5}
+                            fill={k === 3 ? t.front[1] : k < 4 ? t.gold[1] : t.dark[1]}
+                          />
+                        );
+                      })}
+                    </svg>
+                  </span>
+                  <span className={`text-[0.8125rem] ${on ? "font-medium text-ink" : "text-muted"}`}>{t.name}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
-
-        <div className="mt-4">
-          <p className="mb-2 text-sm text-[var(--muted)] font-medium">Active bead style</p>
-          <Seg
-            value={settings.activeStyle}
-            onChange={(v) => set("activeStyle", v)}
-            options={[
-              { v: "glow", l: "Glow" },
-              { v: "ring", l: "Ring" },
-              { v: "pulse", l: "Pulse" },
-              { v: "plain", l: "Plain" }
-            ]}
-          />
-        </div>
-      </Card>
+          {settings.beadTheme === "custom" && (
+            <Panel className="flex flex-wrap items-center gap-6 p-4">
+              <label className="flex items-center gap-3 text-[0.9375rem] font-medium text-ink">
+                Beads
+                <input
+                  type="color"
+                  value={settings.customBead.dark}
+                  onChange={(e) => set("customBead", { ...settings.customBead, dark: e.target.value })}
+                  className="h-9 w-12 cursor-pointer rounded-lg border border-line-strong bg-transparent"
+                />
+              </label>
+              <label className="flex items-center gap-3 text-[0.9375rem] font-medium text-ink">
+                Counted
+                <input
+                  type="color"
+                  value={settings.customBead.gold}
+                  onChange={(e) => set("customBead", { ...settings.customBead, gold: e.target.value })}
+                  className="h-9 w-12 cursor-pointer rounded-lg border border-line-strong bg-transparent"
+                />
+              </label>
+            </Panel>
+          )}
+          <div>
+            <p className="mb-2 text-sm font-medium text-ink">Current bead</p>
+            <Seg
+              label="Current bead highlight"
+              value={settings.activeStyle}
+              onChange={(v) => set("activeStyle", v)}
+              options={[
+                { v: "glow", l: "Glow" },
+                { v: "ring", l: "Ring" },
+                { v: "pulse", l: "Pulse" },
+                { v: "plain", l: "Plain" },
+              ]}
+            />
+          </div>
+        </Group>
+      )}
     </div>
   );
 
-  const sectionCounter = (
-    <div className="space-y-6">
-      <Card className="px-5 py-1">
-        <Row icon={Vibrate} label="Haptic feedback">
-          <Toggle
-            on={settings.haptics}
-            onClick={() => set("haptics", !settings.haptics)}
-          />
-        </Row>
-        <div className="border-t border-[var(--line)]" />
-        <Row icon={Volume2} label="Click sound">
-          <Toggle
-            on={settings.sound}
-            onClick={() => set("sound", !settings.sound)}
-          />
-        </Row>
-        <div className="border-t border-[var(--line)]" />
-        <Row icon={ChevronRight} label="Auto-advance sets">
-          <Toggle
+  const sectionCounting = (
+    <div className="space-y-10">
+      <Group>
+        <Panel className="divide-y divide-line">
+          <ToggleRow label="Vibrate on each count" hint="A stronger pulse when a count is complete." on={settings.haptics} onChange={() => set("haptics", !settings.haptics)} />
+          <ToggleRow label="Click sound" on={settings.sound} onChange={() => set("sound", !settings.sound)} />
+          <ToggleRow
+            label="Move on automatically"
+            hint="In a set, go to the next dhikr when one is complete."
             on={settings.autoAdvance}
-            onClick={() => set("autoAdvance", !settings.autoAdvance)}
+            onChange={() => set("autoAdvance", !settings.autoAdvance)}
           />
-        </Row>
-        <div className="border-t border-[var(--line)]" />
-        <Row icon={RotateCcw} label="Loop single dhikr">
-          <Toggle
+          <ToggleRow
+            label="Keep going after the target"
+            hint="For a single dhikr, start another round instead of stopping."
             on={settings.loop}
-            onClick={() => set("loop", !settings.loop)}
+            onChange={() => set("loop", !settings.loop)}
           />
-        </Row>
-        <div className="border-t border-[var(--line)]" />
-        <Row icon={MousePointerClick} label="Full-screen tap to count" hint="Tap anywhere on the counter (except top & bottom bars) to increment">
-          <Toggle
-            on={settings.fullScreenTap}
-            onClick={() => set("fullScreenTap", !settings.fullScreenTap)}
+          <ToggleRow
+            label="Tap anywhere to count"
+            hint="The whole screen counts, apart from the top and bottom controls."
+            on={!!settings.fullScreenTap}
+            onChange={() => set("fullScreenTap", !settings.fullScreenTap)}
           />
-        </Row>
-      </Card>
-
-      <Card className="px-5 py-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Hand size={17} className="text-[var(--gold)]" />
-          Gestures
-        </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Beads: tap to count, or drag the beads around the loop — clockwise to count up, counter-clockwise to go back. Ring: tap to count, swipe left/right to switch dhikr. Tap the target under the number to change it (33 / 100 / 300 / 1000 / custom).
-        </p>
-        <div className="mb-3 mt-4 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
-          <Keyboard size={17} className="text-[var(--gold)]" />
-          Keyboard (Desktop)
-        </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Space / Enter / ↑ count · Backspace / ↓ undo · ← → switch · R reset · Esc back.
-        </p>
-      </Card>
+        </Panel>
+      </Group>
+      <Group title="Gestures and keys">
+        <dl className="divide-y divide-line border-y border-line text-[0.9375rem]">
+          {[
+            ["Count", "Tap the beads, or press Space, Enter or Up"],
+            ["Undo", "Backspace or Down"],
+            ["Next or previous dhikr", "Swipe sideways, or press Left and Right"],
+            ["Slide the beads", "Drag clockwise to count up, anticlockwise to go back"],
+            ["Start again", "R"],
+            ["Leave the counter", "Escape"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6">
+              <dt className="font-medium text-ink sm:w-52 sm:shrink-0">{k}</dt>
+              <dd className="text-muted">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </Group>
     </div>
+  );
+
+  const targetOptions = (
+    <>
+      <option value="none">None, just a reminder</option>
+      <optgroup label="Sets">
+        {lists.map((l) => (
+          <option key={`list-${l.id}`} value={`list:${l.id}`}>
+            {l.name}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Dhikr">
+        {dhikrs
+          .filter((d) => !d.tags?.includes("names-of-allah"))
+          .map((d) => (
+            <option key={`dhikr-${d.id}`} value={`dhikr:${d.id}`}>
+              {d.tr}
+            </option>
+          ))}
+      </optgroup>
+    </>
   );
 
   const sectionReminders = (
-    <div className="space-y-6">
-      {/* Customizable PWA Reminders & Alerts Card */}
-      <Card className="px-5 py-4 space-y-4">
-        <div className="flex items-center justify-between font-semibold text-sm">
-          <div className="flex items-center gap-3">
-            <Bell size={19} className="text-[var(--gold)] shrink-0" />
-            <span className="text-[var(--text)]">Daily Reminders & Alerts</span>
-          </div>
-          <Toggle
-            on={settings.alertsEnabled}
-            onClick={async () => {
-              const enabling = !settings.alertsEnabled;
-              set("alertsEnabled", enabling);
-              if (enabling && notifyPermission === "default") {
-                await requestNotificationPermission();
-              } else if (enabling && notifyPermission === "denied") {
-                window.alert("Notifications are blocked. Please enable them in your browser/device settings for this app.");
-              }
-            }}
-          />
-        </div>
-
-        {settings.alertsEnabled && (
-          <div className="space-y-4 pt-1 anim-fade">
-            {/* System Notification Permission Status */}
-            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface2)] p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-[var(--text)]">System Authorization</p>
-                <p className="text-[10px] text-[var(--muted)]">Required to fire background notifications.</p>
+    <div className="space-y-10">
+      <Group>
+        <Panel className="divide-y divide-line">
+          <ToggleRow label="Daily reminders" on={settings.alertsEnabled} onChange={toggleAlerts} />
+          {settings.alertsEnabled && (
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.9375rem] font-medium text-ink">Notifications</p>
+                <p className="mt-0.5 text-sm leading-snug text-muted">
+                  {notifyPermission === "granted"
+                    ? "Allowed. Reminders will arrive on time."
+                    : notifyPermission === "denied"
+                      ? "Blocked. Allow notifications for this site in your browser or device settings, then reload."
+                      : "Needed so reminders can reach you."}
+                </p>
               </div>
               {notifyPermission === "granted" ? (
-                <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] bg-[var(--primary)]/10 px-2.5 py-1 rounded-full shrink-0">
-                  <Check size={12} strokeWidth={3} /> Enabled
+                <span className="flex items-center gap-1 text-sm font-medium text-accent">
+                  <Check size={16} aria-hidden="true" /> On
                 </span>
-              ) : notifyPermission === "denied" ? (
-                <span className="text-[10px] font-bold text-[var(--danger)] bg-[var(--danger)]/10 px-2.5 py-1 rounded-full shrink-0">
-                  Blocked
-                </span>
-              ) : (
-                <button
-                  onClick={requestNotificationPermission}
-                  className="rounded-xl bg-[var(--primary)] px-3 py-1.5 text-xs font-bold text-white cursor-pointer active:scale-95 transition-all shadow-sm shrink-0"
-                >
-                  Authorize Reminders
-                </button>
-              )}
+              ) : notifyPermission !== "denied" ? (
+                <Button size="sm" onClick={requestNotificationPermission}>
+                  Allow
+                </Button>
+              ) : null}
             </div>
+          )}
+        </Panel>
+      </Group>
 
-            {notifyPermission === "denied" && (
-              <p className="text-[10px] text-[var(--danger)] leading-relaxed px-1 -mt-2 font-medium">
-                Notifications are blocked. Open your browser or device settings → find this site/app → allow notifications, then refresh.
-              </p>
-            )}
-
-            {/* iOS PWA limitation */}
-            {typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent) && (
-              <p className="text-[10px] text-[var(--gold)] leading-relaxed px-1 -mt-2 font-medium">
-                ⚠️ On iOS, notifications only fire while the app is open. Keep Sabḥa open or in the background for timely alerts.
-              </p>
-            )}
-            {/* List of active alerts */}
-            <div className="space-y-2">
-              {settings.alerts && settings.alerts.map((a) => {
-                let targetLabel = "";
-                let targetTheme = "";
-                if (a.targetType === "list" && a.targetId) {
-                  const listObj = lists.find(x => x.id === a.targetId);
-                  if (listObj) {
-                    targetLabel = `${listObj.name} Set`;
-                    targetTheme = "text-[var(--gold)]";
-                  }
-                } else if (a.targetType === "dhikr" && a.targetId) {
-                  const dhikrObj = dhikrs.find(x => x.id === a.targetId);
-                  if (dhikrObj) {
-                    targetLabel = `${dhikrObj.tr} Dhikr`;
-                    targetTheme = "text-[var(--primary)]";
-                  }
-                }
-
-                return (
-                  <div key={a.id} className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start gap-2">
-                        <span className="text-xs font-bold text-[var(--gold)] shrink-0 bg-[var(--surface2)] px-2 py-0.5 rounded-lg border border-[var(--line)] mt-0.5">
-                          {a.time}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-[var(--text)] truncate">{a.title}</p>
-                          {targetLabel && (
-                            <span className={`flex items-center gap-1 mt-1 text-[10px] font-semibold ${targetTheme}`}>
-                              <Link size={11} className="shrink-0" />
-                              <span className="truncate">{targetLabel}</span>
-                            </span>
-                          )}
-                        </div>
+      {settings.alertsEnabled && (
+        <>
+          <Group title="Your reminders">
+            {(settings.alerts || []).length === 0 ? (
+              <p className="text-[0.9375rem] text-muted">No reminders yet. Add one below.</p>
+            ) : (
+              <ListGroup>
+                {settings.alerts.map((a) => {
+                  const target =
+                    a.targetType === "list"
+                      ? lists.find((x) => x.id === a.targetId)?.name
+                      : a.targetType === "dhikr"
+                        ? dhikrs.find((x) => x.id === a.targetId)?.tr
+                        : null;
+                  return (
+                    <div key={a.id} className="flex items-center gap-3 py-3 pl-4 pr-3">
+                      <span className="numerals w-14 shrink-0 font-display text-lg text-ink">{a.time}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[0.9375rem] font-medium text-ink">{a.title}</p>
+                        {target && (
+                          <p className="flex items-center gap-1 truncate text-sm text-muted">
+                            <Link2 size={13} className="shrink-0" aria-hidden="true" /> Opens {target}
+                          </p>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
                       <Toggle
                         on={a.enabled}
-                        onClick={() => {
-                          const next = settings.alerts.map(x => x.id === a.id ? { ...x, enabled: !x.enabled } : x);
-                          set("alerts", next);
-                        }}
+                        label={`${a.title} at ${a.time}`}
+                        onClick={() => set("alerts", settings.alerts.map((x) => (x.id === a.id ? { ...x, enabled: !x.enabled } : x)))}
                       />
                       {a.custom && (
-                        <button
+                        <IconButton
+                          icon={Trash2}
+                          label={`Delete ${a.title}`}
+                          size="sm"
+                          className="text-danger"
                           onClick={() => {
-                            const next = settings.alerts.filter(x => x.id !== a.id);
-                            set("alerts", next);
+                            const prev = settings.alerts;
+                            set("alerts", prev.filter((x) => x.id !== a.id));
+                            toast(`Deleted “${a.title}”`, { action: { label: "Undo", onClick: () => set("alerts", prev) } });
                           }}
-                          className="p-1.5 text-[var(--danger)] cursor-pointer rounded-lg hover:bg-[var(--surface2)]"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        />
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </ListGroup>
+            )}
+          </Group>
 
-            {/* Custom alarm creator */}
-            <div className="border-t border-[var(--line)]/60 pt-3 space-y-3">
-              <p className="text-xs font-semibold text-[var(--text)]">Add Custom Reminder Alert</p>
-
-              <div className="space-y-2">
-                {/* Selector for Alert Action Target */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Links Recitation Target</label>
-                  <select
-                    value={newAlert.targetType === "none" ? "none" : `${newAlert.targetType}:${newAlert.targetId}`}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "none") {
-                        setNewAlert(prev => ({ ...prev, targetType: "none", targetId: "" }));
-                      } else {
-                        const [type, id] = val.split(":");
-                        let suggestedTitle = "";
-                        if (type === "list") {
-                          const l = lists.find(x => x.id === id);
-                          if (l) suggestedTitle = `${l.name} Routine 🕌`;
-                        } else if (type === "dhikr") {
-                          const d = dhikrs.find(x => x.id === id);
-                          if (d) suggestedTitle = `${d.tr} Recitation 📿`;
-                        }
-                        setNewAlert(prev => ({
-                          ...prev,
-                          targetType: type,
-                          targetId: id,
-                          title: prev.title.trim() === "" ? suggestedTitle : prev.title
-                        }));
-                      }
-                    }}
-                    className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface2)] px-3 py-2 text-xs font-semibold text-[var(--text)] outline-none focus:border-[var(--primary)]"
-                  >
-                    <option value="none">None (General Reminder)</option>
-                    <optgroup label="✨ Seeded & Custom Routines">
-                      {lists && lists.map(l => (
-                        <option key={`list-${l.id}`} value={`list:${l.id}`}>{l.name} Set ({l.steps.length} steps)</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="📿 Seeded & Custom Dhikrs">
-                      {dhikrs && dhikrs.map(d => (
-                        <option key={`dhikr-${d.id}`} value={`dhikr:${d.id}`}>{d.tr}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    value={newAlert.title}
-                    onChange={(e) => setNewAlert({ ...newAlert, title: e.target.value })}
-                    placeholder="e.g. Duha prayer remembrance…"
-                    className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface2)] px-3 py-2 text-xs text-[var(--text)] outline-none focus:border-[var(--primary)] font-semibold"
-                  />
-                  <div className="flex gap-2 shrink-0">
-                    <input
-                      type="time"
-                      value={newAlert.time}
-                      onChange={(e) => setNewAlert({ ...newAlert, time: e.target.value })}
-                      className="rounded-xl border border-[var(--line)] bg-[var(--surface2)] px-3 py-2 text-xs font-bold text-[var(--text)] outline-none focus:border-[var(--primary)]"
-                    />
-                    <button
-                      onClick={() => {
-                        if (!newAlert.title.trim() || !newAlert.time) return;
-                        const alertItem = {
-                          id: "a_" + Date.now(),
-                          title: newAlert.title.trim(),
-                          body: newAlert.targetType !== "none"
-                            ? `It's time to begin your custom ${newAlert.targetType} recitation session.`
-                            : "It's time for your custom dhikr remembrance.",
-                          time: newAlert.time,
-                          enabled: true,
-                          custom: true,
-                          targetType: newAlert.targetType,
-                          targetId: newAlert.targetId
-                        };
-                        set("alerts", [...(settings.alerts || []), alertItem]);
-                        setNewAlert({ title: "", time: "09:00", targetType: "none", targetId: "" });
-                      }}
-                      className="rounded-xl bg-[var(--primary)] px-3 py-2 text-xs font-bold text-white cursor-pointer active:scale-95 transition-all shadow-sm"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
+          <Group title="Add a reminder">
+            <Panel as="form" onSubmit={addAlert} noValidate className="space-y-4 p-4">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                <Field label="Name" error={alertError}>
+                  <TextInput value={newAlert.title} onChange={(e) => setNewAlert((n) => ({ ...n, title: e.target.value }))} placeholder="Duha" />
+                </Field>
+                <Field label="Time">
+                  <TextInput type="time" value={newAlert.time} onChange={(e) => setNewAlert((n) => ({ ...n, time: e.target.value }))} className="numerals" />
+                </Field>
               </div>
-            </div>
-          </div>
-        )}
-      </Card>
+              <Field label="Opens" hint="Tapping the notification goes straight to this set or dhikr.">
+                <Select
+                  value={newAlert.target}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    let suggested = "";
+                    if (val !== "none") {
+                      const [type, id] = val.split(":");
+                      suggested = type === "list" ? lists.find((x) => x.id === id)?.name : dhikrs.find((x) => x.id === id)?.tr;
+                    }
+                    setNewAlert((n) => ({ ...n, target: val, title: n.title.trim() ? n.title : suggested || "" }));
+                  }}
+                >
+                  {targetOptions}
+                </Select>
+              </Field>
+              <Button type="submit" icon={Plus}>
+                Add reminder
+              </Button>
+            </Panel>
+          </Group>
+        </>
+      )}
     </div>
   );
 
   const sectionData = (
-    <div className="space-y-6">
-      {/* Backup & Restore */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <DatabaseBackup size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">Backup &amp; Restore</span>
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Save a backup file with your stats, settings, custom dhikrs, sets and current session. Restore it on a new device — or after reinstalling — to pick up right where you left off.
-        </p>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={handleRestoreFile}
-        />
-
-        <div className="flex flex-col gap-2">
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
-            style={{
-              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
-            }}
-          >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{
-                background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                color: "var(--primary)",
-              }}
-            >
-              {exportState === "done" ? <Check size={17} /> : <Download size={16} />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--text)]">
-                {exportState === "done" ? "Backup downloaded" : "Export backup"}
-              </p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                {exportState === "done"
-                  ? "Saved as a .json file to your device"
-                  : "Download all your data as a single file"}
-              </p>
-            </div>
-          </button>
-
-          {/* Restore */}
-          <button
+    <div className="space-y-10">
+      <Group title="Backup" description="Save everything (stats, settings, your own dhikr and sets, and any session in progress) to one file. Restore it on a new phone to carry on where you left off.">
+        <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleRestoreFile} />
+        <Panel className="divide-y divide-line">
+          <ListRow title="Save a backup file" subtitle="Downloads a .json file" leading={<IconTile icon={Download} size={36} />} onClick={handleExport} />
+          <ListRow
+            title={restoreState === "working" ? "Reading the file" : "Restore from a backup"}
+            subtitle="Replaces what is on this device"
+            leading={<IconTile icon={Upload} size={36} />}
             onClick={() => {
-              if (restoreState === "working") return;
               setRestoreError("");
               fileInputRef.current?.click();
             }}
-            disabled={restoreState === "working"}
-            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
-            style={{
-              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
-            }}
-          >
-            <motion.div
-              animate={restoreState === "working" ? { rotate: 360 } : { rotate: 0 }}
-              transition={restoreState === "working"
-                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
-                : { duration: 0.2 }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{
-                background: "color-mix(in srgb, var(--gold) 16%, transparent)",
-                color: "var(--gold)",
-              }}
-            >
-              {restoreState === "done" ? <Check size={17} /> : <Upload size={16} />}
-            </motion.div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--text)]">
-                {restoreState === "done"
-                  ? "Backup restored"
-                  : restoreState === "working"
-                  ? "Reading backup…"
-                  : "Restore from backup"}
-              </p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                {restoreState === "done"
-                  ? "Your data has been brought back"
-                  : "Replace current data with a backup file"}
-              </p>
-            </div>
-          </button>
+          />
+        </Panel>
+        {restoreError && (
+          <p className="flex items-start gap-1.5 text-sm text-danger" role="alert">
+            <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            {restoreError}
+          </p>
+        )}
+      </Group>
 
-          {restoreError && (
-            <div
-              className="flex items-start gap-2 rounded-2xl border px-3 py-2.5 anim-fade"
-              style={{
-                borderColor: "color-mix(in srgb, var(--danger) 40%, var(--line))",
-                background: "color-mix(in srgb, var(--danger) 8%, transparent)",
-              }}
-            >
-              <AlertTriangle size={15} className="text-[var(--danger)] shrink-0 mt-0.5" />
-              <p className="text-[11px] font-medium text-[var(--danger)] leading-snug">{restoreError}</p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* App & library maintenance */}
-      <Card className="px-5 py-4">
-        <div className="mb-1 flex items-center gap-3 font-semibold text-sm">
-          <Smartphone size={19} className="text-[var(--gold)]" />
-          <span className="text-[var(--text)]">App</span>
-        </div>
-        <p className="mb-3 text-[11px] text-[var(--muted)] leading-relaxed">
-          Resync to pull the latest built-in dhikrs and sets — your custom ones are kept. Install Tasbeeh on your phone for an app-like experience.
-        </p>
-
-        <div className="flex flex-col gap-2">
-          {/* Resync library */}
-          <button
+      <Group title="App">
+        <Panel className="divide-y divide-line">
+          <ListRow
+            title="Refresh the library"
+            subtitle="Gets the latest built-in dhikr and sets. Yours are kept."
+            leading={<IconTile icon={RefreshCw} size={36} />}
             onClick={handleResync}
-            disabled={syncState === "syncing"}
-            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
-            style={{
-              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
-            }}
-          >
-            <motion.div
-              animate={syncState === "syncing" ? { rotate: 360 } : { rotate: 0 }}
-              transition={syncState === "syncing"
-                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
-                : { duration: 0.2 }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{
-                background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                color: "var(--primary)",
-              }}
-            >
-              {syncState === "done" ? <Check size={17} /> : <RefreshCw size={16} />}
-            </motion.div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--text)]">
-                {syncState === "done" ? "Library resynced" : "Resync library"}
-              </p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                {syncState === "done"
-                  ? `${dhikrs.length} dhikrs · ${lists.length} sets`
-                  : "Refresh built-in dhikrs & sets, keep your customs"}
-              </p>
-            </div>
-          </button>
-
-          {/* Check for updates */}
-          <button
+          />
+          <ListRow
+            title={updateAvailable ? "Update ready, reload now" : updateState === "checking" ? "Checking for updates" : "Check for updates"}
+            subtitle={`You have version ${appVersion}`}
+            leading={<IconTile icon={RefreshCw} size={36} tone={updateAvailable ? "accent" : "neutral"} />}
             onClick={updateAvailable ? applyUpdate : handleCheckUpdates}
-            disabled={updateState === "checking"}
-            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99] disabled:opacity-70"
-            style={{
-              borderColor: updateAvailable
-                ? "color-mix(in srgb, var(--gold) 50%, var(--line))"
-                : "color-mix(in srgb, var(--line) 70%, transparent)",
-              background: updateAvailable
-                ? "color-mix(in srgb, var(--gold) 8%, var(--surface))"
-                : "color-mix(in srgb, var(--surface2) 50%, transparent)",
-            }}
-          >
-            <motion.div
-              animate={updateState === "checking" ? { rotate: 360 } : { rotate: 0 }}
-              transition={updateState === "checking"
-                ? { repeat: Infinity, duration: 0.9, ease: "linear" }
-                : { duration: 0.2 }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{
-                background: updateAvailable
-                  ? "color-mix(in srgb, var(--gold) 18%, transparent)"
-                  : "color-mix(in srgb, var(--primary) 14%, transparent)",
-                color: updateAvailable ? "var(--gold)" : "var(--primary)",
-              }}
-            >
-              {updateState === "upToDate" ? <Check size={17} /> : <RefreshCw size={16} />}
-            </motion.div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--text)]">
-                {updateAvailable
-                  ? "Update available — reload"
-                  : updateState === "checking"
-                  ? "Checking for updates…"
-                  : updateState === "upToDate"
-                  ? "You're up to date"
-                  : "Check for updates"}
-              </p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                {updateAvailable
-                  ? "A newer version of Tasbeeh is ready"
-                  : "Reload the app to fetch the newest version"}
-              </p>
-            </div>
-          </button>
-
-          {/* Clean up & Repair App */}
-          <button
-            onClick={() => {
-              if (window.confirm("Clean up and repair the application? This will reset your settings and cached files, but your recitation stats and custom items will be preserved.")) {
-                cleanUpApp();
-              }
-            }}
-            className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
-            style={{
-              borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-              background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
-            }}
-          >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-              style={{
-                background: "color-mix(in srgb, var(--danger) 14%, transparent)",
-                color: "var(--danger)",
-              }}
-            >
-              <RotateCcw size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--text)]">Clean up & Repair App</p>
-              <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                Clears app caches and resets settings (keeps stats & custom dhikrs)
-              </p>
-            </div>
-          </button>
-
-          {/* Install PWA */}
+          />
           {installPrompt ? (
-            <button
-              onClick={promptInstall}
-              className="flex items-center gap-3 rounded-2xl border px-3 py-3 text-left cursor-pointer transition-all active:scale-[0.99]"
-              style={{
-                borderColor: "color-mix(in srgb, var(--primary) 45%, var(--line))",
-                background: "color-mix(in srgb, var(--primary) 8%, var(--surface))",
-              }}
-            >
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-                style={{
-                  background: "color-mix(in srgb, var(--primary) 18%, transparent)",
-                  color: "var(--primary)",
-                }}
-              >
-                <Download size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--text)]">Install Tasbeeh</p>
-                <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                  Add to your home screen for a full-screen, offline-ready experience
-                </p>
-              </div>
-            </button>
+            <ListRow title="Install on this device" subtitle="Opens full screen and works offline" leading={<IconTile icon={Smartphone} size={36} tone="accent" />} onClick={promptInstall} />
           ) : isInstalled ? (
-            <div
-              className="flex items-center gap-3 rounded-2xl border px-3 py-3"
-              style={{
-                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                background: "color-mix(in srgb, var(--surface2) 40%, transparent)",
-              }}
-            >
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-                style={{
-                  background: "color-mix(in srgb, var(--gold) 16%, transparent)",
-                  color: "var(--gold)",
-                }}
-              >
-                <Check size={17} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--text)]">Installed</p>
-                <p className="text-[11px] text-[var(--muted)] mt-0.5">
-                  Tasbeeh is running as an installed app
-                </p>
-              </div>
-            </div>
+            <ListRow title="Installed" subtitle="Running as an app on this device" leading={<IconTile icon={Check} size={36} />} />
           ) : (
-            <div
-              className="flex items-start gap-3 rounded-2xl border px-3 py-3"
-              style={{
-                borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                background: "color-mix(in srgb, var(--surface2) 40%, transparent)",
-              }}
-            >
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
-                style={{
-                  background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                  color: "var(--primary)",
-                }}
-              >
-                <Smartphone size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--text)]">Install on your device</p>
-                <p className="text-[11px] text-[var(--muted)] mt-0.5 leading-relaxed">
-                  On iOS Safari, tap <span className="font-semibold">Share → Add to Home Screen</span>. On Android Chrome, tap the menu and choose <span className="font-semibold">Install app</span>.
-                </p>
-              </div>
-            </div>
+            <ListRow
+              title="Install on your phone"
+              subtitle="iPhone: Share, then Add to Home Screen. Android: menu, then Install app."
+              leading={<IconTile icon={Smartphone} size={36} />}
+            />
           )}
+        </Panel>
+      </Group>
+
+      <Group title="Reset">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="danger"
+            icon={RotateCcw}
+            onClick={() =>
+              setConfirm({
+                title: "Repair the app?",
+                body: "This clears cached files and resets your settings. Your stats and your own dhikr and sets are kept. The app reloads afterwards.",
+                action: "Repair and reload",
+                onConfirm: cleanUpApp,
+              })
+            }
+          >
+            Repair the app
+          </Button>
+          <Button
+            variant="danger"
+            icon={Trash2}
+            onClick={() =>
+              setConfirm({
+                title: "Erase all statistics?",
+                body: "Every count, streak and the activity history will be removed from this device. This can't be undone, so save a backup first if you may want them.",
+                action: "Erase statistics",
+                onConfirm: () => {
+                  setStats({ total: 0, byDate: {}, perDhikr: {} });
+                  toast("Statistics erased");
+                },
+              })
+            }
+          >
+            Erase statistics
+          </Button>
         </div>
-      </Card>
+      </Group>
 
-      <button
-        onClick={() => {
-          if (window.confirm("Reset all statistics? This cannot be undone.")) {
-            setStats({ total: 0, byDate: {}, perDhikr: {} });
-          }
-        }}
-        className="w-full rounded-2xl border border-[var(--danger)] py-3 text-sm font-medium text-[var(--danger)] hover:bg-[var(--danger)]/5 transition-all cursor-pointer active:scale-99"
-      >
-        Reset statistics
-      </button>
-
-      <p className="px-4 text-center text-[10px] text-[var(--muted)] leading-relaxed">
-        Dhikr wording and counts follow common narrations. Please verify against a trusted source.
+      <p className="max-w-[60ch] text-sm leading-relaxed text-muted">
+        Wording and counts follow common narrations. Please check them against a scholar or source you trust.
       </p>
     </div>
   );
 
-  /* ── Menu config ────────────────────────────────────────────────────── */
   const CATEGORIES = [
-    {
-      id: "display",
-      label: "Display & Reading",
-      hint: "Language, dhikr fields, home layout",
-      icon: LayoutGrid,
-      content: sectionDisplay,
-    },
-    {
-      id: "appearance",
-      label: "Appearance & Themes",
-      hint: "Light/dark, theme presets, beads",
-      icon: Palette,
-      content: sectionAppearance,
-    },
-    {
-      id: "counter",
-      label: "Counting & Feedback",
-      hint: "Haptics, sound, gestures, auto-advance",
-      icon: Disc,
-      content: sectionCounter,
-    },
-    {
-      id: "prayer",
-      label: "Prayer Times & Qibla",
-      hint: "Salah times, method, Hijri, compass",
-      icon: Compass,
-      content: <PrayerSettings />,
-    },
-    {
-      id: "reminders",
-      label: "Reminders & Alerts",
-      hint: "Daily notifications and schedules",
-      icon: Bell,
-      content: sectionReminders,
-    },
-    {
-      id: "data",
-      label: "Backup & App",
-      hint: "Backup, restore, updates, reset",
-      icon: DatabaseBackup,
-      content: sectionData,
-    },
+    { id: "display", label: "Reading", hint: "Translation, Arabic typeface, the Today page", icon: BookOpenText, content: sectionReading },
+    { id: "appearance", label: "Appearance", hint: "Light or dark, theme, beads", icon: Palette, content: sectionAppearance },
+    { id: "counter", label: "Counting", hint: "Vibration, sound, moving on, gestures", icon: Hand, content: sectionCounting },
+    { id: "prayer", label: "Prayer times & Qibla", hint: "Location, method, Hijri date", icon: Compass, content: <PrayerSettings /> },
+    { id: "reminders", label: "Reminders", hint: "Daily notifications", icon: Bell, content: sectionReminders },
+    { id: "data", label: "Backup & app", hint: "Backup, restore, updates, reset", icon: DatabaseBackup, content: sectionData },
   ];
-
   const active = CATEGORIES.find((c) => c.id === panel) || null;
 
-  /* Desktop: the drill-down menu becomes a permanent two-pane preferences
-     window — categories always visible on the left, the selected one open on
-     the right. With no ?panel in the URL the first category is shown, so the
-     pane is never empty. */
+  const dialogs = (
+    <>
+      <Sheet
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        size="sm"
+        title={confirm?.title || ""}
+        description={confirm?.body}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                confirm?.onConfirm();
+                setConfirm(null);
+              }}
+            >
+              {confirm?.action}
+            </Button>
+          </div>
+        }
+      />
+      <Sheet
+        open={!!pendingRestore}
+        onClose={() => setPendingRestore(null)}
+        size="sm"
+        title="Restore this backup?"
+        description="Your settings, stats, own dhikr and sets, and any session in progress will be replaced by the ones in the file."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setPendingRestore(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                try {
+                  const r = importData(pendingRestore);
+                  toast(`Restored ${r.total.toLocaleString()} counts and ${r.lists} sets`);
+                } catch (err) {
+                  setRestoreError(err?.message || "That backup couldn't be restored.");
+                }
+                setPendingRestore(null);
+              }}
+            >
+              Replace and restore
+            </Button>
+          </div>
+        }
+      />
+    </>
+  );
+
   if (isDesktop) {
     const current = active || CATEGORIES[0];
     return (
-      <div className="anim-fade pb-6">
-        <h1 className="pb-5 font-display text-3xl text-[var(--text)]">Settings</h1>
-        <div className="grid grid-cols-[17rem_minmax(0,1fr)] items-start gap-6">
-          <nav className="sticky top-6 flex flex-col gap-1">
-            {CATEGORIES.map((c) => {
-              const Icon = c.icon;
-              const isActive = current.id === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => openPanel(c.id)}
-                  aria-current={isActive ? "page" : undefined}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left cursor-pointer transition-colors"
-                  style={
-                    isActive
-                      ? {
-                        background: "color-mix(in srgb, var(--primary) 13%, transparent)",
-                        border: "1px solid color-mix(in srgb, var(--primary) 26%, transparent)",
-                      }
-                      : { border: "1px solid transparent" }
-                  }
-                >
-                  <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                    style={{
-                      background: isActive
-                        ? "var(--primary)"
-                        : "color-mix(in srgb, var(--surface2) 80%, transparent)",
-                      color: isActive ? "#fff" : "var(--muted)",
-                    }}
-                  >
-                    <Icon size={17} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className="block text-sm font-semibold"
-                      style={{ color: isActive ? "var(--primary)" : "var(--text)" }}
+      <div className="space-y-10">
+        <PageHeader title="Settings" />
+        <div className="grid grid-cols-[16rem_minmax(0,1fr)] items-start gap-12">
+          <nav aria-label="Settings sections" className="sticky top-12">
+            <ul className="space-y-0.5">
+              {CATEGORIES.map((c) => {
+                const on = current.id === c.id;
+                return (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onClick={() => openPanel(c.id)}
+                      aria-current={on ? "page" : undefined}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                        on ? "bg-sunken" : "hover:bg-sunken"
+                      }`}
                     >
-                      {c.label}
-                    </span>
-                    <span className="block truncate text-[11px] text-[var(--muted)]">{c.hint}</span>
-                  </span>
-                </button>
-              );
-            })}
-            <p className="pt-4 text-center font-mono text-[10px] text-[var(--muted)]">
-              Sabḥa v{appVersion}
-            </p>
+                      <c.icon size={18} strokeWidth={on ? 2 : 1.6} className={on ? "text-accent" : "text-muted"} aria-hidden="true" />
+                      <span className={`text-[0.9375rem] ${on ? "font-semibold text-ink" : "font-medium text-ink"}`}>{c.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="numerals mt-6 px-3 text-sm text-muted">Tasbeeh Go {appVersion}</p>
           </nav>
-
           <div className="min-w-0 max-w-3xl">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={current.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
               >
-                <h2 className="pb-4 font-display text-xl text-[var(--text)]">{current.label}</h2>
+                <h2 className="mb-8 font-display text-[2rem] leading-tight text-ink">{current.label}</h2>
                 {current.content}
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
+        {dialogs}
       </div>
     );
   }
 
   return (
-    <div className="anim-fade pb-6 overflow-hidden">
+    <div>
       <AnimatePresence mode="wait" initial={false}>
         {!active ? (
-          <motion.div
-            key="menu"
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <h1 className="pt-2 pb-4 font-display text-2xl text-[var(--text)]">Settings</h1>
-
-            <div className="flex flex-col gap-2">
-              {CATEGORIES.map((c, i) => {
-                const Icon = c.icon;
-                return (
-                  <motion.button
-                    key={c.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04, type: "spring", stiffness: 320, damping: 26 }}
-                    whileTap={{ scale: 0.985 }}
-                    onClick={() => openPanel(c.id)}
-                    className="flex items-center gap-3.5 rounded-2xl border px-4 py-3.5 text-left cursor-pointer"
-                    style={{
-                      borderColor: "color-mix(in srgb, var(--line) 70%, transparent)",
-                      background: "color-mix(in srgb, var(--surface) 70%, transparent)",
-                    }}
-                  >
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-2xl shrink-0"
-                      style={{
-                        background: "color-mix(in srgb, var(--primary) 13%, transparent)",
-                        color: "var(--primary)",
-                      }}
-                    >
-                      <Icon size={19} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[var(--text)]">{c.label}</p>
-                      <p className="text-[11px] text-[var(--muted)] mt-0.5 truncate">{c.hint}</p>
-                    </div>
-                    <ChevronRight size={18} className="text-[var(--muted)] shrink-0" />
-                  </motion.button>
-                );
-              })}
-            </div>
-
-            <p className="px-4 pt-6 text-center text-[10px] text-[var(--muted)] leading-relaxed font-mono">
-              Sabḥa v{appVersion}
-            </p>
+          <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="space-y-8">
+            <PageHeader title="Settings" />
+            <ListGroup>
+              {CATEGORIES.map((c) => (
+                <ListRow key={c.id} leading={<IconTile icon={c.icon} />} title={c.label} subtitle={c.hint} chevron onClick={() => openPanel(c.id)} />
+              ))}
+            </ListGroup>
+            <p className="numerals text-center text-sm text-muted">Tasbeeh Go {appVersion}</p>
           </motion.div>
         ) : (
           <motion.div
             key={active.id}
-            initial={{ opacity: 0, x: 28 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 28 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, x: 16 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-8"
           >
-            {/* Sub-screen header with back affordance */}
-            <div className="flex items-center gap-2 pt-2 pb-4">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={closePanel}
-                aria-label="Back to settings"
-                className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 cursor-pointer"
-                style={{
-                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
-                  border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
-                  color: "var(--text)",
-                }}
-              >
-                <ArrowLeft size={18} />
-              </motion.button>
-              <h1 className="font-display text-xl text-[var(--text)] truncate">{active.label}</h1>
+            <div className="flex items-center gap-2">
+              <IconButton icon={ArrowLeft} label="Back to settings" onClick={closePanel} className="-ml-2" />
+              <h1 className="truncate font-display text-[2rem] leading-tight text-ink">{active.label}</h1>
             </div>
-
             {active.content}
           </motion.div>
         )}
       </AnimatePresence>
+      {dialogs}
     </div>
   );
+};
+
+/* Loads every Arabic typeface so the font picker can preview each one. */
+const ReadingFonts = () => {
+  useGoogleFonts(ARABIC_FONTS.map((f) => f.gf));
+  return null;
 };
 
 export default SettingsView;

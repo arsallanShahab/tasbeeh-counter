@@ -1166,13 +1166,13 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 // Settings. The "continue" widget (active session) is contextual and renders
 // independently above the configurable stack.
 export const HOME_SECTIONS = {
-  prayer: { label: "Prayer Times" },
-  streak: { label: "Daily Streak & Goal" },
-  pinned: { label: "Your Dhikr" },
-  suggested: { label: "Suggested Session" },
-  quick: { label: "Quick Collections" },
+  prayer: { label: "Prayer times" },
+  streak: { label: "Daily progress" },
+  pinned: { label: "Your dhikr" },
+  suggested: { label: "Recite now" },
+  quick: { label: "Collections" },
   remedies: { label: "Remedies for the Heart" },
-  asmaul_husna: { label: "Asma-ul-Husna Mode" },
+  asmaul_husna: { label: "Name of the day" },
 };
 // Every section is visible by default so users discover all features; they can
 // hide any in Settings → Display → Home Layout. The discovery launchers also
@@ -1190,42 +1190,48 @@ export const DEFAULT_HOME_SECTIONS = [
 export const EMOTIONAL_REMEDIES = {
   anxiety: {
     key: "anxiety",
-    label: "Anxious & Overwhelmed 🛡️",
+    label: "Anxious & overwhelmed",
+    short: "Anxious",
     desc: "For easing worry, stress, and fear of the future",
     icon: Shield,
     color: "var(--primary)"
   },
   distress: {
     key: "distress",
-    label: "In Hardship & Distress 📿",
+    label: "In hardship & distress",
+    short: "In hardship",
     desc: "For seeking relief and strength in difficult times",
     icon: Shield,
     color: "var(--primary)"
   },
   grief: {
     key: "grief",
-    label: "Grieving or Sad 🕊️",
+    label: "Grieving or sad",
+    short: "Grieving",
     desc: "For comfort in times of loss, sorrow, or heartbreak",
     icon: Heart,
     color: "var(--gold)"
   },
   repentance: {
     key: "repentance",
-    label: "Seeking Forgiveness 🤍",
+    label: "Seeking forgiveness",
+    short: "Remorseful",
     desc: "For clearing guilt and returning to Allah in sincerity",
     icon: Heart,
     color: "var(--danger)"
   },
   gratitude: {
     key: "gratitude",
-    label: "Cultivating Shukr 🌸",
+    label: "Cultivating shukr",
+    short: "Seeking contentment",
     desc: "For countering ungratefulness and feeling content",
     icon: Heart,
     color: "var(--gold)"
   },
   guidance: {
     key: "guidance",
-    label: "Lost & Seeking Direction 🧭",
+    label: "Lost & seeking direction",
+    short: "Unsure of the way",
     desc: "For making decisions and finding clarity",
     icon: Star,
     color: "var(--primary)"
@@ -1248,18 +1254,20 @@ export const DEFAULT_DHIKR_FIELD_VISIBLE = { arabic: true, translit: true, trans
 // (see the @import in index.css). `stack` is dropped into the --font-arabic CSS
 // variable at runtime; `lh` bumps line-height for tall calligraphic styles like
 // Nastaliq so harakat/descenders don't clip against the tighter Tailwind leadings.
+// `gf` is the Google Fonts css2 family query; fonts are loaded on demand
+// (see utils/fonts.js) so only the typeface in use is downloaded.
 export const ARABIC_FONTS = [
-  { id: "amiri", name: "Amiri", sub: "Naskh · Classic", stack: "'Amiri', serif" },
-  { id: "scheherazade", name: "Scheherazade", sub: "Uthmani · Qur'an", stack: "'Scheherazade New', 'Amiri', serif" },
-  { id: "noto-naskh", name: "Noto Naskh", sub: "Naskh · Modern", stack: "'Noto Naskh Arabic', 'Amiri', serif" },
-  { id: "lateef", name: "Lateef", sub: "Naskh · Soft", stack: "'Lateef', 'Amiri', serif" },
-  { id: "nastaliq", name: "Nastaliq", sub: "Indo-Pak · Urdu", stack: "'Gulzar', 'Noto Nastaliq Urdu', 'Amiri', serif", lh: 2.1 },
-  { id: "reem-kufi", name: "Reem Kufi", sub: "Kufi · Geometric", stack: "'Reem Kufi', sans-serif" },
+  { id: "amiri", name: "Amiri", sub: "Naskh · Classic", stack: "'Amiri', serif", gf: "Amiri:wght@400;700" },
+  { id: "scheherazade", name: "Scheherazade", sub: "Uthmani · Qur'an", stack: "'Scheherazade New', 'Amiri', serif", gf: "Scheherazade+New:wght@400;500;700" },
+  { id: "noto-naskh", name: "Noto Naskh", sub: "Naskh · Modern", stack: "'Noto Naskh Arabic', 'Amiri', serif", gf: "Noto+Naskh+Arabic:wght@400;500;700" },
+  { id: "lateef", name: "Lateef", sub: "Naskh · Soft", stack: "'Lateef', 'Amiri', serif", gf: "Lateef" },
+  { id: "nastaliq", name: "Nastaliq", sub: "Indo-Pak · Urdu", stack: "'Gulzar', 'Noto Nastaliq Urdu', 'Amiri', serif", lh: 2.1, gf: "Gulzar" },
+  { id: "reem-kufi", name: "Reem Kufi", sub: "Kufi · Geometric", stack: "'Reem Kufi', sans-serif", gf: "Reem+Kufi:wght@400;500;700" },
 ];
 
 export const DEFAULT_SETTINGS = {
   lang: "both",
-  theme: "pastel",
+  theme: "qalam",
   appearance: "system",
   arabicFont: "amiri",
   translit: true,
@@ -1278,9 +1286,9 @@ export const DEFAULT_SETTINGS = {
   customBead: { dark: "#15302a", gold: "#d8a93a" },
   alertsEnabled: true,
   alerts: [
-    { id: "morning", title: "Morning Adhkar 🌅", body: "Begin your morning with beautiful remembrance.", time: "08:00", enabled: true, targetType: "list", targetId: "morning-short" },
-    { id: "evening", title: "Evening Adhkar 🌙", body: "Recite your evening prayers for peace and protection.", time: "17:00", enabled: true, targetType: "list", targetId: "evening-short" },
-    { id: "sleep", title: "Bedtime Remembrance 🛏️", body: "Recite the sleep sunnah tasbeeh before resting.", time: "22:00", enabled: true, targetType: "list", targetId: "before-sleep" }
+    { id: "morning", title: "Morning adhkar", body: "Begin your morning with beautiful remembrance.", time: "08:00", enabled: true, targetType: "list", targetId: "morning-short" },
+    { id: "evening", title: "Evening adhkar", body: "Recite your evening prayers for peace and protection.", time: "17:00", enabled: true, targetType: "list", targetId: "evening-short" },
+    { id: "sleep", title: "Bedtime remembrance", body: "Recite the sleep sunnah tasbeeh before resting.", time: "22:00", enabled: true, targetType: "list", targetId: "before-sleep" }
   ],
   // Prayer times & Qibla. All times are computed on-device (adhan-js) from the
   // saved coordinates; only conventions vary. hijriOffset nudges the tabular
@@ -1304,47 +1312,61 @@ export const DEFAULT_SETTINGS = {
 };
 
 export const THEMES = {
+  qalam: {
+    name: "Qalam",
+    sub: "Paper & ink",
+    light: { "--bg": "#f3efe6", "--bg2": "#ebe5d8", "--surface": "#fbf9f4", "--surface2": "#efe9dd", "--line": "#ddd5c5", "--line-strong": "#898173", "--text": "#1c231f", "--muted": "#5c635d", "--primary": "#2c5a46", "--primary-dim": "#dde8df", "--on-primary": "#ffffff", "--gold": "#82560f", "--on-gold": "#ffffff", "--danger": "#9b3a2b" },
+    dark: { "--bg": "#111411", "--bg2": "#161a16", "--surface": "#1a1f1b", "--surface2": "#222923", "--line": "#2e362f", "--line-strong": "#6c756d", "--text": "#ebe7dc", "--muted": "#a2a89d", "--primary": "#93c3a3", "--primary-dim": "#23352b", "--on-primary": "#111411", "--gold": "#d6b46e", "--on-gold": "#111411", "--danger": "#e38b79" },
+  },
   classic: {
     name: "Sabḥa",
-    dark: { "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820", "--surface2": "#143729", "--line": "#1d4536", "--text": "#eaf4ee", "--muted": "#85a89a", "--primary": "#34b393", "--primary-dim": "#1c5e4c", "--gold": "#e0bd5c", "--danger": "#e07a6b" },
-    light: { "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff", "--surface2": "#faf5e9", "--line": "#e4dcc6", "--text": "#10302a", "--muted": "#6c8077", "--primary": "#16785f", "--primary-dim": "#bfe3d6", "--gold": "#b0851f", "--danger": "#c14a3a" },
+    sub: "Sandstone & sage",
+    light: { "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff", "--surface2": "#faf5e9", "--line": "#e4dcc6", "--line-strong": "#8a836f", "--text": "#10302a", "--muted": "#586b62", "--primary": "#00664e", "--primary-dim": "#bfe3d6", "--on-primary": "#ffffff", "--gold": "#7b5200", "--on-gold": "#ffffff", "--danger": "#a32d20" },
+    dark: { "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820", "--surface2": "#143729", "--line": "#1d4536", "--line-strong": "#5b8472", "--text": "#eaf4ee", "--muted": "#85a89a", "--primary": "#3db999", "--primary-dim": "#004333", "--on-primary": "#07140f", "--gold": "#e0bd5c", "--on-gold": "#07140f", "--danger": "#ee8677" },
   },
-  // Pastel theme built around the "Tasbeeh Go" logo — cream + navy, teal "g",
-  // coral "o", orange spark, lilac accents — paired with rounded Fredoka/Nunito.
   pastel: {
     name: "Tasbeeh Go",
-    dark: { "--bg": "#131e3c", "--bg2": "#182549", "--surface": "#1f2e57", "--surface2": "#293a69", "--line": "#36477c", "--text": "#f6efe0", "--muted": "#9aa4c8", "--primary": "#5fc8ba", "--primary-dim": "#25454c", "--gold": "#f4b14e", "--danger": "#f3938a", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
-    light: { "--bg": "#faf2e4", "--bg2": "#f4e8d4", "--surface": "#fffdf8", "--surface2": "#fbf3e5", "--line": "#ece0cc", "--text": "#1f2c54", "--muted": "#8580a0", "--primary": "#2fab9b", "--primary-dim": "#c8ece6", "--gold": "#df9528", "--danger": "#e8786c", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
+    sub: "Cream & navy",
+    // Loaded on demand only while this theme is active (see utils/fonts.js).
+    fonts: ["Fredoka:wght@400..700", "Nunito:wght@400..800"],
+    light: { "--bg": "#faf2e4", "--bg2": "#f4e8d4", "--surface": "#fffdf8", "--surface2": "#fbf3e5", "--line": "#ece0cc", "--line-strong": "#8e8371", "--text": "#1f2c54", "--muted": "#69657d", "--primary": "#00675c", "--primary-dim": "#ceeae5", "--on-primary": "#ffffff", "--gold": "#845000", "--on-gold": "#ffffff", "--danger": "#93433b", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
+    dark: { "--bg": "#131e3c", "--bg2": "#182549", "--surface": "#1f2e57", "--surface2": "#293a69", "--line": "#36477c", "--line-strong": "#7186c0", "--text": "#f6efe0", "--muted": "#9fa7c3", "--primary": "#79c5ba", "--primary-dim": "#2c4449", "--on-primary": "#131e3c", "--gold": "#e9b56e", "--on-gold": "#131e3c", "--danger": "#eea29a", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
   },
   sage: {
     name: "Sage & Oat",
-    dark: { "--bg": "#10140e", "--bg2": "#161b12", "--surface": "#1d231a", "--surface2": "#272f23", "--line": "#343d2e", "--text": "#eef1e7", "--muted": "#97a393", "--primary": "#7ea888", "--primary-dim": "#2b3a2d", "--gold": "#cdb277", "--danger": "#cf7e68" },
-    light: { "--bg": "#f3f0e7", "--bg2": "#ebe6d9", "--surface": "#fffdf8", "--surface2": "#f4f1e9", "--line": "#ddd6c5", "--text": "#2e3830", "--muted": "#717d6f", "--primary": "#5e8268", "--primary-dim": "#cdddcf", "--gold": "#a98b4e", "--danger": "#b5654d" },
+    sub: "Oatmeal sage",
+    light: { "--bg": "#f3f0e7", "--bg2": "#ebe6d9", "--surface": "#fffdf8", "--surface2": "#f4f1e9", "--line": "#ddd6c5", "--line-strong": "#898273", "--text": "#2e3830", "--muted": "#5e695c", "--primary": "#40634a", "--primary-dim": "#cdddcf", "--on-primary": "#ffffff", "--gold": "#725615", "--on-gold": "#ffffff", "--danger": "#91442d" },
+    dark: { "--bg": "#10140e", "--bg2": "#161b12", "--surface": "#1d231a", "--surface2": "#272f23", "--line": "#343d2e", "--line-strong": "#707a69", "--text": "#eef1e7", "--muted": "#97a393", "--primary": "#83ad8d", "--primary-dim": "#2b3a2d", "--on-primary": "#10140e", "--gold": "#cdb277", "--on-gold": "#10140e", "--danger": "#df8d76" },
   },
   clay: {
     name: "Warm Clay",
-    dark: { "--bg": "#150f0a", "--bg2": "#1b140d", "--surface": "#241a12", "--surface2": "#30231a", "--line": "#3d2e22", "--text": "#f4ece2", "--muted": "#b09680", "--primary": "#c67d5f", "--primary-dim": "#3a261b", "--gold": "#cda35f", "--danger": "#d27c63" },
-    light: { "--bg": "#f7f0e6", "--bg2": "#f1e7d8", "--surface": "#fffcf6", "--surface2": "#f7f1e8", "--line": "#e6d8c5", "--text": "#3b2c24", "--muted": "#87705f", "--primary": "#b06a4f", "--primary-dim": "#edd6c6", "--gold": "#a98545", "--danger": "#b55440" },
+    sub: "Warm terracotta",
+    light: { "--bg": "#f7f0e6", "--bg2": "#f1e7d8", "--surface": "#fffcf6", "--surface2": "#f7f1e8", "--line": "#e6d8c5", "--line-strong": "#8f8270", "--text": "#3b2c24", "--muted": "#796252", "--primary": "#8b482e", "--primary-dim": "#edd6c6", "--on-primary": "#ffffff", "--gold": "#77550c", "--on-gold": "#ffffff", "--danger": "#9a3c29" },
+    dark: { "--bg": "#150f0a", "--bg2": "#1b140d", "--surface": "#241a12", "--surface2": "#30231a", "--line": "#3d2e22", "--line-strong": "#7e6d5f", "--text": "#f4ece2", "--muted": "#b09680", "--primary": "#d58a6c", "--primary-dim": "#3a261b", "--on-primary": "#150f0a", "--gold": "#cda35f", "--on-gold": "#150f0a", "--danger": "#dd866c" },
   },
   olive: {
     name: "Olive Grove",
-    dark: { "--bg": "#12130c", "--bg2": "#181910", "--surface": "#202116", "--surface2": "#2b2c1e", "--line": "#393b29", "--text": "#eff0e4", "--muted": "#9b9d82", "--primary": "#9ba259", "--primary-dim": "#313321", "--gold": "#cbb06e", "--danger": "#cf7d64" },
-    light: { "--bg": "#f2f1e7", "--bg2": "#eae8d9", "--surface": "#fdfdf7", "--surface2": "#f2f1e7", "--line": "#dcdac5", "--text": "#33352a", "--muted": "#75775f", "--primary": "#7c7f48", "--primary-dim": "#d8dab9", "--gold": "#a98b46", "--danger": "#b25a45" },
+    sub: "Olive grove",
+    light: { "--bg": "#f2f1e7", "--bg2": "#eae8d9", "--surface": "#fdfdf7", "--surface2": "#f2f1e7", "--line": "#dcdac5", "--line-strong": "#868470", "--text": "#33352a", "--muted": "#666850", "--primary": "#5c5e28", "--primary-dim": "#d8dab9", "--on-primary": "#ffffff", "--gold": "#725603", "--on-gold": "#ffffff", "--danger": "#95402c" },
+    dark: { "--bg": "#12130c", "--bg2": "#181910", "--surface": "#202116", "--surface2": "#2b2c1e", "--line": "#393b29", "--line-strong": "#747763", "--text": "#eff0e4", "--muted": "#9b9d82", "--primary": "#a0a75e", "--primary-dim": "#313321", "--on-primary": "#12130c", "--gold": "#cbb06e", "--on-gold": "#12130c", "--danger": "#df8c72" },
   },
   slate: {
     name: "Misty Slate",
-    dark: { "--bg": "#0c1114", "--bg2": "#11171b", "--surface": "#182025", "--surface2": "#212c32", "--line": "#2e3b42", "--text": "#eaf1f4", "--muted": "#8ea0aa", "--primary": "#79a0b8", "--primary-dim": "#25333b", "--gold": "#c8ad77", "--danger": "#cf7e6e" },
-    light: { "--bg": "#eef0ef", "--bg2": "#e3e8e8", "--surface": "#ffffff", "--surface2": "#f1f4f4", "--line": "#d2d9da", "--text": "#28323a", "--muted": "#6a7780", "--primary": "#5b7c92", "--primary-dim": "#cfdce2", "--gold": "#a78c52", "--danger": "#b25a4e" },
+    sub: "Misty slate",
+    light: { "--bg": "#eef0ef", "--bg2": "#e3e8e8", "--surface": "#ffffff", "--surface2": "#f1f4f4", "--line": "#d2d9da", "--line-strong": "#7e8485", "--text": "#28323a", "--muted": "#5b6871", "--primary": "#3f5f74", "--primary-dim": "#cfdce2", "--on-primary": "#ffffff", "--gold": "#71571b", "--on-gold": "#ffffff", "--danger": "#943f34" },
+    dark: { "--bg": "#0c1114", "--bg2": "#11171b", "--surface": "#182025", "--surface2": "#212c32", "--line": "#2e3b42", "--line-strong": "#68777f", "--text": "#eaf1f4", "--muted": "#8ea0aa", "--primary": "#7ea5bd", "--primary-dim": "#25333b", "--on-primary": "#0c1114", "--gold": "#c8ad77", "--on-gold": "#0c1114", "--danger": "#db8979" },
   },
   mocha: {
     name: "Warm Stone",
-    dark: { "--bg": "#13100c", "--bg2": "#1a1610", "--surface": "#221c15", "--surface2": "#2e261d", "--line": "#3b3128", "--text": "#f3ece2", "--muted": "#ad9b88", "--primary": "#a98a6c", "--primary-dim": "#38291f", "--gold": "#cda85f", "--danger": "#d07e64" },
-    light: { "--bg": "#f5f0e8", "--bg2": "#ede5d9", "--surface": "#fffcf7", "--surface2": "#f5efe6", "--line": "#e3d8c8", "--text": "#382f28", "--muted": "#857668", "--primary": "#8a6f57", "--primary-dim": "#e3d4c3", "--gold": "#ab8a4c", "--danger": "#b35a46" },
+    sub: "Warm stone",
+    light: { "--bg": "#f5f0e8", "--bg2": "#ede5d9", "--surface": "#fffcf7", "--surface2": "#f5efe6", "--line": "#e3d8c8", "--line-strong": "#8b8172", "--text": "#382f28", "--muted": "#716255", "--primary": "#70563f", "--primary-dim": "#e3d4c3", "--on-primary": "#ffffff", "--gold": "#755613", "--on-gold": "#ffffff", "--danger": "#96402d" },
+    dark: { "--bg": "#13100c", "--bg2": "#1a1610", "--surface": "#221c15", "--surface2": "#2e261d", "--line": "#3b3128", "--line-strong": "#7c7066", "--text": "#f3ece2", "--muted": "#ad9b88", "--primary": "#b8997a", "--primary-dim": "#38291f", "--on-primary": "#13100c", "--gold": "#cda85f", "--on-gold": "#13100c", "--danger": "#db886d" },
   },
   rose: {
     name: "Faded Rose",
-    dark: { "--bg": "#140f10", "--bg2": "#1b1416", "--surface": "#241a1c", "--surface2": "#312326", "--line": "#3f2e31", "--text": "#f4ebec", "--muted": "#b29699", "--primary": "#bd848d", "--primary-dim": "#3a2629", "--gold": "#cda75f", "--danger": "#d07d66" },
-    light: { "--bg": "#f6f0ee", "--bg2": "#efe3e1", "--surface": "#fffbfa", "--surface2": "#f6efed", "--line": "#e6d4d1", "--text": "#392b2c", "--muted": "#8a7271", "--primary": "#9a6b73", "--primary-dim": "#ecd7d6", "--gold": "#a98a4d", "--danger": "#b3564a" },
+    sub: "Faded rose",
+    light: { "--bg": "#f6f0ee", "--bg2": "#efe3e1", "--surface": "#fffbfa", "--surface2": "#f6efed", "--line": "#e6d4d1", "--line-strong": "#8e7e7b", "--text": "#392b2c", "--muted": "#77605f", "--primary": "#7b4f57", "--primary-dim": "#ecd7d6", "--on-primary": "#ffffff", "--gold": "#745615", "--on-gold": "#ffffff", "--danger": "#993e34" },
+    dark: { "--bg": "#140f10", "--bg2": "#1b1416", "--surface": "#241a1c", "--surface2": "#312326", "--line": "#3f2e31", "--line-strong": "#7f6c6f", "--text": "#f4ebec", "--muted": "#b29699", "--primary": "#c78e97", "--primary-dim": "#3a2629", "--on-primary": "#140f10", "--gold": "#cda75f", "--on-gold": "#140f10", "--danger": "#dc8871" },
   },
 };
 

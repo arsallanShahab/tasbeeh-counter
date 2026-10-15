@@ -1,974 +1,612 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Plus, Trash2, Pin, Sparkles, Search, X, Check,
-  BookOpen, FolderHeart, ChevronRight, ArrowRight,
+  Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronUp, Pencil, ArrowRight, FolderPlus, BookPlus,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import Card from "../common/Card";
-import { OCCASIONS, ICONS, EMOTIONAL_REMEDIES } from "../../constants/dhikrData";
+import { OCCASIONS, ICONS } from "../../constants/dhikrData";
+import { fmt } from "../../utils/stats";
+import { PageHeader, SectionHeader, ListGroup, ListRow, IconTile, GlyphTile, EmptyState } from "../common/Layout";
+import { Button, IconButton } from "../common/Button";
+import { Seg } from "../common/Seg";
+import { useToast } from "../common/Toast";
+import ItemSheet from "./ItemSheet";
 
-const spring = { type: "spring", stiffness: 320, damping: 28 };
+const TABS = [
+  { v: "mine", l: "Mine" },
+  { v: "sets", l: "Sets" },
+  { v: "dhikrs", l: "Dhikr" },
+  { v: "names", l: "Names" },
+];
 
-// ────────────────────────────────────────────────────────────────────────
-// Pin toggle button — single icon with clear filled/outline states
-// ────────────────────────────────────────────────────────────────────────
-const PinButton = ({ isPinned, onClick }) => (
-  <motion.button
-    whileTap={{ scale: 0.85 }}
-    onClick={onClick}
-    className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer transition-colors"
-    style={{
-      color: isPinned ? "var(--gold)" : "var(--muted)",
-      background: isPinned
-        ? "color-mix(in srgb, var(--gold) 16%, transparent)"
-        : "transparent",
-    }}
-    aria-label={isPinned ? "Unpin" : "Pin"}
-    title={isPinned ? "Unpin" : "Pin"}
-  >
-    <motion.span
-      key={isPinned ? "on" : "off"}
-      initial={{ scale: 0.7, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 500, damping: 24 }}
-      style={{ display: "inline-flex" }}
-    >
-      <Pin size={14} fill={isPinned ? "var(--gold)" : "none"} strokeWidth={isPinned ? 2 : 1.75} />
-    </motion.span>
-  </motion.button>
-);
-
-// ────────────────────────────────────────────────────────────────────────
-// List card
-// ────────────────────────────────────────────────────────────────────────
-const ListRow = ({ l, dById, pinned, togglePin, startList, removeList, inPinnedSection }) => {
-  const Ico = ICONS[l.icon] || Sparkles;
-  const isPinned = pinned.includes(l.id);
-  return (
-    <Card
-      animated
-      className="flex items-center gap-3 p-3.5"
-      style={isPinned ? {
-        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
-        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
-      } : undefined}
-    >
-      <div
-        className="flex h-10 w-10 items-center justify-center rounded-2xl shrink-0"
-        style={{
-          background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-          color: "var(--gold)",
-        }}
-      >
-        <Ico size={18} />
-      </div>
-      <button onClick={() => startList(l)} className="min-w-0 flex-1 text-left cursor-pointer">
-        <div className="flex items-center gap-1.5">
-          <p className="font-semibold text-[var(--text)] text-sm truncate">{l.name}</p>
-          {isPinned && !inPinnedSection && (
-            <Pin size={10} fill="var(--gold)" className="text-[var(--gold)] shrink-0" strokeWidth={2} />
-          )}
-        </div>
-        <p className="truncate text-[11px] text-[var(--muted)] mt-0.5">
-          {l.steps.length} step{l.steps.length !== 1 ? "s" : ""} · {l.steps.map((s) => `${dById(s.dhikr)?.tr ?? "?"} ×${s.target}`).join(" · ")}
-        </p>
-      </button>
-      <PinButton isPinned={isPinned} onClick={() => togglePin(l.id)} />
-      {l.id.startsWith("c_") && (
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={() => removeList(l.id)}
-          className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-          style={{
-            color: "var(--danger)",
-            background: "color-mix(in srgb, var(--danger) 12%, transparent)",
-          }}
-          aria-label="Delete"
-        >
-          <Trash2 size={14} />
-        </motion.button>
-      )}
-    </Card>
-  );
+/* Occasion order for grouping and for the category list. */
+const OCC_ORDER = [
+  "morning", "evening", "after-salah", "friday", "sleep", "ramadan", "high-reward", "protection",
+  "forgiveness", "repentance", "distress", "anxiety", "grief", "gratitude", "guidance", "knowledge",
+  "family", "tawheed", "salah", "gathering", "general", "custom",
+];
+const occRank = (k) => {
+  const i = OCC_ORDER.indexOf(k);
+  return i === -1 ? 99 : i;
 };
 
-// ────────────────────────────────────────────────────────────────────────
-// Dhikr card
-// ────────────────────────────────────────────────────────────────────────
-const DhikrRow = ({ d, pinned, togglePin, startDhikr, removeDhikr, lang, inPinnedSection }) => {
-  const isPinned = pinned.includes(d.id);
-  return (
-    <Card
-      animated
-      className="flex items-center gap-3 p-3.5"
-      style={isPinned ? {
-        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
-        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
-      } : undefined}
-    >
-      <button onClick={() => startDhikr(d)} className="min-w-0 flex-1 text-left cursor-pointer">
-        <div className="flex items-center gap-1.5">
-          <p className="font-arabic text-lg text-[var(--text)] truncate" dir="rtl">
-            {d.arabic}
-          </p>
-          {isPinned && !inPinnedSection && (
-            <Pin size={10} fill="var(--gold)" className="text-[var(--gold)] shrink-0" strokeWidth={2} />
-          )}
-        </div>
-        <p className="text-[11px] text-[var(--gold)] font-semibold mt-0.5 truncate">
-          {d.tr} · ×{d.target}
-        </p>
-        <p className="truncate text-[11px] text-[var(--muted)] mt-0.5">
-          {lang === "ur" ? d.ur : d.en}
-        </p>
-      </button>
-      <PinButton isPinned={isPinned} onClick={() => togglePin(d.id)} />
-      {d.tags?.includes("custom") && (
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={() => removeDhikr(d.id)}
-          className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-          style={{
-            color: "var(--danger)",
-            background: "color-mix(in srgb, var(--danger) 12%, transparent)",
-          }}
-          aria-label="Delete"
-        >
-          <Trash2 size={14} />
-        </motion.button>
-      )}
-    </Card>
-  );
-};
+const isCustom = (id) => typeof id === "string" && id.startsWith("c_");
+const setTotal = (l) => l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
 
-// ────────────────────────────────────────────────────────────────────────
-// Name card (for 99 Names of Allah)
-// ────────────────────────────────────────────────────────────────────────
-const NameCard = ({ d, pinned, togglePin, startDhikr, lang }) => {
-  const isPinned = pinned.includes(d.id);
-  const numStr = d.id.replace("name_", "");
-  return (
-    <Card
-      animated
-      className="flex flex-col justify-between p-3.5 h-full min-h-[135px] relative"
-      style={isPinned ? {
-        borderColor: "color-mix(in srgb, var(--gold) 35%, var(--line))",
-        background: "color-mix(in srgb, var(--gold) 4%, var(--surface))",
-      } : undefined}
-    >
-      <div className="flex justify-between items-center w-full mb-1">
-        <span className="text-[9px] font-bold text-[var(--gold)] bg-[var(--surface2)] px-2 py-0.5 rounded-lg border border-[var(--line)]/50">
-          #{numStr}
-        </span>
-        <PinButton isPinned={isPinned} onClick={() => togglePin(d.id)} />
-      </div>
-      <button onClick={() => startDhikr(d)} className="w-full text-center flex-1 flex flex-col justify-center cursor-pointer mt-1 select-none font-sans">
-        <p className="font-arabic text-xl text-[var(--text)] leading-[1.6] line-clamp-1" dir="rtl">
-          {d.arabic}
-        </p>
-        <p className="text-[11px] font-semibold text-[var(--gold)] mt-0.5 truncate">
-          {d.tr}
-        </p>
-        <p className="text-[10px] text-[var(--muted)] mt-1 line-clamp-2 leading-snug">
-          {lang === "ur" ? d.ur || d.en : d.en}
-        </p>
-      </button>
-    </Card>
-  );
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// Collapsible occasion section (for dhikr grouping)
-// ────────────────────────────────────────────────────────────────────────
-const OccasionGroup = ({ occKey, label, items, defaultOpen, renderItem }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="space-y-2">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl px-3 py-2 cursor-pointer"
-        style={{
-          background: "color-mix(in srgb, var(--surface2) 50%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <motion.span animate={{ rotate: open ? 90 : 0 }} transition={spring}>
-            <ChevronRight size={14} className="text-[var(--muted)]" />
-          </motion.span>
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">{label}</span>
-          <span
-            className="rounded-full px-1.5 py-px text-[10px] font-bold"
-            style={{
-              background: "color-mix(in srgb, var(--gold) 14%, transparent)",
-              color: "var(--gold)",
-            }}
-          >
-            {items.length}
-          </span>
-        </div>
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={spring}
-            className="overflow-hidden"
-          >
-            <div className="space-y-2 pt-1 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
-              <AnimatePresence initial={false}>
-                {items.map(renderItem)}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// Main view
-// ────────────────────────────────────────────────────────────────────────
 export const LibraryView = () => {
   const {
-    dhikrs, setDhikrs, lists, setLists, pinned, setPinned,
-    setModal, dById, togglePin: rawTogglePin, startList, startDhikr,
-    settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion,
-    setView,
+    dhikrs, lists, pinned, setPinned, dById, togglePin, startList, startDhikr, openEditor,
+    settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion, setView,
   } = useApp();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [tab, setTab] = useState("sets"); // "sets" | "dhikrs"
-  const [toast, setToast] = useState(null); // { action, label } | null
-  const toastTimer = useRef(null);
+  const tabParam = searchParams.get("tab");
+  const tab = TABS.some((t) => t.v === tabParam) ? tabParam : "sets";
+  const itemId = searchParams.get("item");
+  const itemKind = searchParams.get("kind") === "dhikr" ? "dhikr" : "list";
 
-  // Auto-switch tab from "sets" if there are no sets for the active occasion but there are matching items in other tabs
+  const [reorder, setReorder] = useState(false);
+  const [openGroups, setOpenGroups] = useState(() => new Set(["morning", "evening"]));
+
+  const setTab = (v) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (v === "sets") next.delete("tab");
+        else next.set("tab", v);
+        if (v === "mine") next.delete("occasion");
+        return next;
+      },
+      { replace: true }
+    );
+
+  // A category filter only applies to the browse tabs.
   useEffect(() => {
-    if (tab === "sets" && activeOccasion !== "all") {
-      const hasSets = lists.some((l) => l.occasion === activeOccasion);
-      if (!hasSets) {
-        const hasDhikrs = dhikrs.some((d) =>
-          !d.tags?.includes("names-of-allah") && d.tags?.includes(activeOccasion)
-        );
-        if (hasDhikrs) {
-          setTab("dhikrs");
-        } else {
-          const hasNames = dhikrs.some((d) =>
-            d.tags?.includes("names-of-allah") && d.tags?.includes(activeOccasion)
-          );
-          if (hasNames) {
-            setTab("names");
-          }
-        }
-      }
-    }
-  }, [activeOccasion, tab, lists, dhikrs]);
+    if (tab === "mine" && activeOccasion !== "all") setTab("sets");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOccasion]);
 
-  const togglePin = (id) => {
-    const wasPinned = pinned.includes(id);
-    const item = lists.find((x) => x.id === id) || dhikrs.find((x) => x.id === id);
-    const label = item ? (item.name || item.tr || "Item") : "Item";
-    rawTogglePin(id);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ action: wasPinned ? "unpinned" : "pinned", label });
-    toastTimer.current = setTimeout(() => setToast(null), 1800);
+  const openItem = (kind, id) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("item", id);
+      next.set("kind", kind);
+      return next;
+    });
+
+  const closeItem = () => {
+    if (location.key && location.key !== "default") navigate(-1);
+    else
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("item");
+          next.delete("kind");
+          return next;
+        },
+        { replace: true }
+      );
   };
 
-  useEffect(() => () => toastTimer.current && clearTimeout(toastTimer.current), []);
+  const onPin = (id, label) => {
+    const was = pinned.includes(id);
+    togglePin(id);
+    toast(was ? `Removed “${label}” from Today` : `Pinned “${label}” to Today`);
+  };
 
-  const q = searchQuery.toLowerCase();
-  const filtersActive = q.length > 0 || activeOccasion !== "all";
+  const q = searchQuery.trim().toLowerCase();
+  const filtering = q.length > 0 || activeOccasion !== "all";
+
+  const matchText = (d) =>
+    !q ||
+    d.tr.toLowerCase().includes(q) ||
+    (d.en && d.en.toLowerCase().includes(q)) ||
+    d.arabic.includes(searchQuery.trim()) ||
+    (d.ur && d.ur.includes(searchQuery.trim()));
 
   const filteredLists = useMemo(
-    () => lists.filter((l) => {
-      const matchesSearch =
-        !q || l.name.toLowerCase().includes(q) || (l.note && l.note.toLowerCase().includes(q));
-      const matchesOccasion = activeOccasion === "all" || l.occasion === activeOccasion;
-      return matchesSearch && matchesOccasion;
-    }),
-    [lists, q, activeOccasion]
+    () =>
+      lists.filter((l) => {
+        const text =
+          !q ||
+          l.name.toLowerCase().includes(q) ||
+          l.steps.some((s) => dById(s.dhikr)?.tr.toLowerCase().includes(q));
+        const occ = activeOccasion === "all" || l.occasion === activeOccasion;
+        return text && occ;
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lists, q, activeOccasion, dhikrs]
   );
 
   const filteredDhikrs = useMemo(
-    () => dhikrs.filter((d) => {
-      if (d.tags?.includes("names-of-allah")) return false; // Filter out names from standard list
-      const matchesSearch =
-        !q ||
-        d.tr.toLowerCase().includes(q) ||
-        (d.en && d.en.toLowerCase().includes(q)) ||
-        d.arabic.includes(searchQuery) ||
-        (d.ur && d.ur.includes(searchQuery));
-      const matchesOccasion = activeOccasion === "all" || (d.tags && d.tags.includes(activeOccasion));
-      return matchesSearch && matchesOccasion;
-    }),
+    () =>
+      dhikrs.filter(
+        (d) =>
+          !d.tags?.includes("names-of-allah") &&
+          matchText(d) &&
+          (activeOccasion === "all" || d.tags?.includes(activeOccasion))
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dhikrs, q, activeOccasion, searchQuery]
   );
 
   const filteredNames = useMemo(
-    () => dhikrs.filter((d) => {
-      if (!d.tags?.includes("names-of-allah")) return false; // Only names
-      const matchesSearch =
-        !q ||
-        d.tr.toLowerCase().includes(q) ||
-        (d.en && d.en.toLowerCase().includes(q)) ||
-        d.arabic.includes(searchQuery) ||
-        (d.ur && d.ur.includes(searchQuery));
-      const matchesOccasion = activeOccasion === "all" || (d.tags && d.tags.includes(activeOccasion));
-      return matchesSearch && matchesOccasion;
-    }),
+    () =>
+      dhikrs.filter(
+        (d) =>
+          d.tags?.includes("names-of-allah") &&
+          matchText(d) &&
+          (activeOccasion === "all" || d.tags?.includes(activeOccasion))
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [dhikrs, q, activeOccasion, searchQuery]
   );
 
-  // When not filtering, hide pinned items from the main list to avoid duplication
-  // with the dedicated Pinned section above.
-  const unpinnedLists = useMemo(
-    () => filtersActive ? filteredLists : filteredLists.filter((l) => !pinned.includes(l.id)),
-    [filteredLists, pinned, filtersActive]
-  );
-  const unpinnedDhikrs = useMemo(
-    () => filtersActive ? filteredDhikrs : filteredDhikrs.filter((d) => !pinned.includes(d.id)),
-    [filteredDhikrs, pinned, filtersActive]
-  );
-  const unpinnedNames = useMemo(
-    () => filtersActive ? filteredNames : filteredNames.filter((d) => !pinned.includes(d.id)),
-    [filteredNames, pinned, filtersActive]
-  );
-
-  // Group dhikrs by primary occasion tag when unfiltered for browsability
   const groupedDhikrs = useMemo(() => {
-    if (filtersActive) return null;
+    if (filtering) return null;
     const groups = {};
-    unpinnedDhikrs.forEach((d) => {
-      const tag = (d.tags && d.tags.find((t) => OCCASIONS[t])) || "general";
-      if (!groups[tag]) groups[tag] = [];
-      groups[tag].push(d);
+    filteredDhikrs.forEach((d) => {
+      const tag = isCustom(d.id) ? "custom" : (d.tags && d.tags.find((t) => OCCASIONS[t] && t !== "custom")) || "general";
+      (groups[tag] ||= []).push(d);
     });
-    // Sort with a sensible occasion priority
-    const order = ["morning", "evening", "after-salah", "friday", "sleep", "ramadan", "high-reward", "protection", "forgiveness", "repentance", "distress", "anxiety", "gratitude", "knowledge", "family", "tawheed", "salah", "gathering", "general", "custom"];
-    return Object.entries(groups).sort(([a], [b]) => {
-      const ai = order.indexOf(a);
-      const bi = order.indexOf(b);
-      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    return Object.entries(groups).sort(([a], [b]) => occRank(a) - occRank(b));
+  }, [filteredDhikrs, filtering]);
+
+  const pinnedItems = pinned
+    .map((id) => {
+      const l = lists.find((x) => x.id === id);
+      if (l) return { kind: "list", data: l };
+      const d = dhikrs.find((x) => x.id === id);
+      if (d) return { kind: "dhikr", data: d };
+      return null;
+    })
+    .filter(Boolean);
+  const mySets = lists.filter((l) => isCustom(l.id));
+  const myDhikrs = dhikrs.filter((d) => isCustom(d.id) || (d.tags?.includes("custom") && !d.tags?.includes("names-of-allah")));
+
+  const movePinned = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= pinned.length) return;
+    setPinned((p) => {
+      const next = [...p];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
     });
-  }, [unpinnedDhikrs, filtersActive]);
-
-  // Pinned items (only relevant when not filtering)
-  const pinnedItems = useMemo(() => {
-    if (filtersActive) return [];
-    return pinned
-      .map((id) => {
-        const l = lists.find((x) => x.id === id);
-        if (l) return { type: "list", data: l };
-        const d = dhikrs.find((x) => x.id === id);
-        if (d) return { type: "dhikr", data: d };
-        return null;
-      })
-      .filter(Boolean);
-  }, [pinned, lists, dhikrs, filtersActive]);
-
-  const removeList = (id) => {
-    setLists((ls) => ls.filter((x) => x.id !== id));
-    setPinned((p) => p.filter((x) => x !== id));
   };
 
-  const removeDhikr = (id) => {
-    setDhikrs((ds) => ds.filter((x) => x.id !== id));
-    setPinned((p) => p.filter((x) => x !== id));
+  const clearFilters = () => {
+    setSearchQuery("");
+    setActiveOccasion("all");
   };
 
-  const totalCount = tab === "sets" ? filteredLists.length : tab === "dhikrs" ? filteredDhikrs.length : filteredNames.length;
+  const categories = Object.entries(OCCASIONS)
+    .filter(([k]) => k !== "names-of-allah")
+    .sort(([a], [b]) => occRank(a) - occRank(b));
 
-  return (
-    <div className="space-y-5 relative">
-      {/* Header */}
-      <header className="flex items-center justify-between pt-2 lg:pt-0">
-        <h1 className="font-display text-2xl lg:text-3xl text-[var(--text)]">Library</h1>
-        <div className="flex gap-1.5 sm:gap-2">
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setModal("dhikr")}
-            className="flex items-center gap-1 rounded-2xl border border-[var(--line)] px-3 py-1.5 text-xs text-[var(--text)] font-semibold cursor-pointer hover:bg-[var(--surface2)] transition-colors"
-          >
-            <Plus size={13} /> Dhikr
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setModal("list")}
-            className="flex items-center gap-1 rounded-2xl px-3 py-1.5 text-xs font-semibold text-white cursor-pointer hover:brightness-105 transition-all shadow-sm"
-            style={{ background: "var(--primary)" }}
-          >
-            <Plus size={13} /> Set
-          </motion.button>
-        </div>
-      </header>
+  /* ── Rows ─────────────────────────────────────────────────────────────── */
+  const pinBtn = (id, label) => {
+    const on = pinned.includes(id);
+    return (
+      <IconButton
+        icon={Pin}
+        label={on ? `Unpin ${label}` : `Pin ${label} to Today`}
+        pressed={on}
+        size="sm"
+        onClick={() => onPin(id, label)}
+        className={on ? "" : "text-muted"}
+      />
+    );
+  };
 
-      {/* Desktop splits into a persistent category rail + a results column;
-          mobile keeps the single scrolling column with horizontal filter pills. */}
-      <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
-        <aside className="hidden lg:block lg:sticky lg:top-6">
-          <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
-            Categories
-          </p>
-          <div className="max-h-[calc(100svh-9rem)] space-y-0.5 overflow-y-auto pr-1">
-            <RailButton active={activeOccasion === "all"} onClick={() => setActiveOccasion("all")}>
-              All
-            </RailButton>
-            {Object.entries(OCCASIONS).map(([k, v]) => (
-              <RailButton
-                key={k}
-                active={activeOccasion === k}
-                onClick={() => setActiveOccasion(k)}
-              >
-                {v}
-              </RailButton>
-            ))}
-          </div>
-        </aside>
+  const setRow = (l) => {
+    const Ico = ICONS[l.icon] || Sparkles;
+    const names = l.steps.map((s) => dById(s.dhikr)?.tr).filter(Boolean);
+    return (
+      <ListRow
+        key={l.id}
+        leading={<IconTile icon={Ico} tone={isCustom(l.id) ? "accent" : "neutral"} />}
+        title={l.name}
+        subtitle={names.length ? `×${fmt(setTotal(l))} · ${names.join(" · ")}` : "No dhikr yet"}
+        onClick={() => openItem("list", l.id)}
+        ariaLabel={`${l.name}, details`}
+        trailing={
+          <>
+            {pinBtn(l.id, l.name)}
+            <IconButton
+              icon={Play}
+              label={`Begin ${l.name}`}
+              size="sm"
+              onClick={() => startList(l)}
+              disabled={l.steps.length === 0}
+            />
+          </>
+        }
+      />
+    );
+  };
 
-        <div className="min-w-0 space-y-5">
-      {/* Sticky search + filter strip */}
-      <div
-        className="sticky top-0 z-20 -mx-5 px-5 pt-0 pb-3 space-y-3 lg:mx-0 lg:px-0 lg:pt-1"
-        style={{
-          background: "",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-        }}
-      >
-        {/* Search */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search dhikr, sets, Arabic, translation…"
-            className="w-full rounded-2xl border border-[var(--line)] bg-[var(--surface)] pl-10 pr-9 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] placeholder:text-zinc-500/70 font-medium"
+  const dhikrRow = (d) => (
+    <ListRow
+      key={d.id}
+      leading={<GlyphTile char={d.arabic.charAt(0)} />}
+      title={d.tr}
+      subtitle={`×${fmt(d.target)}${(settings.lang === "ur" ? d.ur || d.en : d.en) ? ` · ${settings.lang === "ur" ? d.ur || d.en : d.en}` : ""}`}
+      onClick={() => openItem("dhikr", d.id)}
+      ariaLabel={`${d.tr}, details`}
+      trailing={
+        <>
+          {pinBtn(d.id, d.tr)}
+          <IconButton icon={Play} label={`Begin ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
+        </>
+      }
+    />
+  );
+
+  const nameRow = (d) => (
+    <ListRow
+      key={d.id}
+      leading={
+        <span className="numerals w-8 text-center font-display text-lg text-muted">{d.id.replace("name_", "")}</span>
+      }
+      title={d.tr}
+      subtitle={settings.lang === "ur" ? d.ur || d.en : d.en}
+      onClick={() => openItem("dhikr", d.id)}
+      ariaLabel={`${d.tr}, details`}
+      trailing={
+        <>
+          <span dir="rtl" lang="ar" className="mr-2 hidden font-arabic text-xl text-ink sm:inline">
+            {d.arabic}
+          </span>
+          <IconButton icon={Play} label={`Count ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
+        </>
+      }
+    />
+  );
+
+  const noResults = (
+    <EmptyState
+      icon={Search}
+      title="Nothing matches"
+      body={q ? `No results for “${searchQuery.trim()}”${activeOccasion !== "all" ? ` in ${OCCASIONS[activeOccasion]}` : ""}.` : "This category is empty in this tab."}
+      action={
+        <Button variant="secondary" size="sm" onClick={clearFilters}>
+          Clear search and filters
+        </Button>
+      }
+    />
+  );
+
+  /* ── Tab bodies ───────────────────────────────────────────────────────── */
+  const mine = (
+    <div className="space-y-10">
+      <section aria-labelledby="pinned-h" className="space-y-4">
+        <SectionHeader
+          id="pinned-h"
+          title="Pinned to Today"
+          count={pinnedItems.length || null}
+          action={
+            pinnedItems.length > 1 && (
+              <Button variant="link" size="sm" onClick={() => setReorder((v) => !v)} aria-pressed={reorder}>
+                {reorder ? "Done" : "Reorder"}
+              </Button>
+            )
+          }
+        />
+        <p className="-mt-2 text-sm text-muted">These appear on Today, in this order.</p>
+        {pinnedItems.length === 0 ? (
+          <EmptyState
+            icon={Pin}
+            title="Nothing pinned yet"
+            body="Pin a set or a dhikr you recite every day. Use the pin on any row in Sets or Dhikr."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setTab("sets")}>
+                Browse sets
+              </Button>
+            }
           />
-          <AnimatePresence>
-            {searchQuery && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full cursor-pointer"
-                style={{
-                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
-                  color: "var(--muted)",
-                }}
-                aria-label="Clear search"
-              >
-                <X size={13} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Tabs + result count */}
-        <div className="flex items-center justify-between gap-2">
-          <div
-            className="flex gap-1 rounded-full p-1 overflow-x-auto no-scrollbar whitespace-nowrap min-w-0"
-            style={{ background: "color-mix(in srgb, var(--surface2) 60%, transparent)" }}
-          >
-            {[
-              { id: "sets", icon: FolderHeart, label: "Sets" },
-              { id: "dhikrs", icon: BookOpen, label: "Dhikrs" },
-              { id: "names", icon: Sparkles, label: "99 Names" },
-            ].map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.id;
+        ) : (
+          <ListGroup>
+            {pinnedItems.map(({ kind, data }, idx) => {
+              const isList = kind === "list";
+              const label = isList ? data.name : data.tr;
+              const Ico = isList ? ICONS[data.icon] || Sparkles : null;
               return (
-                <motion.button
-                  key={t.id}
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => setTab(t.id)}
-                  className="relative flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] sm:text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
-                  style={{ color: active ? "var(--primary)" : "var(--muted)" }}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="lib-tab"
-                      className="absolute inset-0 rounded-full"
-                      style={{
-                        background: "color-mix(in srgb, var(--surface) 95%, transparent)",
-                        boxShadow:
-                          "inset 0 1px 0 0 color-mix(in srgb, #fff 10%, transparent), 0 2px 8px -4px color-mix(in srgb, var(--primary) 40%, transparent)",
-                      }}
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <Icon size={13} className="relative" />
-                  <span className="relative">{t.label}</span>
-                  <span
-                    className="relative rounded-full px-1.5 py-px text-[9px] font-bold"
-                    style={{
-                      background: active
-                        ? "color-mix(in srgb, var(--primary) 14%, transparent)"
-                        : "color-mix(in srgb, var(--surface2) 70%, transparent)",
-                      color: active ? "var(--primary)" : "var(--muted)",
-                    }}
-                  >
-                    {t.id === "sets" ? filteredLists.length : t.id === "dhikrs" ? filteredDhikrs.length : filteredNames.length}
-                  </span>
-                </motion.button>
+                <ListRow
+                  key={data.id}
+                  leading={isList ? <IconTile icon={Ico} /> : <GlyphTile char={data.arabic.charAt(0)} />}
+                  title={label}
+                  subtitle={isList ? `${data.steps.length} dhikr · ×${fmt(setTotal(data))}` : `×${fmt(data.target)}`}
+                  onClick={reorder ? undefined : () => openItem(kind, data.id)}
+                  ariaLabel={`${label}, details`}
+                  trailing={
+                    reorder ? (
+                      <>
+                        <IconButton icon={ChevronUp} label={`Move ${label} up`} size="sm" disabled={idx === 0} onClick={() => movePinned(idx, -1)} />
+                        <IconButton
+                          icon={ChevronDown}
+                          label={`Move ${label} down`}
+                          size="sm"
+                          disabled={idx === pinnedItems.length - 1}
+                          onClick={() => movePinned(idx, 1)}
+                        />
+                      </>
+                    ) : (
+                      pinBtn(data.id, label)
+                    )
+                  }
+                />
               );
             })}
-          </div>
+          </ListGroup>
+        )}
+      </section>
 
-          <AnimatePresence>
-            {filtersActive && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.85 }}
-                onClick={() => {
-                  setSearchQuery("");
-                  setActiveOccasion("all");
-                }}
-                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                style={{
-                  background: "color-mix(in srgb, var(--danger) 14%, transparent)",
-                  color: "var(--danger)",
-                }}
-              >
-                <X size={11} /> Clear
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Occasion filter pills — the rail takes over on desktop */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth lg:hidden">
-          {activeOccasion !== "all" && OCCASIONS[activeOccasion] && (
-            <PillButton
-              active={true}
-              onClick={() => setActiveOccasion("all")}
-            >
-              {OCCASIONS[activeOccasion]}
-            </PillButton>
-          )}
-          <PillButton active={activeOccasion === "all"} onClick={() => setActiveOccasion("all")}>
-            All
-          </PillButton>
-          {Object.entries(OCCASIONS)
-            .filter(([k]) => k !== activeOccasion)
-            .map(([k, v]) => (
-              <PillButton
-                key={k}
-                active={false}
-                onClick={() => setActiveOccasion(k)}
-              >
-                {v}
-              </PillButton>
+      <section aria-labelledby="created-h" className="space-y-4">
+        <SectionHeader id="created-h" title="Made by you" count={mySets.length + myDhikrs.length || null} />
+        {mySets.length + myDhikrs.length === 0 ? (
+          <EmptyState
+            icon={FolderPlus}
+            title="Build your own routine"
+            body="Combine any dhikr into a set with your own counts, or add a dhikr that isn't in the library. You can also open any built-in set and customise a copy."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button size="sm" icon={Plus} onClick={() => openEditor("list")}>
+                  New set
+                </Button>
+                <Button variant="secondary" size="sm" icon={Plus} onClick={() => openEditor("dhikr")}>
+                  New dhikr
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <ListGroup>
+            {mySets.map((l) => {
+              const Ico = ICONS[l.icon] || Sparkles;
+              return (
+                <ListRow
+                  key={l.id}
+                  leading={<IconTile icon={Ico} tone="accent" />}
+                  title={l.name}
+                  subtitle={`Set · ${l.steps.length} dhikr · ×${fmt(setTotal(l))}`}
+                  onClick={() => openItem("list", l.id)}
+                  ariaLabel={`${l.name}, details`}
+                  trailing={
+                    <>
+                      <IconButton icon={Pencil} label={`Edit ${l.name}`} size="sm" onClick={() => openEditor("list", l.id)} />
+                      <IconButton icon={Play} label={`Begin ${l.name}`} size="sm" disabled={l.steps.length === 0} onClick={() => startList(l)} />
+                    </>
+                  }
+                />
+              );
+            })}
+            {myDhikrs.map((d) => (
+              <ListRow
+                key={d.id}
+                leading={<GlyphTile char={d.arabic.charAt(0)} />}
+                title={d.tr}
+                subtitle={`Dhikr · ×${fmt(d.target)}`}
+                onClick={() => openItem("dhikr", d.id)}
+                ariaLabel={`${d.tr}, details`}
+                trailing={
+                  <>
+                    <IconButton icon={Pencil} label={`Edit ${d.tr}`} size="sm" onClick={() => openEditor("dhikr", d.id)} />
+                    <IconButton icon={Play} label={`Begin ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
+                  </>
+                }
+              />
             ))}
-        </div>
-      </div>
+          </ListGroup>
+        )}
+      </section>
+    </div>
+  );
 
-      {/* Discovery: Remedies for the Heart — only on the default (unfiltered) view */}
-      {!filtersActive && (
-        <section className="space-y-2">
-          <h2 className="flex items-center gap-2 pl-1 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-            <Sparkles size={13} className="text-[var(--gold)]" /> Remedies for the Heart
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
-              const RemIcon = rem.icon;
-              return (
-                <motion.button
-                  key={key}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveOccasion(key)}
-                  className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left cursor-pointer"
+  const sets =
+    filteredLists.length === 0 ? (
+      noResults
+    ) : (
+      <ListGroup>
+        {filteredLists.map((l) => (
+          setRow(l)
+        ))}
+      </ListGroup>
+    );
+
+  const dhikrBody =
+    filteredDhikrs.length === 0 ? (
+      noResults
+    ) : groupedDhikrs ? (
+      <div className="space-y-3">
+        {groupedDhikrs.map(([occ, items]) => {
+          const open = openGroups.has(occ);
+          const panelId = `grp-${occ}`;
+          return (
+            <section key={occ}>
+              <h2>
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  onClick={() =>
+                    setOpenGroups((s) => {
+                      const next = new Set(s);
+                      next.has(occ) ? next.delete(occ) : next.add(occ);
+                      return next;
+                    })
+                  }
+                  className="flex h-12 w-full items-center justify-between gap-3 border-b border-line text-left"
                 >
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                    style={{ background: "color-mix(in srgb, var(--gold) 12%, transparent)", color: rem.color }}
-                  >
-                    <RemIcon size={17} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-xs font-bold text-[var(--text)] truncate">{rem.label}</span>
-                    <span className="block text-[10px] text-[var(--muted)] mt-0.5 leading-snug truncate">{rem.desc}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Pinned section — only when no filter */}
-      <AnimatePresence>
-        {pinnedItems.length > 0 && (
-          <motion.section
-            layout
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={spring}
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-2 pl-1">
-              <Pin size={13} className="text-[var(--gold)]" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">
-                Pinned
+                  <span className="font-display text-lg text-ink">
+                    {OCCASIONS[occ] || occ}
+                    <span className="numerals ml-2 font-body text-sm text-muted">{items.length}</span>
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={`text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </button>
               </h2>
-              <span
-                className="rounded-full px-1.5 py-px text-[10px] font-bold"
-                style={{
-                  background: "color-mix(in srgb, var(--gold) 14%, transparent)",
-                  color: "var(--gold)",
-                }}
-              >
-                {pinnedItems.length}
-              </span>
-            </div>
-            <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
-              <AnimatePresence initial={false}>
-                {pinnedItems.map(({ type, data }) =>
-                  type === "list" ? (
-                    <ListRow
-                      key={`p-${data.id}`}
-                      l={data}
-                      dById={dById}
-                      pinned={pinned}
-                      togglePin={togglePin}
-                      startList={startList}
-                      removeList={removeList}
-                      inPinnedSection
-                    />
-                  ) : (
-                    <DhikrRow
-                      key={`p-${data.id}`}
-                      d={data}
-                      pinned={pinned}
-                      togglePin={togglePin}
-                      startDhikr={startDhikr}
-                      removeDhikr={removeDhikr}
-                      lang={settings.lang}
-                      inPinnedSection
-                    />
-                  )
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </motion.section>
-        )}
-      </AnimatePresence>
-
-      {/* Main content based on tab */}
-      <AnimatePresence mode="wait">
-        <motion.section
-          key={tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {tab === "sets" ? (
-            <>
-              {unpinnedLists.length === 0 ? (
-                filteredLists.length === 0 ? (
-                  <EmptyState
-                    icon={FolderHeart}
-                    title={filtersActive ? "No sets match" : "No tasbeeh sets yet"}
-                    subtitle={
-                      filtersActive
-                        ? "Try a different category or clear the search."
-                        : "Create a set to chain multiple dhikrs into one session."
-                    }
-                    cta={
-                      filtersActive
-                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
-                        : { label: "+ Create Set", onClick: () => setModal("list") }
-                    }
-                  />
-                ) : null
-              ) : (
-                <div className="space-y-2">
-                  {pinnedItems.some((p) => p.type === "list") && (
-                    <SectionHeading label="All Sets" count={unpinnedLists.length} />
-                  )}
-                  <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
-                    <AnimatePresence initial={false}>
-                      {unpinnedLists.map((l) => (
-                        <ListRow
-                          key={l.id}
-                          l={l}
-                          dById={dById}
-                          pinned={pinned}
-                          togglePin={togglePin}
-                          startList={startList}
-                          removeList={removeList}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </motion.div>
-                </div>
-              )}
-            </>
-          ) : tab === "dhikrs" ? (
-            <>
-              {unpinnedDhikrs.length === 0 ? (
-                filteredDhikrs.length === 0 ? (
-                  <EmptyState
-                    icon={BookOpen}
-                    title={filtersActive ? "No dhikrs match" : "No dhikrs available"}
-                    subtitle={
-                      filtersActive
-                        ? "Try a different category or clear the search."
-                        : "Add a custom dhikr to expand your library."
-                    }
-                    cta={
-                      filtersActive
-                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
-                        : { label: "+ Add Dhikr", onClick: () => setModal("dhikr") }
-                    }
-                  />
-                ) : null
-              ) : groupedDhikrs ? (
-                <div className="space-y-3">
-                  {groupedDhikrs.map(([occ, items], idx) => (
-                    <OccasionGroup
-                      key={occ}
-                      occKey={occ}
-                      label={OCCASIONS[occ] || occ}
-                      items={items}
-                      defaultOpen={idx < 2}
-                      renderItem={(d) => (
-                        <DhikrRow
-                          key={d.id}
-                          d={d}
-                          pinned={pinned}
-                          togglePin={togglePin}
-                          startDhikr={startDhikr}
-                          removeDhikr={removeDhikr}
-                          lang={settings.lang}
-                        />
-                      )}
-                    />
+              {open && (
+                <ListGroup id={panelId} className="mt-3">
+                  {items.map((d) => (
+                    dhikrRow(d)
                   ))}
-                </div>
-              ) : (
-                <motion.div layout className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
-                  <AnimatePresence initial={false}>
-                    {unpinnedDhikrs.map((d) => (
-                      <DhikrRow
-                        key={d.id}
-                        d={d}
-                        pinned={pinned}
-                        togglePin={togglePin}
-                        startDhikr={startDhikr}
-                        removeDhikr={removeDhikr}
-                        lang={settings.lang}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
+                </ListGroup>
               )}
-            </>
-          ) : (
-            <>
-              {/* Asma-ul-Husna contemplation mode — the dedicated swipe-through
-                  flow, surfaced here since Library is the discovery home. */}
-              {!filtersActive && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setView("names")}
-                  className="mb-3 flex w-full items-center gap-3 rounded-2xl p-4 text-left cursor-pointer shadow-sm"
-                  style={{
-                    background: "color-mix(in srgb, var(--gold) 12%, transparent)",
-                    border: "1px solid color-mix(in srgb, var(--gold) 30%, transparent)",
-                  }}
-                >
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                    style={{ background: "var(--gold)", color: "#1a1206" }}
-                  >
-                    <Sparkles size={19} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-sm font-bold text-[var(--text)]">Contemplation Mode</p>
-                    <p className="text-[11px] text-[var(--muted)] leading-snug">
-                      Flow through the 99 Names one by one, with meanings.
-                    </p>
-                  </div>
-                  <ArrowRight size={16} className="text-[var(--gold)] shrink-0" />
-                </motion.button>
-              )}
-              {unpinnedNames.length === 0 ? (
-                filteredNames.length === 0 ? (
-                  <EmptyState
-                    icon={Sparkles}
-                    title={filtersActive ? "No names match" : "No names available"}
-                    subtitle={
-                      filtersActive
-                        ? "Try a different category or clear the search."
-                        : "Names of Allah database."
-                    }
-                    cta={
-                      filtersActive
-                        ? { label: "Clear filters", onClick: () => { setSearchQuery(""); setActiveOccasion("all"); } }
-                        : null
-                    }
-                  />
-                ) : null
-              ) : (
-                <motion.div layout className="grid grid-cols-2 gap-3 pt-1 lg:grid-cols-4 xl:grid-cols-5">
-                  <AnimatePresence initial={false}>
-                    {unpinnedNames.map((n) => (
-                      <NameCard
-                        key={n.id}
-                        d={n}
-                        pinned={pinned}
-                        togglePin={togglePin}
-                        startDhikr={startDhikr}
-                        lang={settings.lang}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </>
+            </section>
+          );
+        })}
+      </div>
+    ) : (
+      <ListGroup>
+        {filteredDhikrs.map((d) => (
+          dhikrRow(d)
+        ))}
+      </ListGroup>
+    );
+
+  const names = (
+    <div className="space-y-4">
+      {!filtering && (
+        <button
+          type="button"
+          onClick={() => setView("names")}
+          className="group flex w-full items-center gap-4 rounded-2xl bg-sunken px-5 py-5 text-left"
+        >
+          <span dir="rtl" lang="ar" className="font-arabic text-3xl leading-none text-ink">
+            الله
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-xl text-ink">Reflect on the 99 Names</span>
+            <span className="mt-0.5 block text-sm text-muted">One Name at a time, with its meaning and virtue.</span>
+          </span>
+          <ArrowRight size={18} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </button>
+      )}
+      {filteredNames.length === 0 ? (
+        noResults
+      ) : (
+        <ListGroup>
+          {filteredNames.map((d) => (
+            nameRow(d)
+          ))}
+        </ListGroup>
+      )}
+    </div>
+  );
+
+  const counts = { mine: null, sets: filteredLists.length, dhikrs: filteredDhikrs.length, names: filteredNames.length };
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="Library"
+        actions={
+          <>
+            <IconButton icon={BookPlus} label="New dhikr" className="border border-line-strong" onClick={() => openEditor("dhikr")} />
+            <Button icon={Plus} onClick={() => openEditor("list")}>
+              New set
+            </Button>
+          </>
+        }
+      />
+
+      <div className="space-y-4">
+        <Seg
+          label="Library section"
+          value={tab}
+          onChange={setTab}
+          options={TABS.map((t) => ({ ...t, l: counts[t.v] != null && filtering ? `${t.l} ${counts[t.v]}` : t.l }))}
+        />
+
+        {tab !== "mine" && (
+          <div className="relative">
+            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={tab === "names" ? "Search the 99 Names" : "Search by name, meaning or Arabic"}
+              aria-label="Search the library"
+              className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className={tab !== "mine" ? "lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-10" : ""}>
+        {tab !== "mine" && (
+          <>
+            {/* Desktop: category index in its own column. */}
+            <nav aria-label="Categories" className="hidden lg:sticky lg:top-12 lg:block">
+              <p className="eyebrow mb-3">Categories</p>
+              <ul className="space-y-0.5">
+                {[["all", "All"], ...categories].map(([k, v]) => {
+                  const on = activeOccasion === k;
+                  return (
+                    <li key={k}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveOccasion(k)}
+                        aria-current={on ? "true" : undefined}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                          on ? "bg-sunken font-semibold text-ink" : "text-muted hover:text-ink"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            {/* Phone: one scrolling strip of category chips. */}
+            <div className="scroll-fade-x -mx-5 mb-6 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:hidden" role="group" aria-label="Categories">
+              {[["all", "All"], ...categories].map(([k, v]) => (
+                <button key={k} type="button" className="chip" aria-pressed={activeOccasion === k} onClick={() => setActiveOccasion(k)}>
+                  {v}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="min-w-0">
+          {filtering && tab !== "mine" && (
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="numerals text-sm text-muted" aria-live="polite">
+                {fmt(counts[tab])} {counts[tab] === 1 ? "result" : "results"}
+                {activeOccasion !== "all" && ` in ${OCCASIONS[activeOccasion]}`}
+              </p>
+              <Button variant="link" size="sm" onClick={clearFilters}>
+                Clear
+              </Button>
+            </div>
           )}
-        </motion.section>
-      </AnimatePresence>
+          {tab === "mine" ? mine : tab === "sets" ? sets : tab === "dhikrs" ? dhikrBody : names}
         </div>
       </div>
 
-      {/* Pin / Unpin feedback toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key={toast.label + toast.action}
-            initial={{ opacity: 0, y: 20, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            className="fixed left-1/2 bottom-24 z-50 -translate-x-1/2 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-lg pointer-events-none"
-            style={{
-              background: toast.action === "pinned"
-                ? "var(--gold)"
-                : "color-mix(in srgb, var(--surface2) 90%, var(--bg))",
-              color: toast.action === "pinned" ? "#fff" : "var(--text)",
-              border: toast.action === "pinned"
-                ? "none"
-                : "1px solid var(--line)",
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            {toast.action === "pinned"
-              ? <Pin size={12} fill="#fff" strokeWidth={2.5} />
-              : <Check size={13} strokeWidth={2.5} />}
-            <span className="max-w-[180px] truncate">
-              {toast.action === "pinned" ? "Pinned" : "Unpinned"} · {toast.label}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ItemSheet item={itemId ? { kind: itemKind, id: itemId } : null} onClose={closeItem} />
     </div>
   );
 };
-
-const SectionHeading = ({ label, count }) => (
-  <div className="flex items-center gap-2 pl-1 pt-1">
-    <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-      {label}
-    </h2>
-    <span
-      className="rounded-full px-1.5 py-px text-[10px] font-bold"
-      style={{
-        background: "color-mix(in srgb, var(--surface2) 80%, transparent)",
-        color: "var(--muted)",
-      }}
-    >
-      {count}
-    </span>
-  </div>
-);
-
-/* Desktop-only vertical equivalent of PillButton — the category rail. */
-const RailButton = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    aria-current={active ? "true" : undefined}
-    className="w-full rounded-xl px-3 py-2 text-left text-xs font-semibold cursor-pointer transition-colors"
-    style={
-      active
-        ? {
-          background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-          color: "var(--primary)",
-        }
-        : { color: "var(--muted)" }
-    }
-  >
-    {children}
-  </button>
-);
-
-const PillButton = ({ active, onClick, children }) => (
-  <motion.button
-    whileTap={{ scale: 0.94 }}
-    onClick={onClick}
-    className="rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap border cursor-pointer shrink-0"
-    style={
-      active
-        ? {
-          background: "var(--primary)",
-          color: "#fff",
-          borderColor: "var(--primary)",
-          boxShadow: "0 2px 8px -4px color-mix(in srgb, var(--primary) 50%, transparent)",
-        }
-        : {
-          borderColor: "color-mix(in srgb, var(--line) 60%, transparent)",
-          color: "var(--muted)",
-          background: "color-mix(in srgb, var(--surface) 60%, transparent)",
-        }
-    }
-  >
-    {children}
-  </motion.button>
-);
-
-const EmptyState = ({ icon: Icon, title, subtitle, cta }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center text-center rounded-3xl px-6 py-10 gap-3"
-    style={{
-      background: "color-mix(in srgb, var(--surface) 50%, transparent)",
-      border: "1px dashed color-mix(in srgb, var(--line) 70%, transparent)",
-    }}
-  >
-    <div
-      className="flex h-12 w-12 items-center justify-center rounded-2xl"
-      style={{
-        background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-        color: "var(--primary)",
-      }}
-    >
-      <Icon size={22} />
-    </div>
-    <div>
-      <p className="font-display text-base text-[var(--text)]">{title}</p>
-      <p className="text-[11px] text-[var(--muted)] mt-1 max-w-[260px]">{subtitle}</p>
-    </div>
-    {cta && (
-      <motion.button
-        whileTap={{ scale: 0.94 }}
-        onClick={cta.onClick}
-        className="rounded-full px-4 py-1.5 text-xs font-bold text-white cursor-pointer shadow-sm"
-        style={{ background: "var(--primary)" }}
-      >
-        {cta.label}
-      </motion.button>
-    )}
-  </motion.div>
-);
 
 export default LibraryView;

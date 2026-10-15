@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-import { MapPin, Compass, Settings2, Sunrise, Clock, AlertCircle } from "lucide-react";
+import { MapPin, Compass, SlidersHorizontal } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import Card from "../common/Card";
+import { Panel, SectionHeader } from "../common/Layout";
+import { Button, IconButton } from "../common/Button";
 import {
   prayerSchedule,
   PRAYER_KEYS,
@@ -13,6 +13,8 @@ import {
   fmtCountdown,
 } from "../../utils/prayerTimes";
 
+/* Prayer times as a quiet timetable: the next prayer set large with its
+   countdown, then the day's six times in one hairline row. */
 export const PrayerTimesCard = () => {
   const { settings, requestPrayerLocation } = useApp();
   const navigate = useNavigate();
@@ -24,8 +26,6 @@ export const PrayerTimesCard = () => {
   const [locState, setLocState] = useState("idle"); // idle | loading | error
   const [locError, setLocError] = useState("");
 
-  // One ticking clock drives both the live countdown (per second) and the
-  // schedule recompute (per minute, via the memo key below).
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -63,50 +63,57 @@ export const PrayerTimesCard = () => {
       setLocState("error");
       setLocError(
         e?.code === 1
-          ? "Location permission was denied. Enable it for this app, or set your location manually in Settings."
-          : "Couldn't get your location. Try again or set it manually in Settings."
+          ? "Location access is blocked. Allow it for this site, or enter your city in Settings."
+          : "Your location couldn't be found. Try again, or enter it in Settings."
       );
     }
   };
 
-  /* ── No location yet: invite the user to enable it ───────────────────── */
+  const actions = (
+    <div className="-mr-2 flex items-center">
+      <IconButton icon={Compass} label="Qibla direction" size="sm" onClick={() => navigate("/qibla")} />
+      <IconButton
+        icon={SlidersHorizontal}
+        label="Prayer time settings"
+        size="sm"
+        onClick={() => navigate("/settings?panel=prayer")}
+      />
+    </div>
+  );
+
   if (!hasLoc) {
     return (
-      <Card className="p-5 border-[var(--line)] shadow-sm space-y-3">
-        <div className="flex items-center gap-2">
-          <Clock size={16} className="text-[var(--gold)]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
-            Prayer Times
-          </span>
-        </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Get accurate salah times for your location — calculated on your device,
-          fully offline.
-        </p>
-        <button
-          onClick={enableLocation}
-          disabled={locState === "loading"}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold text-white cursor-pointer active:scale-[0.97] hover:brightness-105 transition-all shadow-sm disabled:opacity-60"
-          style={{ background: "var(--primary)" }}
-        >
-          <MapPin size={14} />
-          {locState === "loading" ? "Locating…" : "Use my location"}
-        </button>
-        {locState === "error" && (
-          <p className="flex items-start gap-1.5 text-[11px] text-[var(--danger)] leading-snug">
-            <AlertCircle size={13} className="mt-0.5 shrink-0" />
-            {locError}
+      <section aria-labelledby="prayer-h" className="space-y-4">
+        <SectionHeader id="prayer-h" title="Prayer times" />
+        <Panel className="p-5">
+          <p className="text-[0.9375rem] leading-relaxed text-muted">
+            Set your location to see today&rsquo;s salah times. They are worked out on this device and never leave it.
           </p>
-        )}
-      </Card>
+          <Button
+            variant="secondary"
+            icon={MapPin}
+            loading={locState === "loading"}
+            onClick={enableLocation}
+            className="mt-4"
+          >
+            {locState === "loading" ? "Finding you" : "Use my location"}
+          </Button>
+          {locState === "error" && (
+            <p className="mt-3 text-sm leading-snug text-danger" role="alert">
+              {locError}
+            </p>
+          )}
+        </Panel>
+      </section>
     );
   }
 
   if (!schedule) {
     return (
-      <Card className="p-5 border-[var(--line)] shadow-sm">
-        <p className="text-xs text-[var(--muted)]">Couldn't compute prayer times.</p>
-      </Card>
+      <section aria-labelledby="prayer-h" className="space-y-4">
+        <SectionHeader id="prayer-h" title="Prayer times" action={actions} />
+        <p className="text-[0.9375rem] text-muted">Prayer times couldn&rsquo;t be calculated for this location.</p>
+      </section>
     );
   }
 
@@ -114,115 +121,50 @@ export const PrayerTimesCard = () => {
   const countdownMs = next.time.getTime() - now;
 
   return (
-    <Card className="p-5 border-[var(--line)] shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Clock size={16} className="text-[var(--gold)] shrink-0" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
-            Prayer Times
-          </span>
-          {loc.label && (
-            <span className="flex items-center gap-0.5 text-[10px] text-[var(--muted)] truncate ml-1">
-              <MapPin size={10} /> {loc.label}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate("/qibla")}
-            aria-label="Open Qibla compass"
-            className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-            style={{ background: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)" }}
-          >
-            <Compass size={15} />
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => navigate("/settings?panel=prayer")}
-            aria-label="Prayer time settings"
-            className="flex h-8 w-8 items-center justify-center rounded-full cursor-pointer"
-            style={{ background: "color-mix(in srgb, var(--gold) 12%, transparent)", color: "var(--gold)" }}
-          >
-            <Settings2 size={15} />
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Next-prayer hero */}
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--gold)]">
-            Up next
-          </p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">
-              {PRAYER_LABELS[next.key]}
-            </h3>
-            <span dir="rtl" className="font-arabic text-lg text-[var(--muted)]">
-              {PRAYER_ARABIC[next.key]}
-            </span>
+    <section aria-labelledby="prayer-h" className="space-y-4">
+      <SectionHeader id="prayer-h" title="Prayer times" action={actions} />
+      <Panel className="overflow-hidden">
+        <div className="flex items-end justify-between gap-4 px-5 pb-4 pt-5">
+          <div className="min-w-0">
+            <p className="text-sm text-muted">
+              Next{loc.label ? ` in ${loc.label}` : ""}
+            </p>
+            <p className="mt-1 flex items-baseline gap-2.5">
+              <span className="font-display text-[2rem] leading-none font-medium text-ink">{PRAYER_LABELS[next.key]}</span>
+              <span dir="rtl" lang="ar" className="font-arabic text-xl text-muted">
+                {PRAYER_ARABIC[next.key]}
+              </span>
+            </p>
           </div>
-          <p className="text-xs text-[var(--muted)] mt-0.5">
-            in {fmtCountdown(countdownMs)}
-          </p>
+          <div className="text-right">
+            <p className="numerals font-display text-[2rem] leading-none text-accent">{fmtTime(next.time, p.hour12)}</p>
+            <p className="numerals mt-1.5 text-sm text-muted">in {fmtCountdown(countdownMs)}</p>
+          </div>
         </div>
-        <div className="text-right shrink-0">
-          <p className="font-display text-2xl font-bold" style={{ color: "var(--primary)" }}>
-            {fmtTime(next.time, p.hour12)}
-          </p>
-        </div>
-      </div>
-
-      {/* All times for the day */}
-      <div
-        className="grid grid-cols-6 gap-1 rounded-2xl border p-1.5"
-        style={{
-          borderColor: "color-mix(in srgb, var(--primary) 18%, transparent)",
-          background: "color-mix(in srgb, var(--primary) 6%, transparent)",
-        }}
-      >
-        {PRAYER_KEYS.map((key) => {
-          const isNext = next.key === key && !next.tomorrow;
-          const isCurrent = schedule.current.key === key && !schedule.current.yesterday;
-          const isSunrise = key === "sunrise";
-          return (
-            <div
-              key={key}
-              className="flex flex-col items-center gap-1 rounded-xl py-2 transition-colors"
-              style={{
-                background: isNext
-                  ? "color-mix(in srgb, var(--primary) 16%, transparent)"
-                  : isCurrent
-                  ? "color-mix(in srgb, var(--gold) 12%, transparent)"
-                  : "transparent",
-              }}
-            >
-              <span
-                className="text-[9px] font-bold uppercase tracking-wide flex items-center gap-0.5"
-                style={{
-                  color: isNext
-                    ? "var(--primary)"
-                    : isSunrise
-                    ? "var(--muted)"
-                    : "var(--text)",
-                }}
+        <ol className="grid grid-cols-6 border-t border-line">
+          {PRAYER_KEYS.map((key, i) => {
+            const isNext = next.key === key && !next.tomorrow;
+            const isSunrise = key === "sunrise";
+            return (
+              <li
+                key={key}
+                aria-current={isNext ? "time" : undefined}
+                className={`flex flex-col items-center gap-1 py-3 ${i > 0 ? "border-l border-line" : ""} ${
+                  isNext ? "bg-accent-soft" : ""
+                }`}
               >
-                {isSunrise && <Sunrise size={9} />}
-                {PRAYER_LABELS[key]}
-              </span>
-              <span
-                className="text-[10px] font-semibold tabular-nums"
-                style={{ color: isNext ? "var(--primary)" : "var(--muted)" }}
-              >
-                {fmtTime(schedule.today[key], p.hour12)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
+                <span className={`text-xs ${isNext ? "font-semibold text-accent" : isSunrise ? "text-muted" : "font-medium text-ink"}`}>
+                  {PRAYER_LABELS[key]}
+                </span>
+                <span className={`numerals text-[0.8125rem] ${isNext ? "font-semibold text-accent" : "text-muted"}`}>
+                  {fmtTime(schedule.today[key], p.hour12).replace(/\s?[AP]M$/i, "")}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </Panel>
+    </section>
   );
 };
 

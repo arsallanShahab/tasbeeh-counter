@@ -1,443 +1,350 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Plus, Sparkles, ArrowRight, Zap, Target,
-  ChevronUp, ChevronDown, Pencil, Check
-} from "lucide-react";
+import { ArrowRight, Play, Flame, Pin, Sparkles, Plus } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
-import Card from "../common/Card";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
-import HomeIntro from "./HomeIntro";
+import HomeIntro, { useNow } from "./HomeIntro";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
+import { Panel, SectionHeader, ListGroup, ListRow, IconTile, GlyphTile, ProgressBar } from "../common/Layout";
+import { Button } from "../common/Button";
 import {
-  ICONS, OCCASIONS, OCCASION_ICONS,
-  DEFAULT_QUICK_COLLECTIONS, DEFAULT_HOME_SECTIONS,
+  ICONS,
+  OCCASIONS,
+  DEFAULT_QUICK_COLLECTIONS,
+  DEFAULT_HOME_SECTIONS,
   EMOTIONAL_REMEDIES,
+  SEED_NAMES_OF_ALLAH,
 } from "../../constants/dhikrData";
 
+/* Which set fits this hour. Ids must exist in SEED_LISTS. */
+const suggestionFor = (hr) => {
+  if (hr >= 4 && hr < 12) return { id: "morning-short", when: "For this morning" };
+  if (hr >= 12 && hr < 16) return { id: "after-salah", when: "After your salah" };
+  if (hr >= 16 && hr < 21) return { id: "evening-short", when: "For this evening" };
+  return { id: "before-sleep", when: "Before you sleep" };
+};
+
+const setTotal = (l) => l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
+
+/* Roughly a second and a bit per count, rounded to whole minutes. */
+const durationLabel = (count) => {
+  const min = Math.max(1, Math.round((count * 1.3) / 60));
+  return `about ${min} min`;
+};
+
+const dayOfYear = (d) => {
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
+};
+
 export const HomeView = () => {
-  const {
-    setView,
-    lists,
-    dhikrs,
-    pinned,
-    setPinned,
-    stats,
-    startList,
-    startDhikr,
-    setSearchQuery,
-    session,
-    complete,
-    settings,
-  } = useApp();
+  const { setView, lists, dhikrs, pinned, stats, startList, startDhikr, setSearchQuery, session, complete, settings, dById } =
+    useApp();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-  const [editPinned, setEditPinned] = useState(false);
+  const now = useNow(60000);
+  const d = new Date(now);
 
-  const movePinned = (idx, dir) => {
-    const j = idx + dir;
-    if (j < 0 || j >= pinned.length) return;
-    setPinned((p) => {
-      const next = [...p];
-      [next[idx], next[j]] = [next[j], next[idx]];
-      return next;
-    });
-  };
-
-  const hr = new Date().getHours();
-  const suggestId = hr < 12 ? "morning" : hr >= 15 ? "evening" : "after-salah";
-  const suggest = lists.find((l) => l.id === suggestId) || lists[0];
-
-  // Map pinned IDs to either lists (sets) or single dhikrs
-  const pinnedItems = pinned.map((id) => {
-    const list = lists.find((l) => l.id === id);
-    if (list) return { type: "list", data: list };
-    const dhikr = dhikrs.find((d) => d.id === id);
-    if (dhikr) return { type: "dhikr", data: dhikr };
-    return null;
-  }).filter(Boolean);
-
+  const goal = settings.dailyGoal || 100;
   const today = stats.byDate[dateKey()] || 0;
   const streak = computeStreak(stats.byDate);
 
-  // Daily target threshold (standard premium 300 recitations goal)
-  const DAILY_GOAL = 300;
-  const progressPercent = Math.min((today / DAILY_GOAL) * 100, 100);
+  const pinnedItems = pinned
+    .map((id) => {
+      const list = lists.find((l) => l.id === id);
+      if (list) return { type: "list", data: list };
+      const dhikr = dhikrs.find((x) => x.id === id);
+      if (dhikr) return { type: "dhikr", data: dhikr };
+      return null;
+    })
+    .filter(Boolean);
 
-  // Quick collections — derived from user settings (configurable in Settings)
-  const quickKeys = (settings?.quickCollections && settings.quickCollections.length > 0)
-    ? settings.quickCollections
-    : DEFAULT_QUICK_COLLECTIONS;
-  const quickCategories = quickKeys
-    .filter((k) => OCCASIONS[k])
-    .map((k) => ({
-      key: k,
-      label: OCCASIONS[k],
-      icon: OCCASION_ICONS[k] || Sparkles,
-    }));
+  const sug = suggestionFor(d.getHours());
+  const suggest = lists.find((l) => l.id === sug.id) || lists[0];
 
-  const handleQuickLink = (catKey) => {
-    // Navigate + set the occasion in one go — calling setActiveOccasion and
-    // then setView wipes the search param because navigate("/library")
-    // replaces the URL entirely.
+  const resumable = session && !complete && session.counts.some((c) => c > 0);
+
+  const quickKeys =
+    settings?.quickCollections && settings.quickCollections.length > 0 ? settings.quickCollections : DEFAULT_QUICK_COLLECTIONS;
+  const quick = quickKeys.filter((k) => OCCASIONS[k]);
+
+  const openLibrary = (occasion) => {
     setSearchQuery("");
-    navigate(catKey === "all" ? "/library" : `/library?occasion=${encodeURIComponent(catKey)}`);
+    navigate(occasion ? `/library?occasion=${encodeURIComponent(occasion)}` : "/library");
   };
 
-  // ───────── Section renderers (composed in user-defined order) ─────────
-  const renderStreak = () => (
-    <Card key="streak" className="p-5 border-[var(--line)] shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1.5">
-          <Zap size={16} className="text-[var(--gold)] animate-pulse" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
-            Daily Streak
-          </span>
-        </div>
-        <span className="font-display text-xl text-[var(--gold)] font-bold">
-          {streak} Days 🔥
-        </span>
-      </div>
-      <div className="space-y-2 mb-5">
-        <div className="flex items-center justify-between text-xs font-medium">
-          <span className="text-[var(--muted)] flex items-center gap-1">
-            <Target size={12} /> Daily Goal: {DAILY_GOAL} recitations
-          </span>
-          <span className="text-[var(--text)] font-semibold">{Math.round(progressPercent)}%</span>
-        </div>
-        <div className="h-2.5 w-full rounded-full bg-[var(--surface2)] overflow-hidden border border-[var(--line)]/50">
-          <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progressPercent}%`, background: "var(--primary)" }}
-          />
-        </div>
-      </div>
-      <div className="border-t border-[var(--line)]/60 my-3" />
-      <div className="grid grid-cols-2 text-center pt-2">
-        <div className="border-r border-[var(--line)]/60">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Today</p>
-          <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(today)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">All-Time</p>
-          <p className="font-display text-2xl font-bold text-[var(--text)] mt-1">{fmt(stats.total)}</p>
-        </div>
-      </div>
-    </Card>
-  );
-
-  const renderQuick = () => quickCategories.length > 0 && (
-    <div key="quick" className="space-y-3">
-      <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">Quick Collections</h2>
-      <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${Math.min(quickCategories.length, 4)}, minmax(0, 1fr))` }}
-      >
-        {quickCategories.map((cat) => {
-          const CatIcon = cat.icon;
-          return (
-            <button
-              key={cat.key}
-              onClick={() => handleQuickLink(cat.key)}
-              className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] py-3.5 text-center cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97]"
-            >
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl"
-                style={{ background: "var(--surface2)", color: "var(--primary)" }}
-              >
-                <CatIcon size={18} />
-              </div>
-              <span className="text-[10px] font-bold text-[var(--text)]">{cat.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderRemedies = () => (
-    <div key="remedies" className="space-y-3">
-      <h2 className="font-display text-sm font-semibold text-[var(--muted)] pl-1">
-        Remedies for the Heart
-      </h2>
-      {/* lg:grid-cols-1 — on desktop this section sits in the narrow side rail,
-          where two columns would squeeze the labels. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-        {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => {
-          const RemIcon = rem.icon;
-          return (
-            <button
-              key={key}
-              onClick={() => handleQuickLink(key)}
-              className="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                style={{ background: "var(--surface2)", color: rem.color }}
-              >
-                <RemIcon size={18} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="block text-xs font-bold text-[var(--text)]">{rem.label}</span>
-                <span className="block text-[10px] text-[var(--muted)] mt-0.5 leading-snug truncate">
-                  {rem.desc}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderSuggested = () => suggest && (
-    <Card key="suggested" className="p-5 border-2 border-[var(--primary)] bg-[var(--surface)] shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div className="space-y-1">
-        <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold">
-          Suggested Session
-        </p>
-        <h3 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">
-          {suggest.name}
-        </h3>
-        <p className="text-xs text-[var(--muted)] max-w-xs leading-relaxed">
-          recite and fulfill your daily goal requirements.
-        </p>
-      </div>
-      <button
-        onClick={() => startList(suggest)}
-        className="rounded-2xl px-5 py-3 text-xs font-bold text-white cursor-pointer active:scale-[0.96] hover:brightness-105 transition-all duration-300 flex items-center gap-1.5 shrink-0 shadow-sm"
-        style={{ background: "var(--primary)" }}
-      >
-        Begin Adhkar <ArrowRight size={14} />
-      </button>
-    </Card>
-  );
-
-  const renderNamesShortcut = () => (
-    <Card 
-      key="asmaul_husna"
-      className="p-5 border border-[var(--line)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
-      onClick={() => setView("names")}
-    >
-      <div className="space-y-1 min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
-          <Sparkles size={12} className="text-[var(--gold)]" />
-          Dedicated Mode
-        </p>
-        <h3 className="font-display text-xl font-bold text-[var(--text)] leading-tight">
-          Asma-ul-Husna Mode
-        </h3>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
-          Contemplate the 99 Beautiful Names of Allah.
-        </p>
-      </div>
-      <button 
-        className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer shadow-sm shrink-0 flex items-center gap-1 hover:brightness-105 active:scale-[0.96] transition-all"
-        style={{ background: "var(--gold)" }}
-      >
-        Begin <ArrowRight size={14} />
-      </button>
-    </Card>
-  );
-
-  const renderPinned = () => (
-    <div key="pinned">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-base font-semibold text-[var(--text)]">Your Dhikr</h2>
-        <div className="flex items-center gap-3">
-          {pinnedItems.length > 1 && (
-            <button
-              onClick={() => setEditPinned((v) => !v)}
-              className="flex items-center gap-1 text-sm text-[var(--muted)] cursor-pointer font-bold hover:text-[var(--text)] active:scale-95 transition-all"
-              aria-label={editPinned ? "Done reordering" : "Reorder widgets"}
-            >
-              {editPinned ? (<><Check size={15} /> Done</>) : (<><Pencil size={13} /> Edit</>)}
-            </button>
-          )}
-          <button
-            onClick={() => setView("library")}
-            className="flex items-center gap-1 text-sm text-[var(--gold)] cursor-pointer font-bold hover:brightness-110 active:scale-95 transition-all"
-          >
-            <Plus size={15} /> Add
-          </button>
-        </div>
-      </div>
-
-      {pinnedItems.length === 0 ? (
-        <Card className="p-6 text-center text-sm text-[var(--muted)]">
-          No pinned items yet. Pin sets or single dhikrs from the Library.
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-          {pinnedItems.map((item, idx) => {
-            const isList = item.type === "list";
-            const data = item.data;
-            const Ico = isList ? (ICONS[data.icon] || Sparkles) : null;
-            const total = isList ? data.steps.reduce((acc, s) => acc + s.target, 0) : null;
-            const onActivate = () => isList ? startList(data) : startDhikr(data);
-
-            return (
-              <div key={data.id} className="relative">
-                <button
-                  onClick={editPinned ? undefined : onActivate}
-                  disabled={editPinned}
-                  className={`text-left w-full ${editPinned ? "cursor-default" : "cursor-pointer"}`}
-                >
-                  <Card className={`h-full p-4 transition-all flex flex-col justify-between min-h-[110px] ${editPinned ? "" : "hover:scale-[1.02] active:scale-95"}`}>
-                    <div>
-                      {isList ? (
-                        <div
-                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl"
-                          style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
-                        >
-                          <Ico size={18} className="text-[var(--gold)]" />
-                        </div>
-                      ) : (
-                        <div
-                          className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl font-arabic text-lg text-[var(--gold)]"
-                          style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
-                        >
-                          {data.arabic.charAt(0)}
-                        </div>
-                      )}
-                      <p className="font-semibold text-xs leading-snug text-[var(--text)] line-clamp-2">
-                        {isList ? data.name : data.tr}
-                      </p>
-                    </div>
-                    <span className="mt-2 text-[9px] font-bold text-[var(--muted)] uppercase tracking-wider block">
-                      {isList ? `Set · ${total} counts` : `Dhikr · ×${data.target}`}
-                    </span>
-                  </Card>
-                </button>
-
-                {editPinned && (
-                  <div className="absolute top-2 right-2 flex flex-col gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); movePinned(idx, -1); }}
-                      disabled={idx === 0}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--surface2)] border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer active:scale-90 transition-transform"
-                      aria-label="Move up"
-                    >
-                      <ChevronUp size={13} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); movePinned(idx, 1); }}
-                      disabled={idx === pinnedItems.length - 1}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--surface2)] border border-[var(--line)] text-[var(--text)] disabled:opacity-30 cursor-pointer active:scale-90 transition-transform"
-                      aria-label="Move down"
-                    >
-                      <ChevronDown size={13} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderPrayer = () =>
-    settings?.prayer?.enabled && settings?.prayer?.showOnHome ? (
-      <PrayerTimesCard key="prayer" />
-    ) : null;
-
-  const renderResume = () => {
-    if (!session || complete || !session.counts.some((c) => c > 0)) return null;
-    const idx = session.stepIndex;
-    const currentCount = session.counts[idx];
-    const currentTarget = session.steps[idx].target;
-    const totalSteps = session.steps.length;
-    return (
-      <Card
-        className="p-5 border-2 border-[var(--gold)] bg-[var(--surface)] shadow-md flex justify-between items-center gap-4 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all duration-300"
-        onClick={() => setView("counter")}
-      >
-        <div className="space-y-1 min-w-0 flex-1">
-          <p className="text-[10px] uppercase tracking-widest text-[var(--gold)] font-bold flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[var(--gold)] animate-ping" />
-            Active Session
-          </p>
-          <h3 className="font-display text-xl font-bold text-[var(--text)] truncate leading-tight">
+  /* ── Lead: the one thing to do now. A session in progress wins over the
+        time-of-day suggestion. ─────────────────────────────────────────── */
+  const renderLead = () => {
+    if (resumable) {
+      const i = session.stepIndex;
+      const done = session.counts.reduce((a, c) => a + c, 0);
+      const total = session.steps.reduce((a, s) => a + s.target, 0);
+      const step = session.steps[i];
+      const stepDhikr = step ? dById(step.dhikr) : null;
+      return (
+        <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+          <p className="eyebrow">Continue where you left off</p>
+          <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
             {session.title}
-          </h3>
-          <p className="text-xs text-[var(--muted)] truncate mt-0.5">
-            {totalSteps > 1
-              ? `Recited: Step ${idx + 1} of ${totalSteps} (${currentCount} / ${currentTarget})`
-              : `Recited: ${currentCount} / ${currentTarget} times`
-            }
+          </h2>
+          <p className="numerals mt-2 text-[0.9375rem] text-muted">
+            {session.steps.length > 1 ? `Step ${i + 1} of ${session.steps.length}` : "Single dhikr"}
+            {stepDhikr ? ` · ${stepDhikr.tr}` : ""} · {fmt(done)} of {fmt(total)}
           </p>
+          <ProgressBar value={done} max={total} label="Session progress" className="mt-5" />
+          <Button size="lg" icon={Play} onClick={() => setView("counter")} className="mt-6 w-full sm:w-auto">
+            Continue
+          </Button>
+        </Panel>
+      );
+    }
+    if (!suggest) return null;
+    const first = dById(suggest.steps[0]?.dhikr);
+    const total = setTotal(suggest);
+    return (
+      <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+        <p className="eyebrow">{sug.when}</p>
+        <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
+          {suggest.name}
+        </h2>
+        <p className="numerals mt-2 text-[0.9375rem] text-muted">
+          {suggest.steps.length} {suggest.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)} counts · {durationLabel(total)}
+        </p>
+        {first && (
+          <p dir="rtl" lang="ar" className="mt-6 truncate font-arabic text-[1.75rem] leading-[1.9] text-ink">
+            {first.arabic}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button size="lg" icon={Play} onClick={() => startList(suggest)} className="flex-1 sm:flex-none">
+            Begin
+          </Button>
+          <Button variant="ghost" size="lg" onClick={() => openLibrary(suggest.occasion)}>
+            Other sets
+          </Button>
         </div>
-        <button
-          className="rounded-2xl px-4 py-2.5 text-xs font-bold text-black cursor-pointer active:scale-[0.96] transition-all duration-300 flex items-center gap-1 shrink-0 shadow-sm"
-          style={{ background: "var(--gold)" }}
-        >
-          Resume →
-        </button>
-      </Card>
+      </Panel>
     );
   };
 
-  const sectionRenderers = {
-    prayer: renderPrayer,
-    streak: renderStreak,
-    remedies: renderRemedies,
-    asmaul_husna: renderNamesShortcut,
-    quick: renderQuick,
-    suggested: renderSuggested,
-    pinned: renderPinned,
+  /* ── Daily progress: one line of figures, no card ───────────────────── */
+  const renderProgress = () => (
+    <section key="streak" aria-label="Daily progress" className="space-y-4">
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <p className="numerals font-display text-[2.75rem] leading-none text-ink">{fmt(today)}</p>
+          <p className="numerals mt-2 text-sm text-muted">of {fmt(goal)} today</p>
+        </div>
+        <dl className="flex gap-6 text-right">
+          <div>
+            <dt className="text-sm text-muted">Streak</dt>
+            <dd className="numerals mt-1 flex items-center justify-end gap-1 font-display text-2xl leading-none text-ink">
+              {streak > 0 && <Flame size={16} className="text-gold" aria-hidden="true" />}
+              {streak}
+              <span className="sr-only"> days</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm text-muted">All time</dt>
+            <dd className="numerals mt-1 font-display text-2xl leading-none text-ink">{fmt(stats.total)}</dd>
+          </div>
+        </dl>
+      </div>
+      <ProgressBar value={today} max={goal} label="Today's goal" tone={today >= goal ? "gold" : "accent"} />
+      {today >= goal && <p className="text-sm text-muted">Today&rsquo;s goal is complete. Alhamdulillah.</p>}
+    </section>
+  );
+
+  const renderPinned = () => (
+    <section key="pinned" aria-labelledby="pinned-h" className="space-y-4">
+      <SectionHeader
+        id="pinned-h"
+        title="Your dhikr"
+        action={
+          <Button variant="link" size="sm" onClick={() => navigate("/library?tab=mine")}>
+            Manage
+          </Button>
+        }
+      />
+      {pinnedItems.length === 0 ? (
+        <Panel className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-muted">
+            <Pin size={18} strokeWidth={1.75} aria-hidden="true" />
+          </span>
+          <p className="flex-1 text-[0.9375rem] leading-relaxed text-muted">
+            Pin the sets you recite every day and they&rsquo;ll wait for you here.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => openLibrary()}>
+            Browse library
+          </Button>
+        </Panel>
+      ) : (
+        <ListGroup>
+          {pinnedItems.map(({ type, data }) => {
+            const isList = type === "list";
+            const Ico = isList ? ICONS[data.icon] || Sparkles : null;
+            const count = isList ? setTotal(data) : data.target;
+            return (
+              <ListRow
+                key={data.id}
+                leading={isList ? <IconTile icon={Ico} /> : <GlyphTile char={data.arabic.charAt(0)} />}
+                title={isList ? data.name : data.tr}
+                subtitle={
+                  isList
+                    ? data.steps
+                        .map((s) => dById(s.dhikr)?.tr)
+                        .filter(Boolean)
+                        .join(" · ") || "No dhikr yet"
+                    : data.en
+                }
+                meta={`×${fmt(count)}`}
+                onClick={() => (isList ? startList(data) : startDhikr(data))}
+                ariaLabel={`Begin ${isList ? data.name : data.tr}`}
+              />
+            );
+          })}
+        </ListGroup>
+      )}
+    </section>
+  );
+
+  const renderQuick = () =>
+    quick.length > 0 && (
+      <section key="quick" aria-labelledby="quick-h" className="space-y-4">
+        <SectionHeader
+          id="quick-h"
+          title="Collections"
+          action={
+            <Button variant="link" size="sm" onClick={() => openLibrary()}>
+              All sets
+            </Button>
+          }
+        />
+        <div className="scroll-fade-x -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none">
+          {quick.map((k) => (
+            <button key={k} type="button" onClick={() => openLibrary(k)} className="chip">
+              {OCCASIONS[k]}
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+
+  /* Remedies read as an index: "When you are anxious", not six cards. */
+  const renderRemedies = () => (
+    <section key="remedies" aria-labelledby="remedies-h" className="space-y-4">
+      <SectionHeader id="remedies-h" title="When the heart needs it" />
+      <ul className="grid grid-cols-1 border-t border-line sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-1 xl:grid-cols-2">
+        {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => (
+          <li key={key} className="border-b border-line">
+            <button
+              type="button"
+              onClick={() => openLibrary(key)}
+              className="group flex w-full items-center gap-4 py-4 text-left"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-lg leading-snug text-ink">{rem.short || rem.label}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted">{rem.desc}</span>
+              </span>
+              <ArrowRight
+                size={18}
+                className="shrink-0 text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-ink"
+                aria-hidden="true"
+              />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
+  /* A Name of Allah for the day, set large. Gives the page a quiet end. */
+  const renderName = () => {
+    const idx = dayOfYear(d) % SEED_NAMES_OF_ALLAH.length;
+    const name = SEED_NAMES_OF_ALLAH[idx];
+    if (!name) return null;
+    return (
+      <section key="asmaul_husna" aria-labelledby="name-h" className="rounded-2xl bg-sunken px-6 py-8 text-center lg:py-10">
+        <p className="eyebrow">Name of the day · {idx + 1} of 99</p>
+        <p dir="rtl" lang="ar" className="mt-5 font-arabic text-[3.5rem] leading-[1.5] text-ink">
+          {name.arabic}
+        </p>
+        <h2 id="name-h" className="mt-1 font-display text-2xl text-ink">
+          {name.tr}
+        </h2>
+        <p className="mx-auto mt-1 max-w-[30ch] text-[0.9375rem] text-muted">
+          {settings.lang === "ur" ? name.ur || name.en : name.en}
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          iconRight={ArrowRight}
+          className="mt-6"
+          onClick={() => navigate("/names")}
+        >
+          The 99 Names
+        </Button>
+      </section>
+    );
   };
-  const homeSections = (settings?.homeSections && settings.homeSections.length > 0)
-    ? settings.homeSections
-    : DEFAULT_HOME_SECTIONS;
 
-  const visibleSections = homeSections.filter((s) => s.visible && sectionRenderers[s.key]);
-  const renderSections = (keys) =>
-    visibleSections
-      .filter((s) => keys.includes(s.key))
-      .map((s) => sectionRenderers[s.key]());
+  const renderPrayer = () =>
+    settings?.prayer?.enabled && settings?.prayer?.showOnHome ? <PrayerTimesCard key="prayer" /> : null;
 
-  /* On desktop the single mobile stack becomes a dashboard: the sections you
-     act on go in the wide main column, the glanceable ones into a side rail.
-     The user's configured order is preserved within each column. */
-  const DESKTOP_SIDE = ["prayer", "streak", "remedies"];
-  const DESKTOP_MAIN = ["pinned", "suggested", "quick", "asmaul_husna"];
+  const renderers = {
+    suggested: () => null, // the lead below replaces the old suggested card
+    prayer: renderPrayer,
+    streak: renderProgress,
+    pinned: renderPinned,
+    quick: renderQuick,
+    remedies: renderRemedies,
+    asmaul_husna: renderName,
+  };
 
-  const header = (
-    <>
-      {/* Page H1 for SEO. Kept sr-only because the visual hero is the brand
-          wordmark/greeting in HomeIntro; this gives crawlers a keyword-anchored
-          heading without altering the dashboard layout. */}
-      <h1 className="sr-only">Free Online Tasbeeh Counter — Digital Dhikr &amp; Zikr Counter</h1>
+  const homeSections =
+    settings?.homeSections && settings.homeSections.length > 0 ? settings.homeSections : DEFAULT_HOME_SECTIONS;
+  const visible = homeSections.filter((s) => s.visible && renderers[s.key]);
+  const showLead = resumable || visible.some((s) => s.key === "suggested");
+  const render = (keys) => visible.filter((s) => keys.includes(s.key)).map((s) => renderers[s.key]());
 
-      {/* Merged transparent intro: date · Hijri · brand · greeting · occasion */}
-      <HomeIntro />
+  const footer = (
+    <footer className="flex flex-col items-start justify-between gap-3 border-t border-line pt-6 text-sm text-muted sm:flex-row sm:items-center">
+      <p>Your counts stay on this device. No account, no tracking.</p>
+      <Button variant="link" size="sm" icon={Plus} onClick={() => navigate("/library?tab=mine")} className="-ml-2">
+        Create your own set
+      </Button>
+    </footer>
+  );
 
-      {/* Continue Session — contextual, always above the configurable stack */}
-      {renderResume()}
-    </>
+  const seoTitle = (
+    <h1 className="sr-only">Free Online Tasbeeh Counter, Digital Dhikr &amp; Zikr Counter</h1>
   );
 
   if (isDesktop) {
     return (
-      <div className="anim-fade space-y-6 pb-4">
-        {header}
-        <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-6">
-          <div className="space-y-6">{renderSections(DESKTOP_MAIN)}</div>
-          <aside className="space-y-6">{renderSections(DESKTOP_SIDE)}</aside>
+      <div className="space-y-12">
+        {seoTitle}
+        <HomeIntro />
+        <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-12">
+          <div className="space-y-12">
+            {showLead && renderLead()}
+            {render(["pinned", "quick", "remedies"])}
+          </div>
+          <aside className="sticky top-12 space-y-12">{render(["streak", "prayer", "asmaul_husna"])}</aside>
         </div>
+        {footer}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 anim-fade pb-6">
-      {header}
-
-      {/* Configurable section stack — order/visibility from settings.homeSections */}
-      {visibleSections.map((s) => sectionRenderers[s.key]())}
+    <div className="space-y-10">
+      {seoTitle}
+      <HomeIntro />
+      {showLead && renderLead()}
+      {visible.map((s) => renderers[s.key]())}
+      {footer}
     </div>
   );
 };

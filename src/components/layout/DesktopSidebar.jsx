@@ -1,19 +1,9 @@
-import React from "react";
-import { motion } from "motion/react";
-import {
-  Home, BookOpen, BarChart3, Settings as SettingsIcon,
-  Sparkles, Compass, Plus, Flame, Play,
-} from "lucide-react";
+import { Sparkles, Compass, Plus, Play } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import BrandMark from "../common/BrandMark";
+import { BrandMark } from "../common/BrandMark";
+import { Button } from "../common/Button";
+import { NAV_ITEMS } from "./Navbar";
 import { computeStreak, dateKey, fmt } from "../../utils/stats";
-
-const PRIMARY = [
-  { v: "home", icon: Home, label: "Home" },
-  { v: "library", icon: BookOpen, label: "Library" },
-  { v: "stats", icon: BarChart3, label: "Statistics" },
-  { v: "settings", icon: SettingsIcon, label: "Settings" },
-];
 
 const EXPLORE = [
   { v: "names", icon: Sparkles, label: "99 Names" },
@@ -24,40 +14,24 @@ const NavItem = ({ item, active, onClick }) => {
   const Icon = item.icon;
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className="relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left cursor-pointer"
-      style={{ color: active ? "var(--primary)" : "var(--muted)" }}
+      className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.9375rem] transition-colors ${
+        active ? "bg-sunken font-semibold text-ink" : "font-medium text-muted hover:bg-sunken hover:text-ink"
+      }`}
     >
-      {active && (
-        <motion.span
-          layoutId="desktop-nav-pill"
-          className="absolute inset-0 rounded-2xl"
-          style={{
-            background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-            boxShadow:
-              "inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent), 0 4px 14px -10px color-mix(in srgb, var(--primary) 60%, transparent)",
-          }}
-          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-        />
-      )}
-      <Icon size={18} className="relative shrink-0" />
-      <span className="relative text-sm font-semibold">{item.label}</span>
+      <Icon size={19} strokeWidth={active ? 2 : 1.6} className={active ? "text-accent" : undefined} aria-hidden="true" />
+      {item.label}
     </button>
   );
 };
 
-const SectionLabel = ({ children }) => (
-  <p className="px-3 pb-1.5 pt-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] opacity-70">
-    {children}
-  </p>
-);
-
-/* The desktop chrome: a persistent rail that replaces the mobile floating
-   header + bottom tab bar. Rendered only at `lg` and above (pure CSS, so there
-   is no layout flash), while <AppHeader/> and <Navbar/> are hidden there. */
+/* Desktop rail. Paper, a hairline edge, and only what helps you move: the
+   sections, a resume shortcut while a session is open, and the two create
+   actions. Rendered at lg and up only (pure CSS), so there is no flash. */
 export const DesktopSidebar = () => {
-  const { view, setView, setModal, stats, session, complete, appVersion } = useApp();
+  const { view, setView, openEditor, stats, session, complete, appVersion } = useApp();
 
   const today = stats.byDate[dateKey()] || 0;
   const streak = computeStreak(stats.byDate);
@@ -65,139 +39,56 @@ export const DesktopSidebar = () => {
 
   return (
     <aside
-      className="fixed left-0 top-0 z-30 hidden h-svh w-[17rem] flex-col overflow-y-auto lg:flex"
-      style={{
-        background: "color-mix(in srgb, var(--surface) 55%, transparent)",
-        borderRight: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-      }}
+      aria-label="Sidebar"
+      className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col overflow-y-auto border-r border-line bg-page lg:flex"
     >
-      {/* Brand */}
-      <div className="px-5 pb-1 pt-6">
-        <button
-          onClick={() => setView("home")}
-          className="cursor-pointer text-left"
-          aria-label="Go to home"
-        >
-          <BrandMark className="text-3xl" />
+      <div className="px-6 pb-6 pt-8">
+        <button type="button" onClick={() => setView("home")} aria-label="Tasbeeh Go, go to Today" className="rounded-lg">
+          <BrandMark />
         </button>
-        <p className="mt-1 text-[11px] font-medium text-[var(--muted)]">
-          Your dhikr companion
+        <p className="numerals mt-4 text-sm text-muted">
+          <span className="font-medium text-ink">{fmt(today)}</span> today
+          <span className="mx-2 text-line-strong" aria-hidden="true">/</span>
+          <span className="font-medium text-ink">{streak}</span> day streak
         </p>
       </div>
 
-      {/* Live stats */}
-      <div className="grid grid-cols-2 gap-2 px-4 pt-4">
-        <div
-          className="rounded-2xl px-3 py-2.5"
-          style={{
-            background: "color-mix(in srgb, var(--gold) 12%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--gold) 26%, transparent)",
-          }}
-        >
-          <div className="flex items-center gap-1 text-[var(--gold)]">
-            <Flame size={12} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Streak</span>
-          </div>
-          <p className="font-display text-lg font-bold leading-tight text-[var(--gold)]">
-            {streak}
-          </p>
-        </div>
-        <div
-          className="rounded-2xl px-3 py-2.5"
-          style={{
-            background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--primary) 26%, transparent)",
-          }}
-        >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--primary)]">
-            Today
-          </span>
-          <p className="font-display text-lg font-bold leading-tight text-[var(--primary)]">
-            {fmt(today)}
-          </p>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="px-2 pt-2">
-        <SectionLabel>Menu</SectionLabel>
-        <div className="flex flex-col gap-0.5">
-          {PRIMARY.map((n) => (
-            <NavItem
-              key={n.v}
-              item={n}
-              active={view === n.v}
-              onClick={() => setView(n.v)}
-            />
-          ))}
-        </div>
-
-        <SectionLabel>Explore</SectionLabel>
-        <div className="flex flex-col gap-0.5">
-          {EXPLORE.map((n) => (
-            <NavItem
-              key={n.v}
-              item={n}
-              active={view === n.v}
-              onClick={() => setView(n.v)}
-            />
-          ))}
-        </div>
+      <nav aria-label="Primary" className="flex flex-col gap-0.5 px-3">
+        {NAV_ITEMS.map((n) => (
+          <NavItem key={n.v} item={n} active={view === n.v} onClick={() => setView(n.v)} />
+        ))}
+        <p className="eyebrow px-3 pb-2 pt-6">Explore</p>
+        {EXPLORE.map((n) => (
+          <NavItem key={n.v} item={n} active={view === n.v} onClick={() => setView(n.v)} />
+        ))}
       </nav>
 
-      {/* Resume — mirrors the Home "Active Session" card so a session is always
-          one click away from any screen. */}
       {resumable && (
-        <div className="px-4 pt-4">
+        <div className="px-3 pt-6">
           <button
+            type="button"
             onClick={() => setView("counter")}
-            className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left cursor-pointer"
-            style={{
-              background: "color-mix(in srgb, var(--gold) 12%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--gold) 30%, transparent)",
-            }}
+            className="flex w-full items-center gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-colors hover:border-line-strong"
           >
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: "var(--gold)", color: "#1a1206" }}
-            >
-              <Play size={14} fill="currentColor" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
+              <Play size={15} fill="currentColor" aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold uppercase tracking-widest text-[var(--gold)]">
-                Resume
-              </span>
-              <span className="block truncate text-xs font-semibold text-[var(--text)]">
-                {session.title}
-              </span>
+              <span className="block text-xs font-medium text-muted">Continue</span>
+              <span className="block truncate text-sm font-semibold text-ink">{session.title}</span>
             </span>
           </button>
         </div>
       )}
 
-      {/* Create actions */}
-      <div className="mt-auto px-4 pb-5 pt-6">
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => setModal("dhikr")}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-bold cursor-pointer transition-colors hover:bg-[var(--surface2)]"
-            style={{ borderColor: "var(--line)", color: "var(--text)" }}
-          >
-            <Plus size={14} /> New Dhikr
-          </button>
-          <button
-            onClick={() => setModal("list")}
-            className="flex items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs font-bold text-white cursor-pointer shadow-sm transition-all hover:brightness-105"
-            style={{ background: "var(--primary)" }}
-          >
-            <Plus size={14} /> New Set
-          </button>
-        </div>
-        <p className="pt-4 text-center font-mono text-[10px] text-[var(--muted)]">
-          Sabḥa v{appVersion}
-        </p>
+      <div className="mt-auto flex flex-col gap-2 px-5 pb-6 pt-8">
+        <Button variant="primary" size="md" icon={Plus} onClick={() => openEditor("list")} block>
+          New set
+        </Button>
+        <Button variant="secondary" size="md" icon={Plus} onClick={() => openEditor("dhikr")} block>
+          New dhikr
+        </Button>
+        <p className="numerals pt-3 text-center text-xs text-muted">Tasbeeh Go {appVersion}</p>
       </div>
     </aside>
   );

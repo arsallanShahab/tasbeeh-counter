@@ -1,539 +1,250 @@
-import React, { useEffect, useState } from "react";
-import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionValue, animate } from "motion/react";
 import { useDrag } from "@use-gesture/react";
 import { Navigate } from "react-router-dom";
-import {
-  ArrowLeft, ChevronLeft, ChevronRight, BookOpen, Sparkles, Quote, BookText,
-  LayoutGrid, X
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight, LayoutGrid, Play } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { SEED_NAMES_OF_ALLAH } from "../../constants/asmaUlHusna";
+import { Button, IconButton } from "../common/Button";
+import { Seg } from "../common/Seg";
+import { Sheet } from "../common/Modal";
 
-const slideVariants = {
-  enter: (direction) => ({
-    x: direction > 0 ? "105%" : direction < 0 ? "-105%" : "0%",
-    opacity: 0,
-    scale: 0.98
-  }),
-  center: {
-    x: "0%",
-    opacity: 1,
-    scale: 1,
-    transition: {
-      x: { type: "spring", stiffness: 350, damping: 35 },
-      opacity: { duration: 0.18 },
-      scale: { type: "spring", stiffness: 350, damping: 35 }
-    }
-  },
-  exit: (direction) => ({
-    x: direction > 0 ? "-105%" : direction < 0 ? "105%" : "0%",
-    opacity: 0,
-    scale: 0.98,
-    transition: {
-      x: { type: "spring", stiffness: 350, damping: 35 },
-      opacity: { duration: 0.18 },
-      scale: { type: "spring", stiffness: 350, damping: 35 }
-    }
-  })
+const slide = {
+  enter: (dir) => ({ x: dir > 0 ? 40 : dir < 0 ? -40 : 0, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
+  exit: (dir) => ({ x: dir > 0 ? -40 : dir < 0 ? 40 : 0, opacity: 0, transition: { duration: 0.16 } }),
 };
 
+/* The 99 Names, one at a time: the Name set large in Arabic, its meaning,
+   and its virtue and background when known. Swipe or use the arrow keys to
+   move; the index (a rail on desktop, a grid sheet on phones) jumps anywhere. */
 export const NamesView = () => {
-  const {
-    view,
-    setView,
-    namesSession,
-    settings,
-    navigateNames,
-    startNamesSession,
-    vibe,
-  } = useApp();
+  const { view, setView, namesSession, settings, navigateNames, startNamesSession, startDhikr, dById, vibe } = useApp();
 
-  const isDesktop = useIsDesktop();
-  const [activeTab, setActiveTab] = useState("meaning");
-  const [direction, setDirection] = useState(0); // -1 for previous, 1 for next
-  const [overview, setOverview] = useState(false); // grid jump-to panel
+  const [tab, setTab] = useState("meaning");
+  const [direction, setDirection] = useState(0);
+  const [overview, setOverview] = useState(false);
+  const railRef = useRef(null);
 
   const idx = namesSession.index;
-  const activeName = SEED_NAMES_OF_ALLAH[idx];
-
-  // Motion values for drag gesture
+  const name = SEED_NAMES_OF_ALLAH[idx];
   const dragX = useMotionValue(0);
-  const cardOpacity = useTransform(dragX, [-150, 0, 150], [0.5, 1, 0.5]);
-  const cardScale = useTransform(dragX, [-150, 0, 150], [0.97, 1, 0.97]);
-  const cardRotate = useTransform(dragX, [-150, 0, 150], [-8, 0, 8]);
 
-  const handleNavigate = (dir) => {
-    if (dir === 1 && idx >= 98) return;
-    if (dir === -1 && idx <= 0) return;
+  const [forIdx, setForIdx] = useState(idx);
+  if (forIdx !== idx) {
+    setForIdx(idx);
+    setTab("meaning");
+  }
+
+  const go = (dir) => {
+    if ((dir === 1 && idx >= 98) || (dir === -1 && idx <= 0)) return;
     setDirection(dir);
     navigateNames(dir);
   };
 
-  // Jump straight to any name from the overview grid.
   const jumpTo = (target) => {
     if (target !== idx) {
       setDirection(target > idx ? 1 : -1);
-      startNamesSession(target); // sets index (we're already on /names)
+      startNamesSession(target);
       vibe(8);
     }
     setOverview(false);
   };
 
-  // Horizontal swipe via @use-gesture — axis-locked to "x" so the browser keeps
-  // native vertical scrolling (touch-action: pan-y) for the tab content, while
-  // the library handles pointer capture, tap-filtering and edge-gesture safety.
   const bindSwipe = useDrag(
     ({ down, movement: [mx], velocity: [vx], last, tap }) => {
       if (tap) return;
       if (down) {
-        dragX.set(mx * 0.6);
+        dragX.set(mx * 0.5);
         return;
       }
-      // released: commit on distance OR a quick flick (either direction)
       if (last) {
-        const committed = Math.abs(mx) > 55 || vx > 0.35;
-        if (committed) handleNavigate(mx < 0 ? 1 : -1);
+        if (Math.abs(mx) > 55 || vx > 0.35) go(mx < 0 ? 1 : -1);
         animate(dragX, 0, { type: "spring", stiffness: 350, damping: 35 });
       }
     },
     { axis: "x", filterTaps: true, pointer: { touch: true } }
   );
 
-  // Reset tab to meaning when active name changes
-  useEffect(() => {
-    setActiveTab("meaning");
-  }, [idx]);
-
-  // Keyboard navigation
   useEffect(() => {
     if (view !== "names") return;
     const onKey = (e) => {
-      if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-      if (e.key === "ArrowLeft") handleNavigate(-1);
-      else if (e.key === "ArrowRight") handleNavigate(1);
+      if (["INPUT", "TEXTAREA"].includes(e.target.tagName) || document.querySelector('[role="dialog"]')) return;
+      if (e.key === "ArrowLeft") go(-1);
+      else if (e.key === "ArrowRight") go(1);
       else if (e.key === "Escape") setView("home");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [view, idx, navigateNames, setView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, idx]);
 
-  if (!activeName) {
-    return <Navigate to="/" replace />;
-  }
+  // Keep the active Name visible in the desktop rail.
+  useEffect(() => {
+    railRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [idx]);
 
-  const hasVirtues = !!(activeName.hadith || activeName.benefits);
-  const hasStory = !!activeName.story;
+  if (!name) return <Navigate to="/" replace />;
+
+  const meaning = settings.lang === "ur" ? name.ur || name.en : name.en;
+  const tabs = [
+    { v: "meaning", l: "Meaning" },
+    ...(name.hadith || name.benefits ? [{ v: "virtue", l: "Virtue" }] : []),
+    ...(name.story ? [{ v: "story", l: "Background" }] : []),
+  ];
+  const countable = dById(name.id) || name;
+
+  const reading = (
+    <div className="space-y-5">
+      {tabs.length > 1 && <Seg label="About this Name" value={tab} onChange={setTab} options={tabs} />}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${name.id}-${tab}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="space-y-5"
+        >
+          {tab === "meaning" && (
+            <>
+              {(settings.lang === "en" || settings.lang === "both") && name.en && (
+                <p className="font-display text-2xl leading-snug text-ink">{name.en}</p>
+              )}
+              {(settings.lang === "ur" || settings.lang === "both") && name.ur && (
+                <p dir="rtl" lang="ur" className="font-urdu text-xl text-ink">
+                  {name.ur}
+                </p>
+              )}
+              {name.benefits && tabs.length === 1 && (
+                <p className="max-w-[60ch] text-base leading-relaxed text-muted">{name.benefits}</p>
+              )}
+            </>
+          )}
+          {tab === "virtue" && (
+            <>
+              {name.hadith && (
+                <blockquote className="border-l-2 border-line-strong pl-5">
+                  <p className="font-display text-lg leading-relaxed text-ink">{name.hadith}</p>
+                </blockquote>
+              )}
+              {name.benefits && <p className="max-w-[60ch] text-base leading-relaxed text-ink">{name.benefits}</p>}
+            </>
+          )}
+          {tab === "story" && <p className="max-w-[60ch] text-base leading-relaxed text-ink">{name.story}</p>}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 
   return (
-    <div
-      className="relative flex h-[calc(100svh-2.5rem)] flex-col justify-between lg:h-[calc(100svh-3rem)]"
-      style={{ touchAction: "pan-y", overscrollBehaviorX: "contain" }}
-    >
-      {/* Page H1 for SEO. sr-only so the immersive name carousel stays the
-          visual focus, while crawlers still see a keyword-anchored heading. */}
-      <h1 className="sr-only">99 Names of Allah (Asma ul Husna) with Meaning &amp; Transliteration</h1>
+    <div className="flex min-h-[calc(100svh-1.5rem)] flex-col lg:min-h-[calc(100svh-3rem)]">
+      <h1 className="sr-only">99 Names of Allah (Asma ul Husna) with meaning and transliteration</h1>
 
-      {/* Floating Header */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 280, damping: 26 }}
-        className="flex items-center justify-between rounded-full px-2 py-1.5 backdrop-blur-2xl z-10"
-        style={{
-          background: "color-mix(in srgb, var(--surface) 70%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
-          boxShadow:
-            "0 6px 24px -14px color-mix(in srgb, var(--primary) 35%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
-        }}
-      >
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          whileHover={{ x: -2 }}
-          onClick={() => setView("home")}
-          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer"
-          style={{
-            color: "var(--text)",
-            background: "color-mix(in srgb, var(--surface2) 60%, transparent)",
-          }}
-        >
-          <ArrowLeft size={15} /> Home
-        </motion.button>
-        <p className="font-display text-sm text-[var(--text)] truncate px-2">
-          Asma-ul-Husna
-        </p>
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={() => setOverview(true)}
-          className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 cursor-pointer"
-          style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)" }}
-          aria-label="View all names"
-        >
-          <LayoutGrid size={13} style={{ color: "var(--gold)" }} />
-          <span className="text-[10px] font-bold" style={{ color: "var(--gold)" }}>
-            {idx + 1}/99
-          </span>
-        </motion.button>
-      </motion.header>
+      <header className="flex items-center gap-2">
+        <IconButton icon={X} label="Close" onClick={() => setView("home")} className="-ml-2" />
+        <p className="flex-1 text-center font-display text-lg text-ink">The 99 Names</p>
+        <IconButton icon={LayoutGrid} label="All 99 Names" onClick={() => setOverview(true)} className="-mr-2 lg:invisible" />
+      </header>
 
-      {/* Desktop adds a permanent index rail beside the card — the same jump
-          targets as the overview overlay, always on screen. */}
-      <div className="flex min-h-0 flex-1 lg:gap-6">
-      <aside className="hidden lg:flex lg:w-52 lg:shrink-0 lg:flex-col lg:min-h-0 lg:pt-6">
-        <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">
-          All 99 Names
-        </p>
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
-          {SEED_NAMES_OF_ALLAH.map((n, i) => {
-            const active = i === idx;
-            return (
-              <button
-                key={n.id}
-                onClick={() => jumpTo(i)}
-                aria-current={active ? "true" : undefined}
-                className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left cursor-pointer"
-                style={
-                  active
-                    ? { background: "color-mix(in srgb, var(--primary) 14%, transparent)" }
-                    : undefined
-                }
-              >
-                <span
-                  className="w-5 shrink-0 text-[9px] font-bold tabular-nums"
-                  style={{ color: active ? "var(--primary)" : "var(--muted)" }}
-                >
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[var(--text)]">
-                  {n.tr}
-                </span>
-                <span className="font-arabic shrink-0 text-sm text-[var(--gold)]" dir="rtl">
-                  {n.arabic}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
+      <div className="flex min-h-0 flex-1 lg:mt-6 lg:gap-10">
+        {/* Desktop index */}
+        <nav aria-label="All 99 Names" className="hidden w-60 shrink-0 lg:flex lg:flex-col">
+          <ol ref={railRef} className="max-h-[calc(100svh-8rem)] space-y-0.5 overflow-y-auto pr-2">
+            {SEED_NAMES_OF_ALLAH.map((n, i) => {
+              const on = i === idx;
+              return (
+                <li key={n.id}>
+                  <button
+                    type="button"
+                    onClick={() => jumpTo(i)}
+                    aria-current={on ? "true" : undefined}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                      on ? "bg-sunken" : "hover:bg-sunken"
+                    }`}
+                  >
+                    <span className="numerals w-6 text-right text-[0.8125rem] text-muted">{i + 1}</span>
+                    <span className={`min-w-0 flex-1 truncate text-sm ${on ? "font-semibold text-ink" : "text-ink"}`}>{n.tr}</span>
+                    <span dir="rtl" lang="ar" className="font-arabic text-base text-muted">
+                      {n.arabic}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
 
-      <motion.div
-        {...bindSwipe()}
-        style={{ x: dragX, touchAction: "pan-y", overscrollBehaviorX: "contain" }}
-        className="flex-1 flex flex-col min-h-0 select-none cursor-grab active:cursor-grabbing"
-      >
-        <div className="flex-1 flex flex-col min-h-0 py-6 space-y-5">
-          <AnimatePresence initial={false} custom={direction} mode="wait">
-            <motion.div
-              key={activeName.id}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <motion.article
+              key={name.id}
               custom={direction}
-              variants={slideVariants}
+              variants={slide}
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex-1 flex flex-col min-h-0 space-y-5 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0"
+              className="flex flex-1 flex-col lg:grid lg:grid-cols-2 lg:items-center lg:gap-14"
             >
-              {/* Calligraphy Card - with rotation animation linked to drag offset */}
-              <div className="px-2 overflow-visible relative lg:self-center">
-                <motion.div
-                  style={{ rotate: cardRotate }}
-                  className="w-full text-center space-y-4 py-2"
-                >
-                  <div
-                    className="mx-auto max-w-[280px] rounded-3xl py-7 px-4 text-center border lg:max-w-md lg:py-12"
-                    style={{
-                      borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                      background: "color-mix(in srgb, var(--surface) 40%, transparent)",
-                      boxShadow: "0 8px 32px -16px color-mix(in srgb, var(--primary) 20%, transparent)"
-                    }}
-                  >
-                    <p className="font-arabic text-[3.2rem] lg:text-[4.2rem] leading-normal text-[var(--text)] font-medium" dir="rtl">
-                      {activeName.arabic}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-[var(--gold)] tracking-wide uppercase">
-                      {activeName.tr}
-                    </p>
-                    <p className="text-xs text-[var(--muted)] mt-1 font-medium px-6 leading-relaxed">
-                      {settings.lang === "ur" ? activeName.ur || activeName.en : activeName.en}
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
+              <motion.div
+                {...bindSwipe()}
+                style={{ x: dragX, touchAction: "pan-y" }}
+                className="flex cursor-grab select-none flex-col items-center py-8 text-center active:cursor-grabbing lg:py-0"
+              >
+                <p className="eyebrow numerals">
+                  Name {idx + 1} of 99
+                </p>
+                <p dir="rtl" lang="ar" className="mt-4 font-arabic text-[5rem] leading-[1.45] text-ink lg:text-[7rem]">
+                  {name.arabic}
+                </p>
+                <h2 className="mt-1 font-display text-[2rem] leading-tight text-ink">{name.tr}</h2>
+                {meaning && <p className="mt-1 text-[0.9375rem] text-muted lg:hidden">{meaning}</p>}
+              </motion.div>
 
-              {/* Tabs + panel — grouped so the desktop grid sees exactly two
-                  panes: the calligraphy card and this reading column. */}
-              <div className="flex min-h-0 flex-1 flex-col space-y-5">
-              {/* Tab Selector */}
-              {(hasVirtues || hasStory) && (
-                <div
-                  className="flex gap-1 rounded-full p-1 border mx-2 shrink-0"
-                  style={{
-                    borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                    background: "color-mix(in srgb, var(--surface2) 50%, transparent)"
-                  }}
-                >
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setActiveTab("meaning"); }}
-                    className="flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                    style={
-                      activeTab === "meaning"
-                        ? { background: "var(--primary)", color: "#fff" }
-                        : { color: "var(--muted)" }
-                    }
-                  >
-                    <BookText size={12} /> Meaning
-                  </button>
-                  {hasVirtues && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActiveTab("virtues"); }}
-                      className="flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                      style={
-                        activeTab === "virtues"
-                          ? { background: "var(--primary)", color: "#fff" }
-                          : { color: "var(--muted)" }
-                      }
-                    >
-                      <Sparkles size={12} /> Virtues
-                    </button>
-                  )}
-                  {hasStory && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActiveTab("story"); }}
-                      className="flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                      style={
-                        activeTab === "story"
-                          ? { background: "var(--primary)", color: "#fff" }
-                          : { color: "var(--muted)" }
-                      }
-                    >
-                      <Quote size={12} /> Narrative
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Tab Content Display */}
-              <div className="flex-1 px-2 overflow-y-auto no-scrollbar">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeName.id + "_" + activeTab}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-4"
-                  >
-                    {activeTab === "meaning" && (
-                      <div className="space-y-4">
-                        {/* English Translation */}
-                        {(settings.lang === "en" || settings.lang === "both") && activeName.en && (
-                          <div className="rounded-3xl p-5 border" style={{
-                            borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                            background: "color-mix(in srgb, var(--surface) 20%, transparent)"
-                          }}>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">
-                              English Translation
-                            </p>
-                            <p className="text-sm text-[var(--text)] leading-relaxed">{activeName.en}</p>
-                          </div>
-                        )}
-
-                        {/* Urdu Translation */}
-                        {(settings.lang === "ur" || settings.lang === "both") && activeName.ur && (
-                          <div className="rounded-3xl p-5 border" style={{
-                            borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                            background: "color-mix(in srgb, var(--surface) 20%, transparent)"
-                          }}>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] mb-2">
-                              Urdu Translation
-                            </p>
-                            <p className="font-urdu text-lg text-[var(--text)] leading-loose text-right" dir="rtl">{activeName.ur}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {activeTab === "virtues" && (
-                      <div className="space-y-4">
-                        {activeName.hadith && (
-                          <div
-                            className="rounded-3xl p-5 border"
-                            style={{
-                              borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                              background: "color-mix(in srgb, var(--surface) 20%, transparent)",
-                            }}
-                          >
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] mb-3 flex items-center gap-1.5">
-                              <Quote size={12} className="text-[var(--gold)]" /> Hadith & Reference
-                            </p>
-                            <p className="text-xs text-[var(--text)] italic leading-relaxed">
-                              "{activeName.hadith}"
-                            </p>
-                          </div>
-                        )}
-
-                        {activeName.benefits && (
-                          <div
-                            className="rounded-3xl p-5 border"
-                            style={{
-                              borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                              background: "color-mix(in srgb, var(--surface) 20%, transparent)",
-                            }}
-                          >
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] mb-3 flex items-center gap-1.5">
-                              <Sparkles size={12} className="text-[var(--gold)]" /> Spiritual virtues
-                            </p>
-                            <p className="text-xs text-[var(--muted)] leading-relaxed">
-                              {activeName.benefits}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {activeTab === "story" && activeName.story && (
-                      <div
-                        className="rounded-3xl p-5 border"
-                        style={{
-                          borderColor: "color-mix(in srgb, var(--line) 40%, transparent)",
-                          background: "color-mix(in srgb, var(--surface) 20%, transparent)",
-                        }}
-                      >
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)] mb-3 flex items-center gap-1.5">
-                          <BookOpen size={12} className="text-[var(--gold)]" /> Prophetic Narrative
-                        </p>
-                        <p className="text-xs text-[var(--muted)] leading-relaxed">
-                          {activeName.story}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              </div>
-            </motion.div>
+              <div className="border-t border-line pt-6 lg:border-0 lg:pt-0">{reading}</div>
+            </motion.article>
           </AnimatePresence>
+
+          <div className="mt-8 flex items-center justify-between gap-2 pb-1">
+            <Button variant="secondary" icon={ChevronLeft} onClick={() => go(-1)} disabled={idx === 0} aria-label="Previous Name">
+              <span className="hidden sm:inline">Previous</span>
+            </Button>
+            <Button variant="ghost" icon={Play} onClick={() => startDhikr(countable)}>
+              Count this Name
+            </Button>
+            <Button variant="secondary" iconRight={ChevronRight} onClick={() => go(1)} disabled={idx === 98} aria-label="Next Name">
+              <span className="hidden sm:inline">Next</span>
+            </Button>
+          </div>
         </div>
-      </motion.div>
       </div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.85 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-        className="mb-2 text-center text-[10px] text-[var(--muted)] px-6"
-      >
-        {isDesktop
-          ? "Use ← → or pick any name from the list"
-          : "Swipe/Drag left or right to change name"}
-      </motion.p>
-
-      {/* Floating Control Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 220, damping: 26, delay: 0.1 }}
-        className="mx-auto mb-2 flex items-center gap-4 rounded-full p-1.5 backdrop-blur-2xl px-6 z-10"
-        style={{
-          background: "color-mix(in srgb, var(--surface) 70%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--line) 50%, transparent)",
-          boxShadow:
-            "0 6px 24px -14px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
-        }}
-      >
-        <button
-          onClick={() => handleNavigate(-1)}
-          disabled={idx === 0}
-          className="flex items-center justify-center rounded-full px-4 py-2.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-800/20 active:scale-95 transition-all text-[var(--text)]"
-        >
-          <ChevronLeft size={20} /> <span className="text-xs font-bold ml-1">Previous</span>
-        </button>
-        <div className="h-6 w-px" style={{ background: "color-mix(in srgb, var(--line) 60%, transparent)" }} />
-        <button
-          onClick={() => handleNavigate(1)}
-          disabled={idx === 98}
-          className="flex items-center justify-center rounded-full px-4 py-2.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-800/20 active:scale-95 transition-all text-[var(--text)]"
-        >
-          <span className="text-xs font-bold mr-1">Next</span> <ChevronRight size={20} />
-        </button>
-      </motion.div>
-
-      {/* Overview grid — jump to any of the 99 names */}
-      <AnimatePresence>
-        {overview && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="absolute inset-0 z-30 flex flex-col rounded-3xl"
-            style={{
-              background: "color-mix(in srgb, var(--bg) 94%, transparent)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-            }}
-          >
-            <div className="flex items-center justify-between px-2 py-2.5">
-              <p className="font-display text-base text-[var(--text)] pl-1">All 99 Names</p>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setOverview(false)}
-                aria-label="Close"
-                className="flex h-9 w-9 items-center justify-center rounded-full cursor-pointer"
-                style={{
-                  background: "color-mix(in srgb, var(--surface2) 70%, transparent)",
-                  color: "var(--text)",
-                }}
-              >
-                <X size={18} />
-              </motion.button>
-            </div>
-            <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
-              <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
-                {SEED_NAMES_OF_ALLAH.map((n, i) => {
-                  const active = i === idx;
-                  return (
-                    <motion.button
-                      key={n.id}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => jumpTo(i)}
-                      className="flex flex-col items-center justify-center gap-1 rounded-2xl border p-2.5 cursor-pointer"
-                      style={
-                        active
-                          ? {
-                              borderColor: "var(--primary)",
-                              background: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                            }
-                          : {
-                              borderColor: "color-mix(in srgb, var(--line) 50%, transparent)",
-                              background: "color-mix(in srgb, var(--surface) 40%, transparent)",
-                            }
-                      }
-                    >
-                      <span
-                        className="text-[9px] font-bold leading-none"
-                        style={{ color: active ? "var(--primary)" : "var(--muted)" }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span
-                        className="font-arabic text-lg leading-tight text-[var(--text)]"
-                        dir="rtl"
-                      >
-                        {n.arabic}
-                      </span>
-                      <span className="w-full truncate text-center text-[8px] font-semibold leading-tight text-[var(--muted)]">
-                        {n.tr}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Sheet open={overview} onClose={() => setOverview(false)} title="All 99 Names" size="lg">
+        <ol className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {SEED_NAMES_OF_ALLAH.map((n, i) => {
+            const on = i === idx;
+            return (
+              <li key={n.id}>
+                <button
+                  type="button"
+                  onClick={() => jumpTo(i)}
+                  aria-current={on ? "true" : undefined}
+                  aria-label={`${i + 1}. ${n.tr}`}
+                  className={`flex w-full flex-col items-center gap-0.5 rounded-xl border px-1 py-3 transition-colors ${
+                    on ? "border-ink bg-ink text-page" : "border-line text-ink hover:border-line-strong"
+                  }`}
+                >
+                  <span className={`numerals text-xs ${on ? "" : "text-muted"}`}>{i + 1}</span>
+                  <span dir="rtl" lang="ar" className="font-arabic text-xl leading-snug">
+                    {n.arabic}
+                  </span>
+                  <span className="w-full truncate px-1 text-center text-xs">{n.tr}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </Sheet>
     </div>
   );
 };

@@ -2,29 +2,33 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, Moon, Sun, Sparkles, Mountain, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import BrandMark from "../common/BrandMark";
+import { BrandMark } from "../common/BrandMark";
+import { Button } from "../common/Button";
 import { hijriFormatted, topOccasion } from "../../utils/hijri";
 import { hijriDisplayOffset } from "../../utils/prayerTimes";
 
 const ICON_MAP = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
 
-/* The top-of-home intro: date + Hijri + brand + greeting, and — when there's a
-   special day — the occasion folded into the same block. Intentionally has no
-   card background; it's the one "open" section above the carded stack. Live:
-   ticks so the date rolls at midnight and the Hijri date flips at Maghrib. */
+export const useNow = (ms = 30000) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return now;
+};
+
+/* The top of Today: the date in both calendars, a greeting set large, and,
+   on a special day, the occasion folded in underneath. Open on the page, no
+   card. Ticks so the date rolls at midnight and the Hijri date at Maghrib. */
 export const HomeIntro = () => {
   const { settings, lists, startList } = useApp();
   const navigate = useNavigate();
-
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow();
 
   const d = new Date(now);
   const hr = d.getHours();
-  const greet = hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
+  const greet = hr < 5 ? "Peaceful night" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 
   const offset = hijriDisplayOffset(settings.prayer, d);
   const greg = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
@@ -46,75 +50,36 @@ export const HomeIntro = () => {
   };
 
   return (
-    <header className="pt-2 lg:pt-0">
-      {/* Mobile: brand + greeting side by side, date underneath. */}
-      <div className="flex items-start justify-between gap-3 lg:hidden">
-        <BrandMark className="text-4xl" />
-        <div className="text-right shrink-0">
-          <span className="text-xs text-[var(--muted)] block font-medium">{greet},</span>
-          <span className="text-sm font-bold text-[var(--text)]">Seeker</span>
-        </div>
+    <header>
+      <div className="mb-8 lg:hidden">
+        <BrandMark />
       </div>
 
-      {/* Date — large and glanceable, Gregorian + Hijri */}
-      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 lg:hidden">
-        <span className="font-display text-xl font-bold text-[var(--text)] leading-tight">
-          {greg}
-        </span>
+      <p className="eyebrow">
+        <span>{greg}</span>
         {hijri && (
-          <span className="text-sm font-bold text-[var(--gold)] leading-tight">{hijri}</span>
+          <>
+            <span className="mx-2 text-line-strong" aria-hidden="true">/</span>
+            <span>{hijri}</span>
+          </>
         )}
-      </div>
+      </p>
+      <p className="mt-3 font-display text-[2.75rem] leading-[1.02] font-medium tracking-[-0.015em] text-ink lg:text-6xl">
+        {greet}.
+      </p>
 
-      {/* Desktop: the brand already lives in the sidebar, so the page opens on
-          the greeting instead — a proper page title rather than a repeat logo. */}
-      <div className="hidden lg:flex lg:items-end lg:justify-between lg:gap-6">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-[var(--muted)]">{greet}, Seeker</p>
-          <h2 className="font-display mt-1 text-4xl font-bold leading-tight text-[var(--text)]">
-            {greg}
-          </h2>
-        </div>
-        {hijri && (
-          <span
-            className="shrink-0 rounded-2xl px-4 py-2 text-sm font-bold text-[var(--gold)]"
-            style={{
-              background: "color-mix(in srgb, var(--gold) 12%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--gold) 26%, transparent)",
-            }}
-          >
-            {hijri}
-          </span>
-        )}
-      </div>
-
-      {/* Occasion — inline, still background-free, separated by a faint hairline */}
       {occ && (
-        <div
-          className="mt-4 flex items-center gap-3 border-t pt-4"
-          style={{ borderColor: "color-mix(in srgb, var(--line) 45%, transparent)" }}
-        >
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-            style={{ background: "color-mix(in srgb, var(--gold) 14%, transparent)", color: occ.accent }}
-          >
-            {OccIcon && <OccIcon size={21} />}
-          </div>
+        <div className="mt-6 flex items-start gap-4 border-t border-line pt-5">
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-gold">
+            {OccIcon && <OccIcon size={19} strokeWidth={1.75} aria-hidden="true" />}
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: occ.accent }}>
-              {occ.label}
-            </p>
-            <p className="text-[11px] text-[var(--muted)] leading-snug mt-0.5 line-clamp-2">
-              {occ.desc}
-            </p>
+            <p className="font-display text-xl leading-snug text-ink">{occ.label}</p>
+            <p className="mt-1 text-[0.9375rem] leading-relaxed text-muted">{occ.desc}</p>
+            <Button variant="link" size="sm" iconRight={ArrowRight} onClick={handleCta} className="-ml-2 mt-2">
+              {occ.cta?.label || "Open"}
+            </Button>
           </div>
-          <button
-            onClick={handleCta}
-            className="flex shrink-0 items-center gap-1 rounded-2xl px-3.5 py-2.5 text-[11px] font-bold text-white cursor-pointer active:scale-[0.96] hover:brightness-105 transition-all shadow-sm"
-            style={{ background: occ.accent }}
-          >
-            {occ.cta?.label || "Open"} <ArrowRight size={13} />
-          </button>
         </div>
       )}
     </header>

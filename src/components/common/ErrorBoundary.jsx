@@ -56,39 +56,27 @@ export class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      // Rendered outside the themed app root, so it carries the Qalam colours
+      // itself, following the device light/dark preference.
+      const dark = typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches;
       return (
         <div
-          className="font-body flex min-h-svh flex-col items-center justify-center p-6 text-center select-none"
-          style={{ 
-            ...THEMES.classic.dark, 
-            background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))", 
-            color: "var(--text)" 
-          }}
+          className="font-body flex min-h-svh items-center justify-center bg-page p-6 text-ink"
+          style={THEMES.qalam[dark ? "dark" : "light"]}
+          role="alert"
         >
-          <div className="max-w-md w-full rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-8 shadow-xl space-y-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto bg-amber-500/10 text-[var(--gold)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="font-display text-2xl font-bold text-[var(--text)]">App Recovery</h1>
-              <p className="text-xs text-[var(--muted)] leading-relaxed">
-                Sabḥa encountered an issue (which can happen during app upgrades or due to browser caching mismatch). Click the button below to repair the app.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-[var(--surface2)] border border-[var(--line)] p-4 text-left overflow-auto max-h-32">
-              <code className="text-[10px] text-[var(--danger)] block break-all whitespace-pre-wrap font-mono">
-                {this.state.error?.toString() || "Unknown error"}
-              </code>
-            </div>
-
-            <button
-              onClick={this.handleCleanUp}
-              className="w-full rounded-2xl bg-[var(--primary)] text-white py-3.5 text-sm font-bold cursor-pointer hover:brightness-105 active:scale-[0.98] transition-all duration-300 shadow-md flex items-center justify-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-              Clean Up & Repair App
+          <div className="w-full max-w-md space-y-6">
+            <p className="eyebrow">Tasbeeh Go</p>
+            <h1 className="font-display text-[2.5rem] leading-tight text-ink">Something went wrong</h1>
+            <p className="text-[0.9375rem] leading-relaxed text-muted">
+              This can happen after an update, when the browser still holds old files. Repairing clears those files and
+              resets settings. Your counts and your own dhikr and sets are kept.
+            </p>
+            <pre className="max-h-32 overflow-auto rounded-xl border border-line bg-surface p-4 text-[0.8125rem] whitespace-pre-wrap text-muted [overflow-wrap:anywhere]">
+              {this.state.error?.toString() || "Unknown error"}
+            </pre>
+            <button type="button" onClick={this.handleCleanUp} className="btn btn-primary btn-lg w-full">
+              Repair and reload
             </button>
           </div>
         </div>

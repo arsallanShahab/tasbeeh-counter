@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 
-export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, onDec, children }) => {
+export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, onDec, children, label }) => {
   const N = Math.max(1, Math.min(target, 33));
   const STEP = (2 * Math.PI) / N;
   const STEP_DEG = 360 / N;
@@ -103,18 +103,21 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
       onPointerCancel={onUp}
       whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      className="relative flex h-[320px] w-[320px] cursor-pointer select-none items-center justify-center"
+      className="relative flex aspect-square w-[min(20rem,82vw,46svh)] cursor-pointer select-none items-center justify-center lg:w-[min(24rem,60svh)]"
       style={{ touchAction: "none" }}
       data-tap-skip="true"
+      role="button"
+      tabIndex={-1}
+      aria-label={label}
     >
       {/* Soft ambient halo that intensifies with progress (no scale pulse — keeps the ring grounded) */}
       <motion.div
         className="pointer-events-none absolute inset-0 rounded-full"
         style={{
-          background: `radial-gradient(circle at center, ${theme.glow}26 0%, transparent 60%)`,
-          filter: "blur(8px)",
+          background: `radial-gradient(circle at center, ${theme.glow}1f 0%, transparent 62%)`,
+          filter: "blur(10px)",
         }}
-        animate={{ opacity: 0.3 + p * 0.4 }}
+        animate={{ opacity: 0.2 + p * 0.35 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       />
 
@@ -164,12 +167,12 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
         </defs>
 
         {/* progress arc */}
-        <circle cx="100" cy="100" r="92" fill="none" stroke="var(--surface2)" strokeWidth="5" />
+        <circle cx="100" cy="100" r="92" fill="none" stroke="var(--line)" strokeWidth="3" />
         <motion.circle
           cx="100" cy="100" r="92"
           fill="none"
           stroke={done ? theme.gold[1] : theme.arc}
-          strokeWidth="5"
+          strokeWidth="3"
           strokeLinecap="round"
           strokeDasharray={C}
           transform="rotate(-90 100 100)"
@@ -286,17 +289,8 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
             exit={{ opacity: 0, y: -4, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
           >
-            <span
-              className="rounded-full px-3 py-1 text-[11px] font-bold whitespace-nowrap backdrop-blur-xl"
-              style={{
-                background: "color-mix(in srgb, var(--surface) 88%, transparent)",
-                color: theme.arc,
-                border: "1px solid color-mix(in srgb, var(--line) 60%, transparent)",
-                boxShadow:
-                  "0 4px 14px -8px color-mix(in srgb, var(--primary) 30%, transparent), inset 0 1px 0 0 color-mix(in srgb, #fff 8%, transparent)",
-              }}
-            >
-              lap {Math.max(lap, 1)} / {totalLaps}
+            <span className="numerals whitespace-nowrap rounded-full border border-line bg-surface px-3 py-1 text-[0.8125rem] font-medium text-muted">
+              Round {Math.max(lap, 1)} of {totalLaps}
             </span>
           </motion.div>
         )}

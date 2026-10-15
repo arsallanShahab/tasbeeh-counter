@@ -23,14 +23,14 @@
 
     <!-- Pre-paint background so the fallback/splash never flashes while the
          bundled CSS (imported via JS) is still loading. The base value here is
-         the Pastel dark default; the inline theme script below overrides it
+         the Qalam light default; the inline theme script below overrides it
          with the user's actual theme before first paint (see end of <head>). -->
     <style>
       /* Only <html> carries the background — the pre-paint script (which runs in
          <head>, before <body> exists) overrides this with the user's theme. A
          solid <body> background here would sit on top and hide it, so body stays
          transparent. */
-      html { margin: 0; background: #131e3c; }
+      html { margin: 0; background: #f3efe6; }
       body { margin: 0; background: transparent; }
       .sr-only {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -42,6 +42,16 @@
       @keyframes sg-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       @media (prefers-reduced-motion: reduce) { .sg-loader { animation: none; } }
     </style>
+
+    <!-- Fonts: the display serif, the interface sans and the default Arabic
+         face. Anything else (another Arabic typeface, Urdu Nastaliq, a theme's
+         own fonts) is requested on demand by src/utils/fonts.js. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Instrument+Sans:wght@400..600&family=Amiri:wght@400;700&display=swap"
+    />
 
     <!-- Multilingual (single URL serves English + Arabic) -->
     <link rel="alternate" hreflang="en" href="https://tasbeehgo.vercel.app/" />
@@ -56,7 +66,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#151e31" />
+    <meta name="theme-color" content="#f3efe6" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Tasbeeh Go" />
@@ -215,7 +225,7 @@
          loader/splash matches the user's saved theme — no dark↔light flash.
          Reads the last resolved colors that App.jsx persists to localStorage
          ("paint"). First-time visitors (no saved value) fall back to the
-         Pastel default resolved against their OS light/dark preference. No
+         Qalam default resolved against their OS light/dark preference. No
          cookie or server render is needed: this is a static client-only SPA,
          so localStorage read here is already available before paint. -->
     <script>
@@ -228,12 +238,11 @@
               window.matchMedia &&
               window.matchMedia("(prefers-color-scheme: light)").matches;
             p = light
-              ? { bg: "#faf2e4", bg2: "#f4e8d4", text: "#1f2c54" }  // Pastel light
-              : { bg: "#131e3c", bg2: "#182549", text: "#f6efe0" }; // Pastel dark
+              ? { bg: "#f3efe6", bg2: "#ebe5d8", text: "#1c231f" }  // Qalam light
+              : { bg: "#111411", bg2: "#161a16", text: "#ebe7dc" }; // Qalam dark
           }
           var r = document.documentElement;
-          r.style.background =
-            "radial-gradient(120% 80% at 50% -10%, " + p.bg2 + ", " + p.bg + ")";
+          r.style.background = p.bg;
           r.style.setProperty("--bg", p.bg);
           r.style.setProperty("--bg2", p.bg2);
           r.style.setProperty("--text", p.text);
@@ -253,18 +262,16 @@
            and internal links instead of an empty page. The copy honestly
            describes the app — no cloaking or keyword stuffing. -->
       <main
-        style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-family:ui-rounded,'Fredoka',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text,#f6efe0);text-align:center;"
+        style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-family:'Newsreader',Georgia,serif;color:var(--text,#1c231f);text-align:center;"
       >
-        <!-- What a human sees while the app boots: a theme-aware brand wordmark
-             that matches the in-app splash. "tasbeeh" follows the pre-painted
-             theme via --text; the teal "g" / coral "o" are fixed brand colors. -->
+        <!-- What a human sees while the app boots: the wordmark in the
+             pre-painted theme colour, matching the in-app splash. -->
         <div
           aria-hidden="true"
           class="sg-loader"
-          style="position:relative;display:inline-flex;align-items:baseline;font-weight:700;font-size:clamp(2.5rem,12vw,3.5rem);letter-spacing:-0.01em;line-height:1;"
+          style="display:inline-flex;align-items:baseline;font-weight:500;font-size:clamp(2.25rem,10vw,3rem);letter-spacing:-0.015em;line-height:1;"
         >
-          <span style="position:absolute;top:-0.32em;left:0.55em;font-size:0.5em;line-height:1;color:#b9a6e6;">✦</span>
-          <span style="color:var(--text,#f6efe0);">tasbeeh</span><span style="color:#34bcab;">g</span><span style="color:#f0938a;">o</span>
+          <span style="color:var(--text,#1c231f);">tasbeeh</span><span style="font-style:italic;color:#2c5a46;">go</span>
         </div>
 
         <!-- Crawlable content for non-JS crawlers, AI bots, and as a safety net

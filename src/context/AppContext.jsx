@@ -30,6 +30,7 @@ export const AppProvider = ({ children }) => {
 
   const view = pathToView(location.pathname);
   const modal = searchParams.get("modal") || null;
+  const editId = searchParams.get("edit") || null;
   const activeOccasion = searchParams.get("occasion") || "all";
 
   const [loaded, setLoaded] = useState(false);
@@ -105,11 +106,30 @@ export const AppProvider = ({ children }) => {
         (prev) => {
           const next = new URLSearchParams(prev);
           if (newModal) next.set("modal", newModal);
-          else next.delete("modal");
+          else {
+            next.delete("modal");
+            next.delete("edit");
+          }
           return next;
         },
         { replace: !newModal }
       );
+    },
+    [setSearchParams]
+  );
+
+  /* Editors live in the URL like every other sheet (?modal=dhikr|list), with
+     ?edit=<id> when an existing item is being changed, so the hardware back
+     button closes them. */
+  const openEditor = useCallback(
+    (kind, id = null) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("modal", kind);
+        if (id) next.set("edit", id);
+        else next.delete("edit");
+        return next;
+      });
     },
     [setSearchParams]
   );
@@ -180,6 +200,26 @@ export const AppProvider = ({ children }) => {
       if (loadedSettings.theme === "dark" || loadedSettings.theme === "light") {
         loadedSettings.appearance = loadedSettings.theme;
         loadedSettings.theme = "classic";
+      }
+
+      // One-time move off the old Pastel default onto Qalam. Pastel stays
+      // available in Settings for anyone who wants it back.
+      if (!store.get("theme_default_v2", false)) {
+        if (!loadedSettings.theme || loadedSettings.theme === "pastel") {
+          loadedSettings.theme = "qalam";
+          if (loadedSettings.beadTheme === "pastel") loadedSettings.beadTheme = "onyx";
+        }
+        store.set("theme_default_v2", true);
+      }
+
+      // Older builds saved emoji into reminder titles; they also end up in
+      // system notifications, so strip them.
+      if (Array.isArray(loadedSettings.alerts)) {
+        loadedSettings.alerts = loadedSettings.alerts.map((a) =>
+          typeof a?.title === "string"
+            ? { ...a, title: a.title.replace(/[\p{Extended_Pictographic}️‍]/gu, "").replace(/\s{2,}/g, " ").trim() }
+            : a
+        );
       }
 
       // Lossless alert deep-link schema upgrade
@@ -688,20 +728,146 @@ export const AppProvider = ({ children }) => {
     return { dhikrs: nextDhikrs.length, lists: nextLists.length };
   }, [dhikrs, lists]);
 
-  const saveDhikr = useCallback((nd, setNd) => {
-    if (!nd.tr.trim() || !nd.arabic.trim()) return;
-    const id = "c_" + Date.now();
-    setDhikrs((ds) => [...ds, { ...nd, id, target: Number(nd.target) || 33, tags: ["custom", "general"] }]);
-    setNd({ tr: "", arabic: "", en: "", ur: "", target: 33 });
-    setModal(null);
-  }, [setModal]);
+  /* ─── Library management ───────────────────────────────────────────────
+     Custom items carry a "c_" id. Built-in items are never edited in place:
+     a built-in set is customised by duplicating it. Every delete returns an
+     undo function, so the UI can offer Undo instead of a blocking confirm. */
+  const isCustomId = (id) => typeof id === "string" && id.startsWith("c_");
+  const newId = () => `c_${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
-  const saveList = useCallback((nl, setNl) => {
-    if (!nl.name.trim() || nl.steps.length === 0) return;
-    setLists((ls) => [...ls, { ...nl, id: "c_" + Date.now() }]);
-    setNl({ name: "", occasion: "custom", icon: "sparkles", steps: [] });
-    setModal(null);
-  }, [setModal]);
+  const createDhikr = useCallback((data) => {
+    const id = newId();
+    const tags = Array.from(new Set(["custom", ...(data.tags || []).filter(Boolean), "general"]));
+    setDhikrs((ds) => [
+      ...ds,
+      {
+        tr: data.tr.trim(),
+        arabic: data.arabic.trim(),
+        en: (data.en || "").trim(),
+        ur: (data.ur || "").trim(),
+        target: Math.max(1, Math.round(Number(data.target) || 33)),
+        tags,
+        id,
+      },
+    ]);
+    return id;
+  }, []);
+
+  const updateDhikr = useCallback((id, patch) => {
+    setDhikrs((ds) =>
+      ds.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              ...patch,
+              target: patch.target != null ? Math.max(1, Math.round(Number(patch.target) || d.target)) : d.target,
+            }
+          : d
+      )
+    );
+  }, []);
+
+  const deleteDhikr = useCallback(
+    (id) => {
+      const index = dhikrs.findIndex((d) => d.id === id);
+      if (index < 0 || !isCustomId(id)) return null;
+      const item = dhikrs[index];
+      const pinIndex = pinned.indexOf(id);
+      const affected = lists
+        .filter((l) => l.steps.some((s) => s.dhikr === id))
+        .map((l) => ({ id: l.id, steps: l.steps }));
+
+      setDhikrs((ds) => ds.filter((d) => d.id !== id));
+      setPinned((p) => p.filter((x) => x !== id));
+      if (affected.length) {
+        setLists((ls) =>
+          ls.map((l) =>
+            affected.some((a) => a.id === l.id) ? { ...l, steps: l.steps.filter((s) => s.dhikr !== id) } : l
+          )
+        );
+      }
+
+      return () => {
+        setDhikrs((ds) => (ds.some((d) => d.id === id) ? ds : [...ds.slice(0, index), item, ...ds.slice(index)]));
+        if (pinIndex >= 0) {
+          setPinned((p) => (p.includes(id) ? p : [...p.slice(0, pinIndex), id, ...p.slice(pinIndex)]));
+        }
+        if (affected.length) {
+          setLists((ls) =>
+            ls.map((l) => {
+              const a = affected.find((x) => x.id === l.id);
+              return a ? { ...l, steps: a.steps } : l;
+            })
+          );
+        }
+      };
+    },
+    [dhikrs, lists, pinned]
+  );
+
+  const createList = useCallback((data) => {
+    const id = newId();
+    setLists((ls) => [
+      ...ls,
+      {
+        name: data.name.trim(),
+        occasion: data.occasion || "custom",
+        icon: data.icon || "sparkles",
+        steps: data.steps.map((s) => ({ dhikr: s.dhikr, target: Math.max(1, Math.round(Number(s.target) || 33)) })),
+        id,
+      },
+    ]);
+    return id;
+  }, []);
+
+  const updateList = useCallback((id, patch) => {
+    setLists((ls) =>
+      ls.map((l) =>
+        l.id === id
+          ? {
+              ...l,
+              ...patch,
+              steps: patch.steps
+                ? patch.steps.map((s) => ({ dhikr: s.dhikr, target: Math.max(1, Math.round(Number(s.target) || 33)) }))
+                : l.steps,
+            }
+          : l
+      )
+    );
+  }, []);
+
+  const deleteList = useCallback(
+    (id) => {
+      const index = lists.findIndex((l) => l.id === id);
+      if (index < 0 || !isCustomId(id)) return null;
+      const item = lists[index];
+      const pinIndex = pinned.indexOf(id);
+      setLists((ls) => ls.filter((l) => l.id !== id));
+      setPinned((p) => p.filter((x) => x !== id));
+      return () => {
+        setLists((ls) => (ls.some((l) => l.id === id) ? ls : [...ls.slice(0, index), item, ...ls.slice(index)]));
+        if (pinIndex >= 0) {
+          setPinned((p) => (p.includes(id) ? p : [...p.slice(0, pinIndex), id, ...p.slice(pinIndex)]));
+        }
+      };
+    },
+    [lists, pinned]
+  );
+
+  /* Copy any set (usually a built-in one) into an editable custom set. */
+  const duplicateList = useCallback(
+    (id) => {
+      const src = lists.find((l) => l.id === id);
+      if (!src) return null;
+      return createList({
+        name: isCustomId(id) ? `${src.name} (copy)` : `${src.name} (mine)`,
+        occasion: src.occasion === "custom" ? "custom" : src.occasion,
+        icon: src.icon,
+        steps: src.steps,
+      });
+    },
+    [lists, createList]
+  );
 
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -1211,6 +1377,8 @@ export const AppProvider = ({ children }) => {
         setSession,
         modal,
         setModal,
+        editId,
+        openEditor,
         bump,
         complete,
         setComplete,
@@ -1234,8 +1402,13 @@ export const AppProvider = ({ children }) => {
         goStep,
         applyTarget,
         togglePin,
-        saveDhikr,
-        saveList,
+        createDhikr,
+        updateDhikr,
+        deleteDhikr,
+        createList,
+        updateList,
+        deleteList,
+        duplicateList,
         notifyPermission,
         requestNotificationPermission,
         requestPrayerLocation,

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect } from "react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES, ARABIC_FONTS } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
+import { useGoogleFonts, URDU_FONT } from "./utils/fonts";
 import { useDocumentSeo } from "./utils/seo";
 import { store } from "./utils/storage";
 import HomeView from "./components/home/HomeView";
@@ -14,12 +15,15 @@ import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
 import QiblaView from "./components/qibla/QiblaView";
 import Navbar from "./components/layout/Navbar";
-import AppHeader from "./components/layout/AppHeader";
 import DesktopSidebar from "./components/layout/DesktopSidebar";
-import NewDhikrModal from "./components/library/NewDhikrModal";
-import NewListModal from "./components/library/NewListModal";
+import DhikrEditor from "./components/library/NewDhikrModal";
+import SetEditor from "./components/library/NewListModal";
 import UpdateBanner from "./components/common/UpdateBanner";
-import BrandMark from "./components/common/BrandMark";
+import { BrandMark } from "./components/common/BrandMark";
+import { ToastProvider } from "./components/common/Toast";
+
+/* Views that take the whole screen: no tab bar, their own top bar. */
+const IMMERSIVE = ["counter", "names", "qibla"];
 
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
@@ -27,115 +31,74 @@ const AppContent = () => {
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
   useDocumentSeo();
 
-  const activeThemeGroup = THEMES[settings.theme] || THEMES.classic;
-  const themeVars = activeThemeGroup[effectiveAppearance];
+  const theme = THEMES[settings.theme] || THEMES.qalam;
+  const themeVars = theme[effectiveAppearance];
+  const arabicFont = ARABIC_FONTS.find((f) => f.id === settings.arabicFont) || ARABIC_FONTS[0];
 
-  // Persist the resolved background/text colors so index.html's pre-paint
-  // script can replay them before first paint on the next load — this is what
-  // makes the loader theme-aware and removes the dark↔light flash. Also keep
-  // the address-bar <meta theme-color> in sync with the live theme.
+  useGoogleFonts([
+    arabicFont.gf,
+    settings.lang !== "en" ? URDU_FONT : null,
+    ...(theme.fonts || []),
+  ]);
+
+  // Persist the resolved colours so index.html can paint them before React
+  // loads (no light/dark flash), and keep the browser chrome colour in sync.
+  // Applied to <html> too, so overscroll and the area behind sheets match.
   useEffect(() => {
-    // Wait until the saved settings have loaded, otherwise we'd persist the
-    // transient default (Pastel) over the user's real theme during boot.
     if (!loaded || !themeVars) return;
-    store.set("paint", {
-      bg: themeVars["--bg"],
-      bg2: themeVars["--bg2"],
-      text: themeVars["--text"],
-    });
+    store.set("paint", { bg: themeVars["--bg"], bg2: themeVars["--bg2"], text: themeVars["--text"] });
+    const root = document.documentElement;
+    root.style.background = themeVars["--bg"];
+    root.style.colorScheme = effectiveAppearance;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", themeVars["--bg"]);
-  }, [loaded, themeVars]);
-
-  // Wait for the Fredoka brand font before revealing the splash wordmark.
-  // Otherwise it renders in the fallback font first and visibly reflows when
-  // Fredoka swaps in (FOUT). We force the load, then fade it in already-static.
-  const [brandFontReady, setBrandFontReady] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const reveal = () => { if (!cancelled) setBrandFontReady(true); };
-    if (typeof document !== "undefined" && document.fonts?.load) {
-      Promise.race([
-        document.fonts.load("700 1em Fredoka"),
-        new Promise((r) => setTimeout(r, 1500)), // safety fallback
-      ]).then(reveal, reveal);
-    } else {
-      reveal();
-    }
-    return () => { cancelled = true; };
-  }, []);
+  }, [loaded, themeVars, effectiveAppearance]);
 
   if (!loaded) {
     return (
-      <div
-        className="font-body flex min-h-svh items-center justify-center"
-        style={{ background: "transparent" }}
-      >
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: brandFontReady ? 1 : 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <BrandMark
-            className="text-5xl"
-            style={brandFontReady ? { animation: "shimmer 1.6s ease infinite" } : undefined}
-          />
+      <div className="flex min-h-svh items-center justify-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+          <BrandMark size="lg" />
         </motion.div>
       </div>
     );
   }
 
-  const arabicFont =
-    ARABIC_FONTS.find((f) => f.id === settings.arabicFont) || ARABIC_FONTS[0];
+  const immersive = IMMERSIVE.includes(view);
 
   return (
     <div
-      className="font-body min-h-svh transition-colors duration-300 relative overflow-x-hidden"
+      className="font-body relative min-h-svh overflow-x-clip bg-page text-ink"
       data-arabic-font={arabicFont.id}
-      style={{
-        ...themeVars,
-        "--font-arabic": arabicFont.stack,
-        background: "radial-gradient(120% 80% at 50% -10%, var(--bg2), var(--bg))",
-        color: "var(--text)",
-      }}
+      data-theme={effectiveAppearance}
+      style={{ ...themeVars, "--font-arabic": arabicFont.stack }}
     >
-      {/* Dynamic Geometric Background Grid */}
-      <svg
-        className="pointer-events-none fixed inset-0 h-full w-full select-none"
-        style={{ opacity: 0.04 }}
-        aria-hidden="true"
+      <ToastProvider>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-ink"
       >
-        <defs>
-          <pattern id="geo" width="62" height="62" patternUnits="userSpaceOnUse">
-            <path
-              d="M31 2 L38 24 L60 31 L38 38 L31 60 L24 38 L2 31 L24 24 Z"
-              fill="none"
-              stroke="var(--primary)"
-              strokeWidth="1"
-            />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#geo)" />
-      </svg>
+        Skip to content
+      </a>
 
-      {/* Layout: mobile keeps the single narrow column under floating chrome;
-          desktop indents past the fixed sidebar and opens up to a wide canvas
-          that each view lays out for itself. */}
-      <div
-        className={`relative mx-auto max-w-md px-5 transition-all duration-300 lg:max-w-none lg:pr-8 lg:pl-[18.5rem] ${
-          ["counter", "names", "qibla"].includes(view)
-            ? "pt-4 pb-6 lg:pt-6 lg:pb-6"
-            : "pt-20 pb-28 lg:pt-8 lg:pb-12"
+      <DesktopSidebar />
+
+      <main
+        id="main"
+        className={`relative lg:ml-[17rem] ${
+          immersive
+            ? "px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-10 lg:pt-6 lg:pb-6"
+            : "px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:px-12 lg:pt-12 lg:pb-16"
         }`}
       >
-        <div className="lg:mx-auto lg:w-full lg:max-w-[1180px]">
-          <AnimatePresence mode="wait">
+        <div className={`mx-auto w-full ${immersive ? "max-w-[34rem] lg:max-w-[1180px]" : "max-w-[34rem] lg:max-w-[1120px]"}`}>
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
               <Routes location={location}>
                 <Route path="/" element={<HomeView />} />
@@ -150,25 +113,25 @@ const AppContent = () => {
             </motion.div>
           </AnimatePresence>
         </div>
-      </div>
+      </main>
 
-      <DesktopSidebar />
-      <AppHeader />
-      <Navbar />
+      {!immersive && <Navbar />}
 
-      {/* Top-level modals — open state lives in URL search params (?modal=dhikr|list) */}
-      <NewDhikrModal isOpen={modal === "dhikr"} onClose={() => setModal(null)} />
-      <NewListModal isOpen={modal === "list"} onClose={() => setModal(null)} />
+      <DhikrEditor isOpen={modal === "dhikr"} onClose={() => setModal(null)} />
+      <SetEditor isOpen={modal === "list"} onClose={() => setModal(null)} />
 
       <UpdateBanner />
+      </ToastProvider>
     </div>
   );
 };
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <MotionConfig reducedMotion="user">
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </MotionConfig>
   );
 }

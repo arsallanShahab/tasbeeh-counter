@@ -1,207 +1,355 @@
-@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Outfit:wght@300;400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;500;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Lateef&family=Reem+Kufi:wght@400;500;700&family=Gulzar&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
-
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Tokens
+   Colour values live in THEMES (constants/dhikrData.js) and are applied as
+   CSS variables on the app root, so a theme switch is one object swap. The
+   block below maps those raw variables onto semantic Tailwind colours, so
+   components write `text-ink bg-surface border-line` instead of hex or
+   `text-[var(--text)]`. Never introduce a colour outside this map.
+   ───────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-page: var(--bg);
+  --color-page-2: var(--bg2);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--primary);
+  --color-accent-soft: var(--primary-dim);
+  --color-on-accent: var(--on-primary);
+  --color-gold: var(--gold);
+  --color-on-gold: var(--on-gold);
+  --color-danger: var(--danger);
+}
+
 @theme {
-  --font-display: 'Marcellus', serif;
-  --font-body: 'Outfit', sans-serif;
-  --font-arabic: 'Amiri', serif;
-  --font-urdu: 'Noto Nastaliq Urdu', 'Amiri', serif;
+  /* Display serif for titles and numerals, humanist sans for the interface.
+     A theme may override --font-display / --font-body on the app root. */
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-arabic: "Amiri", serif;
+  --font-urdu: "Noto Nastaliq Urdu", "Amiri", serif;
+
+  /* Motion. UI transitions sit between 120ms and 320ms; nothing longer. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* Elevation is reserved for things that float: sheets, menus, toasts. */
+  --shadow-float: 0 18px 48px -18px rgb(0 0 0 / 0.28), 0 2px 6px -2px rgb(0 0 0 / 0.08);
+  --shadow-raise: 0 1px 2px 0 rgb(0 0 0 / 0.06);
 }
 
-:root {
-  font-family: var(--font-body, 'Outfit', sans-serif);
+/* ─── Base ─────────────────────────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg, #f3efe6);
+  color: var(--text, #1c231f);
+  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* .font-display / .font-body read CSS vars so a theme can swap the typeface
-   (e.g. the Pastel theme overrides them with Fredoka / Nunito to match the
-   rounded "Tasbeeh Go" wordmark). Falls back to the defaults above. */
+::selection {
+  background: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+/* One focus treatment for every interactive element: a 2px accent ring with
+   an offset, so it reads against both the paper and the ink surfaces. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 .font-display {
-  font-family: var(--font-display, 'Marcellus', serif);
-  letter-spacing: .01em;
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
 }
-
 .font-body {
-  font-family: var(--font-body, 'Outfit', sans-serif);
+  font-family: var(--font-body);
 }
 
-/* The "Tasbeeh Go" wordmark always uses the rounded brand typeface,
-   independent of the active theme's display font. */
-.font-brand {
-  font-family: 'Fredoka', sans-serif;
-}
-
-/* Arabic script typeface is user-selectable (Settings → Display & Reading).
-   The chosen font's stack is injected into --font-arabic on the app root; this
-   falls back to Amiri when unset. */
+/* Arabic typeface is user-selectable (Settings > Reading). The chosen stack is
+   injected into --font-arabic on the app root; Amiri is the fallback. */
 .font-arabic {
-  font-family: var(--font-arabic, 'Amiri', serif);
+  font-family: var(--font-arabic, "Amiri", serif);
+  font-feature-settings: "kern", "liga", "calt";
 }
 
-/* Tall calligraphic styles (Nastaliq) need more vertical room than the tight
-   Tailwind leadings (leading-normal / leading-[1.9]) the Arabic blocks use, or
-   harakat and descenders clip. Override per-font via the root data attribute. */
+/* Nastaliq needs more vertical room than Naskh or harakat and descenders
+   clip. Overridden per font through the root data attribute. */
 [data-arabic-font="nastaliq"] .font-arabic {
   line-height: 2.15 !important;
 }
 
 .font-urdu {
-  font-family: 'Noto Nastaliq Urdu', 'Amiri', serif;
+  font-family: var(--font-urdu);
   line-height: 2.1;
 }
 
-/* Ant-design inspired easing curves */
-:root {
-  --ease-out-quint: cubic-bezier(.215,.61,.355,1);
-  --ease-in-out-quint: cubic-bezier(.86,0,.07,1);
-  --ease-out-circ: cubic-bezier(.08,.82,.17,1);
-  --ease-in-out-circ: cubic-bezier(.78,.14,.15,.86);
-  --ease-out-back: cubic-bezier(.34,1.56,.64,1);
+/* ─── Type roles ───────────────────────────────────────────────────────── */
+/* Eyebrow: the small label above a title. 12px is the floor for any text in
+   the app; nothing renders at 9-11px. */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-/* Default smooth transitions on common interactive elements */
-button, a, input, textarea, select {
-  transition: background-color .25s var(--ease-out-quint),
-              border-color .25s var(--ease-out-quint),
-              color .25s var(--ease-out-quint),
-              box-shadow .25s var(--ease-out-quint),
-              transform .2s var(--ease-out-quint),
-              opacity .25s var(--ease-out-quint);
+@utility numerals {
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-button:active:not(:disabled) {
-  transform: scale(.97);
-}
+/* ─── Components ───────────────────────────────────────────────────────── */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+  }
+  .btn-sm { height: 2.25rem; padding-inline: 0.875rem; font-size: 0.875rem; }
+  .btn-md { height: 2.75rem; padding-inline: 1.125rem; font-size: 0.9375rem; }
+  .btn-lg { height: 3.25rem; padding-inline: 1.5rem; font-size: 1rem; }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
+  .btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 86%, var(--text));
+  }
+  .btn-primary:active:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 78%, var(--text));
+  }
 
-@keyframes popIn {
-  0% { transform: scale(.92); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--surface2);
+  }
+  .btn-secondary:active:not(:disabled) {
+    background: color-mix(in srgb, var(--surface2) 80%, var(--line));
+  }
 
-@keyframes ringPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.04); }
-  100% { transform: scale(1); }
-}
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface2);
+  }
+  .btn-ghost:active:not(:disabled) {
+    background: color-mix(in srgb, var(--surface2) 80%, var(--line));
+  }
 
-@keyframes shimmer {
-  0% { opacity: .4; }
-  50% { opacity: 1; }
-  100% { opacity: .4; }
-}
+  /* Text-only action in the accent colour, for "Manage", "See all". */
+  .btn-link {
+    background: transparent;
+    color: var(--primary);
+    padding-inline: 0.5rem;
+  }
+  .btn-link:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+  }
 
-/* Modal enter/exit (ant design "zoom" motion) */
-@keyframes zoomIn {
-  0%   { transform: scale(.2); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes zoomOut {
-  0%   { transform: scale(1); opacity: 1; }
-  100% { transform: scale(.2); opacity: 0; }
-}
-@keyframes maskIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes maskOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
+  /* Every destructive action wears this one variant, in the trigger and in
+     its confirmation alike. */
+  .btn-danger {
+    background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  }
 
-/* Page transition (slide-up + fade like ant motion-fall) */
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes pageOut {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translateY(-8px); }
-}
+  .btn[aria-busy="true"] {
+    cursor: progress;
+  }
 
-.anim-fade {
-  animation: fadeUp .45s var(--ease-out-quint) both;
-}
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    color: var(--text);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .icon-btn:hover:not(:disabled) {
+    background: var(--surface2);
+  }
+  .icon-btn:active:not(:disabled) {
+    transform: scale(0.94);
+    background: color-mix(in srgb, var(--surface2) 80%, var(--line));
+  }
+  .icon-btn:disabled {
+    opacity: 0.4;
+  }
+  .icon-btn[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+  }
 
-.anim-pop {
-  animation: popIn .35s var(--ease-out-quint) both;
-}
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2.25rem;
+    padding-inline: 0.9rem;
+    border-radius: 9999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+  .chip:hover {
+    border-color: var(--line-strong);
+  }
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"],
+  .chip[aria-current="true"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
 
-.anim-mask-in   { animation: maskIn .25s var(--ease-out-quint) both; }
-.anim-mask-out  { animation: maskOut .2s var(--ease-out-quint) both; }
-.anim-zoom-in   { animation: zoomIn .28s var(--ease-out-circ) both; }
-.anim-zoom-out  { animation: zoomOut .22s var(--ease-in-out-circ) both; }
-.anim-page-in   { animation: pageIn .35s var(--ease-out-quint) both; }
+  .field-input {
+    width: 100%;
+    min-width: 0;
+    height: 3rem;
+    padding-inline: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+  }
+  .field-input::placeholder {
+    color: var(--muted);
+    opacity: 0.8;
+  }
+  .field-input:hover {
+    border-color: color-mix(in srgb, var(--line-strong) 70%, var(--text));
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+  .field-input[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+  .field-input:disabled {
+    opacity: 0.5;
+  }
+  select.field-input {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+  }
 
-.tap-num {
-  transition: transform .12s var(--ease-out-quint);
-}
-
-.tap-num.bump {
-  transform: scale(1.12);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+  /* A hairline row that responds to hover and press. Used for every list. */
+  .row-interactive {
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+  .row-interactive:hover {
+    background: color-mix(in srgb, var(--surface2) 70%, transparent);
+  }
+  .row-interactive:active {
+    background: var(--surface2);
   }
 }
 
-/* Desktop chrome. Touch devices keep the native overlay scrollbars; pointer
-   devices get a slim themed one so long panes (settings, the 99-names rail,
-   the library results column) don't gain a chunky OS gutter. */
+/* ─── Scrollbars ───────────────────────────────────────────────────────── */
 @media (pointer: fine) {
   * {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--muted, #888) 35%, transparent) transparent;
-  }
-
-  *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--muted, #888) 28%, transparent);
-    border: 3px solid transparent;
-    background-clip: content-box;
-    border-radius: 999px;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--muted, #888) 50%, transparent);
-    background-clip: content-box;
   }
 }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-@keyframes beadPulse {
-  0% { transform: scale(1); opacity: .4; }
-  70% { opacity: 0; }
-  100% { transform: scale(2.2); opacity: 0; }
+/* A horizontally scrolling strip fades at its trailing edge so it is obvious
+   that more chips sit off-screen. */
+.scroll-fade-x {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
 }
 
-.bead-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: beadPulse 1.3s ease-out infinite;
+/* ─── Motion ───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
