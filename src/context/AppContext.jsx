@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { resolveHomeSections } from "../utils/homeSections";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH, HOME_SECTIONS, DEFAULT_HOME_SECTIONS } from "../constants/dhikrData";
+import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH } from "../constants/dhikrData";
 import { store } from "../utils/storage";
 import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
@@ -184,6 +185,13 @@ export const AppProvider = ({ children }) => {
         store.set("theme_default_v2", true);
       }
 
+      // One-time switch to the strand counter as the new default.
+      if (!store.get("counter_default_strand_v1", false)) {
+        if (!loadedSettings.counterStyle || loadedSettings.counterStyle === "beads") loadedSettings.counterStyle = "strand";
+        store.set("settings", loadedSettings);
+        store.set("counter_default_strand_v1", true);
+      }
+
       // Older builds saved emoji into reminder titles; they also end up in
       // system notifications, so strip them.
       if (Array.isArray(loadedSettings.alerts)) {
@@ -212,11 +220,19 @@ export const AppProvider = ({ children }) => {
       
       // Normalize homeSections to ensure any newly added sections are present
       if (loadedSettings.homeSections && Array.isArray(loadedSettings.homeSections)) {
-        const existingKeys = loadedSettings.homeSections.map(s => s.key);
-        const missingSections = DEFAULT_HOME_SECTIONS.filter(s => !existingKeys.includes(s.key));
-        if (missingSections.length > 0) {
-          loadedSettings.homeSections = [...loadedSettings.homeSections, ...missingSections];
+        // Most recited sits above Your dhikr; older saves appended it last.
+        if (!store.get("home_frequent_v2", false)) {
+          const hs = loadedSettings.homeSections;
+          if (Array.isArray(hs) && hs.some((x) => x.key === "frequent")) {
+            const rest = hs.filter((x) => x.key !== "frequent");
+            const at = rest.findIndex((x) => x.key === "pinned");
+            const f = hs.find((x) => x.key === "frequent");
+            loadedSettings.homeSections = at < 0 ? [...rest, f] : [...rest.slice(0, at), f, ...rest.slice(at)];
+          }
+          store.set("settings", loadedSettings);
+          store.set("home_frequent_v2", true);
         }
+        loadedSettings.homeSections = resolveHomeSections(loadedSettings.homeSections);
 
         // One-time correction: an earlier build hid the discovery launchers on
         // Home. We've since decided every section should be visible by default
@@ -402,6 +418,13 @@ export const AppProvider = ({ children }) => {
       stepIndex: 0
     });
     setComplete(false);
+    // Session starts per set or single dhikr, for the Most recited section.
+    const key = sourceListId || (steps.length === 1 ? steps[0].dhikr : null);
+    if (key)
+      setStats((st) => {
+        const o = st.opens || {};
+        return { ...st, opens: { ...o, [key]: { n: (o[key]?.n || 0) + 1, last: Date.now() } } };
+      });
     setView("counter", navOpts);
   }, [setView]);
 
@@ -474,6 +497,7 @@ export const AppProvider = ({ children }) => {
     setStats((st) => {
       const k = dateKey();
       return {
+        ...st,
         total: st.total + 1,
         byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
         perDhikr: { ...st.perDhikr, [dId]: (st.perDhikr[dId] || 0) + 1 }
@@ -536,6 +560,7 @@ export const AppProvider = ({ children }) => {
     setStats((st) => {
       const k = dateKey();
       return {
+        ...st,
         total: Math.max(0, st.total - 1),
         byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
         perDhikr: { ...st.perDhikr, [dId]: Math.max(0, (st.perDhikr[dId] || 0) - 1) }
@@ -1145,6 +1170,7 @@ export const AppProvider = ({ children }) => {
     setStats((st) => {
       const k = dateKey();
       return {
+        ...st,
         total: st.total + 1,
         byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
         perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 }
@@ -1181,6 +1207,7 @@ export const AppProvider = ({ children }) => {
     setStats((st) => {
       const k = dateKey();
       return {
+        ...st,
         total: Math.max(0, st.total - 1),
         byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
         perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) }

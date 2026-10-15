@@ -47,13 +47,18 @@ const AppContent = () => {
   // Applied to <html> too, so overscroll and the area behind sheets match.
   useEffect(() => {
     if (!loaded || !themeVars) return;
-    store.set("paint", { bg: themeVars["--bg"], bg2: themeVars["--bg2"], text: themeVars["--text"], primary: themeVars["--primary"] });
+    // Both schemes are saved so the pre-paint script can match the device on the next launch.
+    const pick = (v) => ({ bg: v["--bg"], bg2: v["--bg2"], text: v["--text"], primary: v["--primary"] });
+    store.set("paint", { appearance: settings.appearance, light: pick(theme.light), dark: pick(theme.dark) });
+    // The page root and body read these too; browsers tint their bars from them.
     const root = document.documentElement;
+    for (const k of ["--bg", "--bg2", "--text", "--primary"]) root.style.setProperty(k, themeVars[k]);
     root.style.background = themeVars["--bg"];
+    root.style.color = themeVars["--text"];
     root.style.colorScheme = effectiveAppearance;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", themeVars["--bg"]);
-  }, [loaded, themeVars, effectiveAppearance]);
+  }, [loaded, themeVars, effectiveAppearance, theme, settings.appearance]);
 
   // The boot screen in index.html covers this until the app is ready.
   if (!loaded) return <div className="min-h-svh" aria-hidden="true" />;

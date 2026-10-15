@@ -1168,6 +1168,7 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 export const HOME_SECTIONS = {
   prayer: { label: "Prayer times" },
   streak: { label: "Daily progress" },
+  frequent: { label: "Most recited" },
   pinned: { label: "Your dhikr" },
   suggested: { label: "Recite now" },
   quick: { label: "Collections" },
@@ -1180,6 +1181,7 @@ export const HOME_SECTIONS = {
 export const DEFAULT_HOME_SECTIONS = [
   { key: "prayer", visible: true },
   { key: "streak", visible: true },
+  { key: "frequent", visible: true },
   { key: "pinned", visible: true },
   { key: "suggested", visible: true },
   { key: "quick", visible: true },
@@ -1280,7 +1282,7 @@ export const DEFAULT_SETTINGS = {
   sound: false,
   autoAdvance: true,
   loop: true,
-  counterStyle: "beads",
+  counterStyle: "strand",
   beadTheme: "onyx",
   activeStyle: "glow",
   customBead: { dark: "#15302a", gold: "#d8a93a" },

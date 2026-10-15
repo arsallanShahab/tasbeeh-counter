@@ -250,15 +250,16 @@
     <script>
       (function () {
         try {
-          var p = null;
-          try { p = JSON.parse(localStorage.getItem("paint") || "null"); } catch (e) {}
-          if (!p || !p.bg) {
-            var light =
-              window.matchMedia &&
-              window.matchMedia("(prefers-color-scheme: light)").matches;
-            p = light
-              ? { bg: "#f3efe6", bg2: "#ebe5d8", text: "#1c231f", primary: "#2c5a46" }  // Qalam light
-              : { bg: "#111411", bg2: "#161a16", text: "#ebe7dc", primary: "#93c3a3" }; // Qalam dark
+          var saved = null;
+          try { saved = JSON.parse(localStorage.getItem("paint") || "null"); } catch (e) {}
+          var deviceDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var pref = saved && saved.appearance;
+          var dark = pref === "dark" || (pref !== "light" && deviceDark);
+          var p = saved && saved.light && saved.dark ? (dark ? saved.dark : saved.light) : null;
+          if (!p) {
+            p = dark
+              ? { bg: "#111411", bg2: "#161a16", text: "#ebe7dc", primary: "#93c3a3" }  // Qalam dark
+              : { bg: "#f3efe6", bg2: "#ebe5d8", text: "#1c231f", primary: "#2c5a46" }; // Qalam light
           }
           var r = document.documentElement;
           r.style.background = p.bg;
@@ -267,6 +268,7 @@
           r.style.setProperty("--text", p.text);
           r.style.setProperty("--primary", p.primary || "#2c5a46");
           r.style.color = p.text;
+          r.style.colorScheme = dark ? "dark" : "light";
           var m = document.querySelector('meta[name="theme-color"]');
           if (m) m.setAttribute("content", p.bg);
         } catch (e) {}

@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from "react";
+import { resolveHomeSections } from "../../utils/homeSections";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   BookOpenText, Palette, Hand, Compass, Bell, DatabaseBackup, ArrowLeft, Check, ChevronUp, ChevronDown,
@@ -19,7 +20,7 @@ import Seg from "../common/Seg";
 import CounterStylePicker from "../counter/CounterStylePicker";
 import {
   THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
-  OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS, DEFAULT_HOME_SECTIONS,
+  OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS,
 } from "../../constants/dhikrData";
 import { useEffectiveAppearance } from "../../utils/theme";
 import {
@@ -532,13 +533,7 @@ export const SettingsView = () => {
   const fieldVisible = settings.dhikrFieldVisible || DEFAULT_DHIKR_FIELD_VISIBLE;
   const visibleFieldCount = fieldOrder.filter((k) => fieldVisible[k] !== false).length;
 
-  const homeSections = (() => {
-    const stored = Array.isArray(settings.homeSections) && settings.homeSections.length ? settings.homeSections : DEFAULT_HOME_SECTIONS;
-    return [
-      ...stored.filter((s) => HOME_SECTIONS[s.key]),
-      ...Object.keys(HOME_SECTIONS).filter((k) => !stored.some((s) => s.key === k)).map((k) => ({ key: k, visible: true })),
-    ];
-  })();
+  const homeSections = resolveHomeSections(settings.homeSections);
   const quick = (settings.quickCollections && settings.quickCollections.length ? settings.quickCollections : DEFAULT_QUICK_COLLECTIONS).filter((k) => OCCASIONS[k]);
 
   const sectionReading = (

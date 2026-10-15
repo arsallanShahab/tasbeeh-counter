@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Play, Flame, Pin, Sparkles, Plus } from "lucide-react";
+import { ArrowRight, Play, Flame, Pin, Sparkles, Plus, Search, X, ChevronDown } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
+import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
 import { Panel, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, ProgressBar } from "../common/Layout";
@@ -12,7 +14,6 @@ import {
   ICONS,
   OCCASIONS,
   DEFAULT_QUICK_COLLECTIONS,
-  DEFAULT_HOME_SECTIONS,
   EMOTIONAL_REMEDIES,
   SEED_NAMES_OF_ALLAH,
 } from "../../constants/dhikrData";
@@ -24,6 +25,11 @@ const suggestionFor = (hr) => {
   if (hr >= 16 && hr < 21) return { id: "evening-short", when: "For this evening" };
   return { id: "before-sleep", when: "Before you sleep" };
 };
+
+const FREQUENT_MAX = 10;
+
+// Pinned rows shown before "Show all"; a search appears past this.
+const PINNED_PEEK = 4;
 
 const setTotal = (l) => l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
 
@@ -59,6 +65,29 @@ export const HomeView = () => {
       return null;
     })
     .filter(Boolean);
+
+  const [pinQuery, setPinQuery] = useState("");
+  const [pinAll, setPinAll] = useState(false);
+  const pq = pinQuery.trim().toLowerCase();
+  const pinMatches = pq
+    ? pinnedItems.filter(({ type, data }) =>
+        (type === "list"
+          ? [data.name, ...data.steps.map((s) => dById(s.dhikr)?.tr)]
+          : [data.tr, data.en, data.arabic]
+        ).some((v) => v && v.toLowerCase().includes(pq))
+      )
+    : pinnedItems;
+  const pinShown = pq || pinAll ? pinMatches : pinMatches.slice(0, PINNED_PEEK);
+
+  // Ranked by sessions started; counts break ties and cover older data.
+  const opens = stats.opens || {};
+  const frequent = [
+    ...lists.map((l) => ({ type: "list", data: l, n: opens[l.id]?.n || 0, c: 0 })),
+    ...dhikrs.map((x) => ({ type: "dhikr", data: x, n: opens[x.id]?.n || 0, c: stats.perDhikr?.[x.id] || 0 })),
+  ]
+    .filter((f) => f.n > 0 || f.c > 0)
+    .sort((a, b) => b.n - a.n || b.c - a.c || (opens[b.data.id]?.last || 0) - (opens[a.data.id]?.last || 0))
+    .slice(0, FREQUENT_MAX);
 
   const sug = suggestionFor(d.getHours());
   const suggest = lists.find((l) => l.id === sug.id) || lists[0];
@@ -162,6 +191,7 @@ export const HomeView = () => {
       <SectionHeader
         id="pinned-h"
         title="Your dhikr"
+        count={pinnedItems.length > PINNED_PEEK ? pinnedItems.length : null}
         action={
           <Button variant="link" size="sm" onClick={() => navigate("/library?tab=mine")}>
             Manage
@@ -181,8 +211,37 @@ export const HomeView = () => {
           </Button>
         </Panel>
       ) : (
-        <ListGroup>
-          {pinnedItems.map(({ type, data }) => {
+        <>
+        {pinnedItems.length > PINNED_PEEK && (
+          <div className="relative">
+            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
+            <input
+              type="search"
+              value={pinQuery}
+              onChange={(e) => setPinQuery(e.target.value)}
+              placeholder={`Find in your ${pinnedItems.length}`}
+              aria-label="Find in your dhikr"
+              className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {pinQuery && (
+              <button
+                type="button"
+                onClick={() => setPinQuery("")}
+                aria-label="Clear search"
+                className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
+        {pinShown.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-line px-5 py-6 text-center text-[0.9375rem] text-muted">
+            Nothing pinned matches &ldquo;{pinQuery.trim()}&rdquo;. Try a shorter word.
+          </p>
+        ) : (
+        <ListGroup id="pinned-list">
+          {pinShown.map(({ type, data }) => {
             const isList = type === "list";
             const Ico = isList ? ICONS[data.icon] || Sparkles : null;
             const count = isList ? setTotal(data) : data.target;
@@ -205,10 +264,61 @@ export const HomeView = () => {
               />
             );
           })}
+          {!pq && pinMatches.length > PINNED_PEEK && (
+            <button
+              type="button"
+              onClick={() => setPinAll((v) => !v)}
+              aria-expanded={pinAll}
+              aria-controls="pinned-list"
+              className="row-interactive flex min-h-12 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-accent"
+            >
+              {pinAll ? "Show fewer" : `Show all ${pinMatches.length}`}
+              <ChevronDown size={16} aria-hidden="true" className={pinAll ? "rotate-180" : ""} />
+            </button>
+          )}
         </ListGroup>
+        )}
+        </>
       )}
     </section>
   );
+
+  const renderFrequent = () =>
+    frequent.length > 0 && (
+      <section key="frequent" aria-labelledby="frequent-h" className="space-y-4">
+        <SectionHeader id="frequent-h" title="Most recited" />
+        <ol className="scroll-fade-x -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:mask-none">
+          {frequent.map(({ type, data, n, c }, i) => {
+            const isList = type === "list";
+            const name = isList ? data.name : data.tr;
+            const usage = n > 0 ? `${fmt(n)} ${n === 1 ? "session" : "sessions"}` : `${fmt(c)} counts`;
+            return (
+              <li key={data.id} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => (isList ? startList(data) : startDhikr(data))}
+                  aria-label={`Begin ${name}, ${usage}`}
+                  className="row-interactive flex h-[8.75rem] w-[10.5rem] flex-col justify-between rounded-2xl border border-line bg-surface p-4 text-left lg:w-full"
+                >
+                  <span className="flex w-full items-start justify-between">
+                    {isList ? <IconTile icon={ICONS[data.icon] || Sparkles} size={36} /> : <DhikrTile size={36} />}
+                    <span className="numerals font-display text-lg leading-none text-muted" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]">
+                      {name}
+                    </span>
+                    <span className="numerals mt-1 block truncate text-sm text-muted">{usage}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    );
 
   const renderQuick = () =>
     quick.length > 0 && (
@@ -310,13 +420,13 @@ export const HomeView = () => {
     prayer: renderPrayer,
     streak: renderProgress,
     pinned: renderPinned,
+    frequent: renderFrequent,
     quick: renderQuick,
     remedies: renderRemedies,
     asmaul_husna: renderName,
   };
 
-  const homeSections =
-    settings?.homeSections && settings.homeSections.length > 0 ? settings.homeSections : DEFAULT_HOME_SECTIONS;
+  const homeSections = resolveHomeSections(settings?.homeSections);
   const visible = homeSections.filter((s) => s.visible && renderers[s.key]);
   const showLead = resumable || visible.some((s) => s.key === "suggested");
   const render = (keys) => visible.filter((s) => keys.includes(s.key)).map((s) => renderers[s.key]());
@@ -342,7 +452,7 @@ export const HomeView = () => {
         <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-12">
           <div className="space-y-12">
             {showLead && renderLead()}
-            {render(["pinned", "quick", "remedies"])}
+            {render(["frequent", "pinned", "quick", "remedies"])}
           </div>
           <aside className="sticky top-12 space-y-12">{render(["streak", "prayer", "asmaul_husna"])}</aside>
         </div>
