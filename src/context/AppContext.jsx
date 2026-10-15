@@ -418,13 +418,6 @@ export const AppProvider = ({ children }) => {
       stepIndex: 0
     });
     setComplete(false);
-    // Session starts per set or single dhikr, for the Most recited section.
-    const key = sourceListId || (steps.length === 1 ? steps[0].dhikr : null);
-    if (key)
-      setStats((st) => {
-        const o = st.opens || {};
-        return { ...st, opens: { ...o, [key]: { n: (o[key]?.n || 0) + 1, last: Date.now() } } };
-      });
     setView("counter", navOpts);
   }, [setView]);
 
@@ -508,6 +501,18 @@ export const AppProvider = ({ children }) => {
       vibe([0, 38, 28, 38]);
       click();
 
+      // A finished set (every step) or round of a single dhikr, once per round.
+      const key = s.sourceListId || (s.steps.length === 1 ? s.steps[0].dhikr : null);
+      const finished = s.steps.every((st, j) => counts[j] >= st.target);
+      if (key && finished && s.recordedLoop !== s.loops[i]) {
+        sessionRef.current = { ...sessionRef.current, recordedLoop: s.loops[i] };
+        setSession((cur) => cur && { ...cur, recordedLoop: s.loops[i] });
+        setStats((st) => {
+          const d = st.completed || {};
+          return { ...st, completed: { ...d, [key]: { n: (d[key]?.n || 0) + 1, last: Date.now() } } };
+        });
+      }
+
       if (s.steps.length > 1 && i < s.steps.length - 1 && settings.autoAdvance) {
         setTimeout(() => {
           setSession((cur) => {
@@ -577,7 +582,8 @@ export const AppProvider = ({ children }) => {
         ...s,
         counts: s.counts.map(() => 0),
         loops: s.loops.map(() => 0),
-        stepIndex: 0
+        stepIndex: 0,
+        recordedLoop: undefined
       };
     });
     vibe(8);

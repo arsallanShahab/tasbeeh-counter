@@ -56,8 +56,8 @@ const AppContent = () => {
     root.style.background = themeVars["--bg"];
     root.style.color = themeVars["--text"];
     root.style.colorScheme = effectiveAppearance;
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", themeVars["--bg"]);
+    // Both media variants, so the app's own light/dark choice wins over the device's.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", themeVars["--bg"]));
   }, [loaded, themeVars, effectiveAppearance, theme, settings.appearance]);
 
   // The boot screen in index.html covers this until the app is ready.

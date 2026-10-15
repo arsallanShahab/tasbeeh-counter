@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Play, Flame, Pin, Sparkles, Plus, Search, X, ChevronDown } from "lucide-react";
+import {
+  ArrowRight,
+  Play,
+  Flame,
+  Pin,
+  Sparkles,
+  Plus,
+  Search,
+  X,
+  ChevronDown,
+} from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
@@ -8,7 +18,15 @@ import HomeIntro from "./HomeIntro";
 import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
-import { Panel, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, ProgressBar } from "../common/Layout";
+import {
+  Panel,
+  SectionHeader,
+  ListGroup,
+  ListRow,
+  IconTile,
+  DhikrTile,
+  ProgressBar,
+} from "../common/Layout";
 import { Button } from "../common/Button";
 import {
   ICONS,
@@ -20,9 +38,12 @@ import {
 
 /* Which set fits this hour. Ids must exist in SEED_LISTS. */
 const suggestionFor = (hr) => {
-  if (hr >= 4 && hr < 12) return { id: "morning-short", when: "For this morning" };
-  if (hr >= 12 && hr < 16) return { id: "after-salah", when: "After your salah" };
-  if (hr >= 16 && hr < 21) return { id: "evening-short", when: "For this evening" };
+  if (hr >= 4 && hr < 12)
+    return { id: "morning-short", when: "For this morning" };
+  if (hr >= 12 && hr < 16)
+    return { id: "after-salah", when: "After your salah" };
+  if (hr >= 16 && hr < 21)
+    return { id: "evening-short", when: "For this evening" };
   return { id: "before-sleep", when: "Before you sleep" };
 };
 
@@ -31,7 +52,8 @@ const FREQUENT_MAX = 10;
 // Pinned rows shown before "Show all"; a search appears past this.
 const PINNED_PEEK = 4;
 
-const setTotal = (l) => l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
+const setTotal = (l) =>
+  l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
 
 /* Roughly a second and a bit per count, rounded to whole minutes. */
 const durationLabel = (count) => {
@@ -45,8 +67,21 @@ const dayOfYear = (d) => {
 };
 
 export const HomeView = () => {
-  const { setView, lists, dhikrs, pinned, stats, startList, startDhikr, setSearchQuery, session, complete, settings, dById, startNamesSession } =
-    useApp();
+  const {
+    setView,
+    lists,
+    dhikrs,
+    pinned,
+    stats,
+    startList,
+    startDhikr,
+    setSearchQuery,
+    session,
+    complete,
+    settings,
+    dById,
+    startNamesSession,
+  } = useApp();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const now = useNow(60000);
@@ -74,19 +109,24 @@ export const HomeView = () => {
         (type === "list"
           ? [data.name, ...data.steps.map((s) => dById(s.dhikr)?.tr)]
           : [data.tr, data.en, data.arabic]
-        ).some((v) => v && v.toLowerCase().includes(pq))
+        ).some((v) => v && v.toLowerCase().includes(pq)),
       )
     : pinnedItems;
   const pinShown = pq || pinAll ? pinMatches : pinMatches.slice(0, PINNED_PEEK);
 
-  // Ranked by sessions started; counts break ties and cover older data.
-  const opens = stats.opens || {};
+  // Ranked by completed sets and rounds; the latest breaks ties.
+  const completed = stats.completed || {};
   const frequent = [
-    ...lists.map((l) => ({ type: "list", data: l, n: opens[l.id]?.n || 0, c: 0 })),
-    ...dhikrs.map((x) => ({ type: "dhikr", data: x, n: opens[x.id]?.n || 0, c: stats.perDhikr?.[x.id] || 0 })),
+    ...lists.map((l) => ({ type: "list", data: l })),
+    ...dhikrs.map((x) => ({ type: "dhikr", data: x })),
   ]
-    .filter((f) => f.n > 0 || f.c > 0)
-    .sort((a, b) => b.n - a.n || b.c - a.c || (opens[b.data.id]?.last || 0) - (opens[a.data.id]?.last || 0))
+    .map((f) => ({
+      ...f,
+      n: completed[f.data.id]?.n || 0,
+      last: completed[f.data.id]?.last || 0,
+    }))
+    .filter((f) => f.n > 0)
+    .sort((a, b) => b.n - a.n || b.last - a.last)
     .slice(0, FREQUENT_MAX);
 
   const sug = suggestionFor(d.getHours());
@@ -95,12 +135,18 @@ export const HomeView = () => {
   const resumable = session && !complete && session.counts.some((c) => c > 0);
 
   const quickKeys =
-    settings?.quickCollections && settings.quickCollections.length > 0 ? settings.quickCollections : DEFAULT_QUICK_COLLECTIONS;
+    settings?.quickCollections && settings.quickCollections.length > 0
+      ? settings.quickCollections
+      : DEFAULT_QUICK_COLLECTIONS;
   const quick = quickKeys.filter((k) => OCCASIONS[k]);
 
   const openLibrary = (occasion) => {
     setSearchQuery("");
-    navigate(occasion ? `/library?occasion=${encodeURIComponent(occasion)}` : "/library");
+    navigate(
+      occasion
+        ? `/library?occasion=${encodeURIComponent(occasion)}`
+        : "/library",
+    );
   };
 
   /* ── Lead: the one thing to do now. A session in progress wins over the
@@ -113,17 +159,38 @@ export const HomeView = () => {
       const step = session.steps[i];
       const stepDhikr = step ? dById(step.dhikr) : null;
       return (
-        <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+        <Panel
+          key="lead"
+          as="section"
+          aria-labelledby="lead-h"
+          className="p-6 lg:p-8"
+        >
           <p className="eyebrow">Continue where you left off</p>
-          <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
+          <h2
+            id="lead-h"
+            className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
+          >
             {session.title}
           </h2>
           <p className="numerals mt-2 text-[0.9375rem] text-muted">
-            {session.steps.length > 1 ? `Step ${i + 1} of ${session.steps.length}` : "Single dhikr"}
-            {stepDhikr ? ` · ${stepDhikr.tr}` : ""} · {fmt(done)} of {fmt(total)}
+            {session.steps.length > 1
+              ? `Step ${i + 1} of ${session.steps.length}`
+              : "Single dhikr"}
+            {stepDhikr ? ` · ${stepDhikr.tr}` : ""} · {fmt(done)} of{" "}
+            {fmt(total)}
           </p>
-          <ProgressBar value={done} max={total} label="Session progress" className="mt-5" />
-          <Button size="lg" icon={Play} onClick={() => setView("counter")} className="mt-6 w-full sm:w-auto">
+          <ProgressBar
+            value={done}
+            max={total}
+            label="Session progress"
+            className="mt-5"
+          />
+          <Button
+            size="lg"
+            icon={Play}
+            onClick={() => setView("counter")}
+            className="mt-6 w-full sm:w-auto"
+          >
             Continue
           </Button>
         </Panel>
@@ -133,24 +200,47 @@ export const HomeView = () => {
     const first = dById(suggest.steps[0]?.dhikr);
     const total = setTotal(suggest);
     return (
-      <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+      <Panel
+        key="lead"
+        as="section"
+        aria-labelledby="lead-h"
+        className="p-6 lg:p-8"
+      >
         <p className="eyebrow">{sug.when}</p>
-        <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
+        <h2
+          id="lead-h"
+          className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
+        >
           {suggest.name}
         </h2>
         <p className="numerals mt-2 text-[0.9375rem] text-muted">
-          {suggest.steps.length} {suggest.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)} counts · {durationLabel(total)}
+          {suggest.steps.length}{" "}
+          {suggest.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)}{" "}
+          counts · {durationLabel(total)}
         </p>
         {first && (
-          <p dir="rtl" lang="ar" className="mt-6 truncate font-arabic text-[1.75rem] leading-[1.9] text-ink">
+          <p
+            dir="rtl"
+            lang="ar"
+            className="mt-6 truncate font-arabic text-[1.75rem] leading-[1.9] text-ink"
+          >
             {first.arabic}
           </p>
         )}
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button size="lg" icon={Play} onClick={() => startList(suggest)} className="flex-1 sm:flex-none">
+          <Button
+            size="lg"
+            icon={Play}
+            onClick={() => startList(suggest)}
+            className="flex-1 sm:flex-none"
+          >
             Begin
           </Button>
-          <Button variant="ghost" size="lg" onClick={() => openLibrary(suggest.occasion)}>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={() => openLibrary(suggest.occasion)}
+          >
             Other sets
           </Button>
         </div>
@@ -163,26 +253,43 @@ export const HomeView = () => {
     <section key="streak" aria-label="Daily progress" className="space-y-4">
       <div className="flex items-end justify-between gap-6">
         <div>
-          <p className="numerals font-display text-[2.75rem] leading-none text-ink">{fmt(today)}</p>
-          <p className="numerals mt-2 text-sm text-muted">of {fmt(goal)} today</p>
+          <p className="numerals font-display text-[2.75rem] leading-none text-ink">
+            {fmt(today)}
+          </p>
+          <p className="numerals mt-2 text-sm text-muted">
+            of {fmt(goal)} today
+          </p>
         </div>
         <dl className="flex gap-6 text-right">
           <div>
             <dt className="text-sm text-muted">Streak</dt>
             <dd className="numerals mt-1 flex items-center justify-end gap-1 font-display text-2xl leading-none text-ink">
-              {streak > 0 && <Flame size={16} className="text-gold" aria-hidden="true" />}
+              {streak > 0 && (
+                <Flame size={16} className="text-gold" aria-hidden="true" />
+              )}
               {streak}
               <span className="sr-only"> days</span>
             </dd>
           </div>
           <div>
             <dt className="text-sm text-muted">All time</dt>
-            <dd className="numerals mt-1 font-display text-2xl leading-none text-ink">{fmt(stats.total)}</dd>
+            <dd className="numerals mt-1 font-display text-2xl leading-none text-ink">
+              {fmt(stats.total)}
+            </dd>
           </div>
         </dl>
       </div>
-      <ProgressBar value={today} max={goal} label="Today's goal" tone={today >= goal ? "gold" : "accent"} />
-      {today >= goal && <p className="text-sm text-muted">Today&rsquo;s goal is complete. Alhamdulillah.</p>}
+      <ProgressBar
+        value={today}
+        max={goal}
+        label="Today's goal"
+        tone={today >= goal ? "gold" : "accent"}
+      />
+      {today >= goal && (
+        <p className="text-sm text-muted">
+          Today&rsquo;s goal is complete. Alhamdulillah.
+        </p>
+      )}
     </section>
   );
 
@@ -193,7 +300,11 @@ export const HomeView = () => {
         title="Your dhikr"
         count={pinnedItems.length > PINNED_PEEK ? pinnedItems.length : null}
         action={
-          <Button variant="link" size="sm" onClick={() => navigate("/library?tab=mine")}>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => navigate("/library?tab=mine")}
+          >
             Manage
           </Button>
         }
@@ -204,7 +315,8 @@ export const HomeView = () => {
             <Pin size={18} strokeWidth={1.75} aria-hidden="true" />
           </span>
           <p className="flex-1 text-[0.9375rem] leading-relaxed text-muted">
-            Pin the sets you recite every day and they&rsquo;ll wait for you here.
+            Pin the sets you recite every day and they&rsquo;ll wait for you
+            here.
           </p>
           <Button variant="secondary" size="sm" onClick={() => openLibrary()}>
             Browse library
@@ -212,86 +324,101 @@ export const HomeView = () => {
         </Panel>
       ) : (
         <>
-        {pinnedItems.length > PINNED_PEEK && (
-          <div className="relative">
-            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
-            <input
-              type="search"
-              value={pinQuery}
-              onChange={(e) => setPinQuery(e.target.value)}
-              placeholder={`Find in your ${pinnedItems.length}`}
-              aria-label="Find in your dhikr"
-              className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {pinQuery && (
-              <button
-                type="button"
-                onClick={() => setPinQuery("")}
-                aria-label="Clear search"
-                className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        )}
-        {pinShown.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-line px-5 py-6 text-center text-[0.9375rem] text-muted">
-            Nothing pinned matches &ldquo;{pinQuery.trim()}&rdquo;. Try a shorter word.
-          </p>
-        ) : (
-        <ListGroup id="pinned-list">
-          {pinShown.map(({ type, data }) => {
-            const isList = type === "list";
-            const Ico = isList ? ICONS[data.icon] || Sparkles : null;
-            const count = isList ? setTotal(data) : data.target;
-            return (
-              <ListRow
-                key={data.id}
-                leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
-                title={isList ? data.name : data.tr}
-                subtitle={
-                  isList
-                    ? data.steps
-                        .map((s) => dById(s.dhikr)?.tr)
-                        .filter(Boolean)
-                        .join(" · ") || "No dhikr yet"
-                    : data.en
-                }
-                meta={`×${fmt(count)}`}
-                onClick={() => (isList ? startList(data) : startDhikr(data))}
-                ariaLabel={`Begin ${isList ? data.name : data.tr}`}
+          {pinnedItems.length > PINNED_PEEK && (
+            <div className="relative">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                aria-hidden="true"
               />
-            );
-          })}
-          {!pq && pinMatches.length > PINNED_PEEK && (
-            <button
-              type="button"
-              onClick={() => setPinAll((v) => !v)}
-              aria-expanded={pinAll}
-              aria-controls="pinned-list"
-              className="row-interactive flex min-h-12 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-accent"
-            >
-              {pinAll ? "Show fewer" : `Show all ${pinMatches.length}`}
-              <ChevronDown size={16} aria-hidden="true" className={pinAll ? "rotate-180" : ""} />
-            </button>
+              <input
+                type="search"
+                value={pinQuery}
+                onChange={(e) => setPinQuery(e.target.value)}
+                placeholder={`Find in your ${pinnedItems.length}`}
+                aria-label="Find in your dhikr"
+                className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
+              />
+              {pinQuery && (
+                <button
+                  type="button"
+                  onClick={() => setPinQuery("")}
+                  aria-label="Clear search"
+                  className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           )}
-        </ListGroup>
-        )}
+          {pinShown.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-line px-5 py-6 text-center text-[0.9375rem] text-muted">
+              Nothing pinned matches &ldquo;{pinQuery.trim()}&rdquo;. Try a
+              shorter word.
+            </p>
+          ) : (
+            <ListGroup id="pinned-list">
+              {pinShown.map(({ type, data }) => {
+                const isList = type === "list";
+                const Ico = isList ? ICONS[data.icon] || Sparkles : null;
+                const count = isList ? setTotal(data) : data.target;
+                return (
+                  <ListRow
+                    key={data.id}
+                    leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
+                    title={isList ? data.name : data.tr}
+                    subtitle={
+                      isList
+                        ? data.steps
+                            .map((s) => dById(s.dhikr)?.tr)
+                            .filter(Boolean)
+                            .join(" · ") || "No dhikr yet"
+                        : data.en
+                    }
+                    meta={`×${fmt(count)}`}
+                    onClick={() =>
+                      isList ? startList(data) : startDhikr(data)
+                    }
+                    ariaLabel={`Begin ${isList ? data.name : data.tr}`}
+                  />
+                );
+              })}
+              {!pq && pinMatches.length > PINNED_PEEK && (
+                <button
+                  type="button"
+                  onClick={() => setPinAll((v) => !v)}
+                  aria-expanded={pinAll}
+                  aria-controls="pinned-list"
+                  className="row-interactive flex min-h-12 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-accent"
+                >
+                  {pinAll ? "Show fewer" : `Show all ${pinMatches.length}`}
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={pinAll ? "rotate-180" : ""}
+                  />
+                </button>
+              )}
+            </ListGroup>
+          )}
         </>
       )}
     </section>
   );
 
-  const renderFrequent = () =>
-    frequent.length > 0 && (
-      <section key="frequent" aria-labelledby="frequent-h" className="space-y-4">
-        <SectionHeader id="frequent-h" title="Most recited" />
+  const renderFrequent = () => (
+    <section key="frequent" aria-labelledby="frequent-h" className="space-y-4">
+      <SectionHeader id="frequent-h" title="Most recited" />
+      {frequent.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-line px-5 py-5 text-[0.9375rem] leading-relaxed text-muted">
+          Finish a set and it appears here, ranked by how often you complete it.
+        </p>
+      ) : (
         <ol className="scroll-fade-x -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:mask-none">
-          {frequent.map(({ type, data, n, c }, i) => {
+          {frequent.map(({ type, data, n }, i) => {
             const isList = type === "list";
             const name = isList ? data.name : data.tr;
-            const usage = n > 0 ? `${fmt(n)} ${n === 1 ? "session" : "sessions"}` : `${fmt(c)} counts`;
+            const usage = `Completed ${fmt(n)} ${n === 1 ? "time" : "times"}`;
             return (
               <li key={data.id} className="shrink-0">
                 <button
@@ -301,8 +428,15 @@ export const HomeView = () => {
                   className="row-interactive flex h-[8.75rem] w-[10.5rem] flex-col justify-between rounded-2xl border border-line bg-surface p-4 text-left lg:w-full"
                 >
                   <span className="flex w-full items-start justify-between">
-                    {isList ? <IconTile icon={ICONS[data.icon] || Sparkles} size={36} /> : <DhikrTile size={36} />}
-                    <span className="numerals font-display text-lg leading-none text-muted" aria-hidden="true">
+                    {isList ? (
+                      <IconTile icon={ICONS[data.icon] || Sparkles} size={36} />
+                    ) : (
+                      <DhikrTile size={36} />
+                    )}
+                    <span
+                      className="numerals font-display text-lg leading-none text-muted"
+                      aria-hidden="true"
+                    >
                       {i + 1}
                     </span>
                   </span>
@@ -310,15 +444,18 @@ export const HomeView = () => {
                     <span className="line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]">
                       {name}
                     </span>
-                    <span className="numerals mt-1 block truncate text-sm text-muted">{usage}</span>
+                    <span className="numerals mt-1 block truncate text-sm text-muted">
+                      {usage}
+                    </span>
                   </span>
                 </button>
               </li>
             );
           })}
         </ol>
-      </section>
-    );
+      )}
+    </section>
+  );
 
   const renderQuick = () =>
     quick.length > 0 && (
@@ -334,7 +471,12 @@ export const HomeView = () => {
         />
         <div className="scroll-fade-x -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none">
           {quick.map((k) => (
-            <button key={k} type="button" onClick={() => openLibrary(k)} className="chip">
+            <button
+              key={k}
+              type="button"
+              onClick={() => openLibrary(k)}
+              className="chip"
+            >
               {OCCASIONS[k]}
             </button>
           ))}
@@ -355,8 +497,12 @@ export const HomeView = () => {
               className="group flex w-full items-center gap-4 py-4 text-left"
             >
               <span className="min-w-0 flex-1">
-                <span className="block font-display text-lg leading-snug text-ink">{rem.short || rem.label}</span>
-                <span className="mt-0.5 block text-sm leading-snug text-muted">{rem.desc}</span>
+                <span className="block font-display text-lg leading-snug text-ink">
+                  {rem.short || rem.label}
+                </span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted">
+                  {rem.desc}
+                </span>
               </span>
               <ArrowRight
                 size={18}
@@ -386,23 +532,42 @@ export const HomeView = () => {
           <div className="relative">
             <p className="eyebrow flex items-center justify-center gap-2 text-gold">
               <span>Name of the day</span>
-              <span className="h-px w-4 bg-current opacity-60" aria-hidden="true" />
+              <span
+                className="h-px w-4 bg-current opacity-60"
+                aria-hidden="true"
+              />
               <span className="numerals">{idx + 1} of 99</span>
             </p>
-            <p dir="rtl" lang="ar" className="mt-7 font-arabic text-[3.75rem] leading-[1.45] text-ink">
+            <p
+              dir="rtl"
+              lang="ar"
+              className="mt-7 font-arabic text-[3.75rem] leading-[1.45] text-ink"
+            >
               {name.arabic}
             </p>
-            <h2 id="name-h" className="mt-2 font-display text-[1.75rem] leading-tight text-ink">
+            <h2
+              id="name-h"
+              className="mt-2 font-display text-[1.75rem] leading-tight text-ink"
+            >
               {name.tr}
             </h2>
             <p className="mx-auto mt-1.5 max-w-[30ch] text-[0.9375rem] leading-relaxed text-muted">
               {settings.lang === "ur" ? name.ur || name.en : name.en}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-              <Button variant="secondary" size="sm" iconRight={ArrowRight} onClick={() => startNamesSession(idx)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                iconRight={ArrowRight}
+                onClick={() => startNamesSession(idx)}
+              >
                 Reflect on this Name
               </Button>
-              <Button variant="link" size="sm" onClick={() => navigate("/names")}>
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => navigate("/names")}
+              >
                 All 99
               </Button>
             </div>
@@ -413,7 +578,9 @@ export const HomeView = () => {
   };
 
   const renderPrayer = () =>
-    settings?.prayer?.enabled && settings?.prayer?.showOnHome ? <PrayerTimesCard key="prayer" /> : null;
+    settings?.prayer?.enabled && settings?.prayer?.showOnHome ? (
+      <PrayerTimesCard key="prayer" />
+    ) : null;
 
   const renderers = {
     suggested: () => null, // the lead below replaces the old suggested card
@@ -429,19 +596,28 @@ export const HomeView = () => {
   const homeSections = resolveHomeSections(settings?.homeSections);
   const visible = homeSections.filter((s) => s.visible && renderers[s.key]);
   const showLead = resumable || visible.some((s) => s.key === "suggested");
-  const render = (keys) => visible.filter((s) => keys.includes(s.key)).map((s) => renderers[s.key]());
+  const render = (keys) =>
+    visible.filter((s) => keys.includes(s.key)).map((s) => renderers[s.key]());
 
   const footer = (
     <footer className="flex flex-col items-start justify-between gap-3 border-t border-line pt-6 text-sm text-muted sm:flex-row sm:items-center">
       <p>Your counts stay on this device. No account, no tracking.</p>
-      <Button variant="link" size="sm" icon={Plus} onClick={() => navigate("/library?tab=mine")} className="-ml-2">
+      <Button
+        variant="link"
+        size="sm"
+        icon={Plus}
+        onClick={() => navigate("/library?tab=mine")}
+        className="-ml-2"
+      >
         Create your own set
       </Button>
     </footer>
   );
 
   const seoTitle = (
-    <h1 className="sr-only">Free Online Tasbeeh Counter, Digital Dhikr &amp; Zikr Counter</h1>
+    <h1 className="sr-only">
+      Free Online Tasbeeh Counter, Digital Dhikr &amp; Zikr Counter
+    </h1>
   );
 
   if (isDesktop) {
@@ -454,7 +630,9 @@ export const HomeView = () => {
             {showLead && renderLead()}
             {render(["frequent", "pinned", "quick", "remedies"])}
           </div>
-          <aside className="sticky top-12 space-y-12">{render(["streak", "prayer", "asmaul_husna"])}</aside>
+          <aside className="sticky top-12 space-y-12">
+            {render(["streak", "prayer", "asmaul_husna"])}
+          </aside>
         </div>
         {footer}
       </div>
