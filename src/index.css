@@ -28,8 +28,9 @@
 @theme {
   /* Display serif for titles and numerals, humanist sans for the interface.
      A theme may override --font-display / --font-body on the app root. */
-  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
-  --font-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Amiri is a per-glyph fallback, so ﷺ and other Arabic marks render. */
+  --font-display: "Newsreader", "Amiri", "Iowan Old Style", Georgia, serif;
+  --font-body: "Instrument Sans", "Amiri", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-arabic: "Amiri", serif;
   --font-urdu: "Noto Nastaliq Urdu", "Amiri", serif;
 

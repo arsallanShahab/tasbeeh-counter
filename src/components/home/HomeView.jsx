@@ -6,8 +6,9 @@ import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
 import { useNow } from "../../hooks/useNow";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
-import { Panel, SectionHeader, ListGroup, ListRow, IconTile, GlyphTile, ProgressBar } from "../common/Layout";
+import { Panel, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, ProgressBar } from "../common/Layout";
 import { Button } from "../common/Button";
+import { StarRosette } from "../common/Ornament";
 import {
   ICONS,
   OCCASIONS,
@@ -39,7 +40,7 @@ const dayOfYear = (d) => {
 };
 
 export const HomeView = () => {
-  const { setView, lists, dhikrs, pinned, stats, startList, startDhikr, setSearchQuery, session, complete, settings, dById } =
+  const { setView, lists, dhikrs, pinned, stats, startList, startDhikr, setSearchQuery, session, complete, settings, dById, startNamesSession } =
     useApp();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
@@ -189,7 +190,7 @@ export const HomeView = () => {
             return (
               <ListRow
                 key={data.id}
-                leading={isList ? <IconTile icon={Ico} /> : <GlyphTile char={data.arabic.charAt(0)} />}
+                leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
                 title={isList ? data.name : data.tr}
                 subtitle={
                   isList
@@ -266,26 +267,39 @@ export const HomeView = () => {
     const name = SEED_NAMES_OF_ALLAH[idx];
     if (!name) return null;
     return (
-      <section key="asmaul_husna" aria-labelledby="name-h" className="rounded-2xl bg-sunken px-6 py-8 text-center lg:py-10">
-        <p className="eyebrow">Name of the day · {idx + 1} of 99</p>
-        <p dir="rtl" lang="ar" className="mt-5 font-arabic text-[3.5rem] leading-[1.5] text-ink">
-          {name.arabic}
-        </p>
-        <h2 id="name-h" className="mt-1 font-display text-2xl text-ink">
-          {name.tr}
-        </h2>
-        <p className="mx-auto mt-1 max-w-[30ch] text-[0.9375rem] text-muted">
-          {settings.lang === "ur" ? name.ur || name.en : name.en}
-        </p>
-        <Button
-          variant="secondary"
-          size="sm"
-          iconRight={ArrowRight}
-          className="mt-6"
-          onClick={() => navigate("/names")}
-        >
-          The 99 Names
-        </Button>
+      <section
+        key="asmaul_husna"
+        aria-labelledby="name-h"
+        className="rounded-2xl border border-line bg-surface p-1.5"
+      >
+        {/* Inner rule: a manuscript-style double border. */}
+        <div className="relative overflow-hidden rounded-[0.875rem] border border-[color-mix(in_srgb,var(--gold)_38%,var(--line))] px-6 pb-7 pt-8 text-center">
+          <StarRosette className="pointer-events-none absolute left-1/2 top-28 h-56 w-56 -translate-x-1/2 -translate-y-1/2 text-gold opacity-[0.16]" />
+          <div className="relative">
+            <p className="eyebrow flex items-center justify-center gap-2 text-gold">
+              <span>Name of the day</span>
+              <span className="h-px w-4 bg-current opacity-60" aria-hidden="true" />
+              <span className="numerals">{idx + 1} of 99</span>
+            </p>
+            <p dir="rtl" lang="ar" className="mt-5 font-arabic text-[3.75rem] leading-[1.45] text-ink">
+              {name.arabic}
+            </p>
+            <h2 id="name-h" className="mt-2 font-display text-[1.75rem] leading-tight text-ink">
+              {name.tr}
+            </h2>
+            <p className="mx-auto mt-1.5 max-w-[30ch] text-[0.9375rem] leading-relaxed text-muted">
+              {settings.lang === "ur" ? name.ur || name.en : name.en}
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              <Button variant="secondary" size="sm" iconRight={ArrowRight} onClick={() => startNamesSession(idx)}>
+                Reflect on this Name
+              </Button>
+              <Button variant="link" size="sm" onClick={() => navigate("/names")}>
+                All 99
+              </Button>
+            </div>
+          </div>
+        </div>
       </section>
     );
   };

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronUp, Pencil, ArrowRight, FolderPlus, BookPlus,
+  Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronUp, Pencil, ArrowRight, FolderPlus,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { OCCASIONS, ICONS } from "../../constants/dhikrData";
 import { fmt } from "../../utils/stats";
-import { PageHeader, SectionHeader, ListGroup, ListRow, IconTile, GlyphTile, EmptyState } from "../common/Layout";
+import { PageHeader, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, EmptyState } from "../common/Layout";
 import { Button, IconButton } from "../common/Button";
 import { Seg } from "../common/Seg";
 import { useToast } from "../common/toastContext";
@@ -210,7 +210,6 @@ export const LibraryView = () => {
   const dhikrRow = (d) => (
     <ListRow
       key={d.id}
-      leading={<GlyphTile char={d.arabic.charAt(0)} />}
       title={d.tr}
       subtitle={`×${fmt(d.target)}${(settings.lang === "ur" ? d.ur || d.en : d.en) ? ` · ${settings.lang === "ur" ? d.ur || d.en : d.en}` : ""}`}
       onClick={() => openItem("dhikr", d.id)}
@@ -295,7 +294,7 @@ export const LibraryView = () => {
               return (
                 <ListRow
                   key={data.id}
-                  leading={isList ? <IconTile icon={Ico} /> : <GlyphTile char={data.arabic.charAt(0)} />}
+                  leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
                   title={label}
                   subtitle={isList ? `${data.steps.length} dhikr · ×${fmt(setTotal(data))}` : `×${fmt(data.target)}`}
                   onClick={reorder ? undefined : () => openItem(kind, data.id)}
@@ -365,7 +364,7 @@ export const LibraryView = () => {
             {myDhikrs.map((d) => (
               <ListRow
                 key={d.id}
-                leading={<GlyphTile char={d.arabic.charAt(0)} />}
+                leading={<DhikrTile />}
                 title={d.tr}
                 subtitle={`Dhikr · ×${fmt(d.target)}`}
                 onClick={() => openItem("dhikr", d.id)}
@@ -488,9 +487,11 @@ export const LibraryView = () => {
         title="Library"
         actions={
           <>
-            <IconButton icon={BookPlus} label="New dhikr" className="border border-line-strong" onClick={() => openEditor("dhikr")} />
-            <Button icon={Plus} onClick={() => openEditor("list")}>
-              New set
+            <Button variant="secondary" size="sm" icon={Plus} onClick={() => openEditor("dhikr")} aria-label="New dhikr">
+              Dhikr
+            </Button>
+            <Button size="sm" icon={Plus} onClick={() => openEditor("list")} aria-label="New set">
+              Set
             </Button>
           </>
         }

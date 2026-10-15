@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import { BeadMark } from "./BrandMark";
 
 const cx = (...parts) => parts.filter(Boolean).join(" ");
 
@@ -72,7 +73,7 @@ export const ListRow = ({
     <>
       {leading && <span className="flex shrink-0 items-center">{leading}</span>}
       <span className="min-w-0 flex-1 text-left">
-        <span className={cx("line-clamp-2 block text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]", titleClassName)}>
+        <span className={cx("line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]", titleClassName)}>
           {title}
         </span>
         {subtitle && <span className="mt-0.5 block truncate text-sm text-muted">{subtitle}</span>}
@@ -116,15 +117,10 @@ export const IconTile = ({ icon: Icon, tone = "neutral", size = 40 }) => (
   </span>
 );
 
-/* Arabic initial as a row's leading element for single dhikrs. */
-export const GlyphTile = ({ char, size = 40 }) => (
-  <span
-    className="flex items-center justify-center rounded-xl bg-sunken font-arabic text-xl leading-none text-ink"
-    style={{ width: size, height: size }}
-    aria-hidden="true"
-    dir="rtl"
-  >
-    {char}
+// Leading tile for a single dhikr: the brand bead mark.
+export const DhikrTile = ({ size = 40 }) => (
+  <span className="flex items-center justify-center rounded-xl bg-sunken text-ink" style={{ width: size, height: size }} aria-hidden="true">
+    <BeadMark size={Math.round(size * 0.5)} />
   </span>
 );
 
