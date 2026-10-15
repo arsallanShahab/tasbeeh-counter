@@ -835,6 +835,44 @@ export const SEED_DHIKRS = [
     hadith: "The Prophet ﷺ said: 'If any Muslim says: Inna lillahi wa inna ilayhi raji'oon... when a calamity strikes, Allah will reward him and compensate him with something better.' (Muslim)",
     story: "Recited by believers when struck by any loss, big or small, to remind themselves that they and all their loved ones belong to Allah and will return to Him.",
     benefits: "Eases the sharp pain of bereavement, loss, and sudden trials by providing immediate spiritual perspective."
+  },
+
+  // Seasonal: Dhul-Hijjah, Eid, ʿArafah and fasting days.
+  {
+    id: "takbir_eid",
+    tr: "Allahu akbar, Allahu akbar, la ilaha illallah, wallahu akbar, Allahu akbar, wa lillahil hamd",
+    arabic: "اللّٰهُ أَكْبَرُ، اللّٰهُ أَكْبَرُ، لَا إِلَٰهَ إِلَّا اللّٰهُ، وَاللّٰهُ أَكْبَرُ، اللّٰهُ أَكْبَرُ، وَلِلّٰهِ الْحَمْدُ",
+    en: "Allah is the Greatest, Allah is the Greatest, there is no god but Allah. Allah is the Greatest, Allah is the Greatest, and to Allah belongs all praise",
+    target: 33,
+    tags: ["dhul-hijjah", "eid"],
+    hadith: "The Prophet ﷺ said: 'There are no days greater before Allah, nor in which deeds are more beloved to Him, than these ten days, so say much tahlil, takbir and tahmid in them.' (Ahmad 5446). This wording of the Takbir is reported from Ibn Masʿud. (Ibn Abi Shaybah)",
+    story: "Said aloud in the markets by the Companions in the first ten days of Dhul-Hijjah, from Fajr of ʿArafah to the end of the Days of Tashreeq, and on the way to both Eid prayers.",
+    benefits: "The signature dhikr of the two Eids and the best ten days of the year."
+  },
+
+  {
+    id: "arafah_dua",
+    tr: "La ilaha illallahu wahdahu la sharika lah, lahul mulku wa lahul hamdu wa huwa ala kulli shay'in qadeer",
+    arabic:
+      "لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
+    en: "None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He has power over all things (the du'a of ʿArafah)",
+    target: 100,
+    tags: ["dhul-hijjah"],
+    hadith: "The Prophet ﷺ said: 'The best du'a is the du'a of the Day of ʿArafah, and the best of what I and the prophets before me have said is: La ilaha illallahu wahdahu la sharika lah...' (Tirmidhi 3585, hasan). Fasting the day expiates the sins of the year before and the year after. (Muslim 1162)",
+    story: "While the pilgrims stand on the plain of ʿArafah, the rest of the Ummah fasts and repeats the same words of tawheed from wherever they are.",
+    benefits: "The best du'a on the best day of the year."
+  },
+
+  {
+    id: "iftar_dua",
+    tr: "Dhahabaz-zama'u wabtallatil-'uruqu wa thabatal-ajru in sha' Allah",
+    arabic: "ذَهَبَ الظَّمَأُ، وَابْتَلَّتِ الْعُرُوقُ، وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللّٰهُ",
+    en: "The thirst has gone, the veins are moistened, and the reward is confirmed, if Allah wills",
+    target: 1,
+    tags: ["fasting", "ramadan"],
+    hadith: "When the Prophet ﷺ broke his fast he would say this. (Abu Dawud 2357, hasan)",
+    story: "Said at the moment of iftar, after the first sip of water or bite of a date.",
+    benefits: "Closes a day of fasting with gratitude and hope for its reward."
   }
 ];
 
@@ -1119,6 +1157,62 @@ export const SEED_LISTS = [
       { dhikr: "rabbi_shrah", target: 3 },
       { dhikr: "ainni_ala_dhikrika", target: 1 }
     ]
+  },
+
+  // Seasonal sets, surfaced on Today by the Hijri date (see utils/hijri.js).
+  {
+    id: "dhul-hijjah-ten",
+    name: "First Ten of Dhul-Hijjah",
+    occasion: "dhul-hijjah",
+    icon: "sun",
+    steps: [
+      { dhikr: "takbir_eid", target: 100 },
+      { dhikr: "tahleel", target: 100 },
+      { dhikr: "alhamdulillah", target: 100 }
+    ]
+  },
+
+  {
+    id: "arafah-day",
+    name: "Day of ʿArafah",
+    occasion: "dhul-hijjah",
+    icon: "sun",
+    steps: [
+      { dhikr: "arafah_dua", target: 100 },
+      { dhikr: "takbir_eid", target: 33 }
+    ]
+  },
+
+  {
+    id: "eid-takbir",
+    name: "Takbir of Eid",
+    occasion: "eid",
+    icon: "sparkles",
+    steps: [
+      { dhikr: "takbir_eid", target: 33 }
+    ]
+  },
+
+  {
+    id: "last-ten-nights",
+    name: "The Last Ten Nights",
+    occasion: "ramadan",
+    icon: "moon",
+    steps: [
+      { dhikr: "allahumma_innaka_afuw", target: 100 },
+      { dhikr: "astaghfirullah", target: 100 },
+      { dhikr: "salawat", target: 100 }
+    ]
+  },
+
+  {
+    id: "iftar",
+    name: "Breaking the Fast",
+    occasion: "fasting",
+    icon: "sunset",
+    steps: [
+      { dhikr: "iftar_dua", target: 1 }
+    ]
   }
 ];
 
@@ -1128,7 +1222,8 @@ export const OCCASIONS = {
   sleep: "Sleep", forgiveness: "Forgiveness", tawheed: "Tawheed", gratitude: "Gratitude",
   anxiety: "Anxiety", protection: "Protection", ramadan: "Ramadan", family: "Family",
   knowledge: "Knowledge", salah: "In Salah", "high-reward": "High Reward", gathering: "Gathering",
-  grief: "In Grief", guidance: "Seeking Guidance", "names-of-allah": "99 Names"
+  grief: "In Grief", guidance: "Seeking Guidance", "names-of-allah": "99 Names",
+  "dhul-hijjah": "Dhul-Hijjah", eid: "Eid", fasting: "Fasting"
 };
 
 export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
@@ -1157,7 +1252,10 @@ export const OCCASION_ICONS = {
   gathering: Sparkles,
   grief: Heart,
   guidance: Star,
-  "names-of-allah": Sparkles
+  "names-of-allah": Sparkles,
+  "dhul-hijjah": Sun,
+  eid: Sparkles,
+  fasting: Sunset
 };
 
 export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "friday"];

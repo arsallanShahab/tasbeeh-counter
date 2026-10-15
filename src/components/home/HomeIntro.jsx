@@ -1,20 +1,18 @@
-import { useNavigate } from "react-router-dom";
 import { Star, Moon, Sun, Sparkles, Mountain, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { BrandMark } from "../common/BrandMark";
 import { Button } from "../common/Button";
-import { hijriFormatted, topOccasion } from "../../utils/hijri";
+import { hijriFormatted } from "../../utils/hijri";
 import { hijriDisplayOffset } from "../../utils/prayerTimes";
 import { useNow } from "../../hooks/useNow";
 
 const ICON_MAP = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
 
 /* The top of Today: the date in both calendars, a greeting set large, and,
-   on a special day, the occasion folded in underneath. Open on the page, no
-   card. Ticks so the date rolls at midnight and the Hijri date at Maghrib. */
-export const HomeIntro = () => {
-  const { settings, lists, startList } = useApp();
-  const navigate = useNavigate();
+   on a special day the occasion underneath when the lead card isn't showing
+   it. Open on the page, no card. Ticks so the dates roll at midnight and Maghrib. */
+export const HomeIntro = ({ occasion: occ = null }) => {
+  const { settings, startList } = useApp();
   const now = useNow();
 
   const d = new Date(now);
@@ -24,21 +22,7 @@ export const HomeIntro = () => {
   const offset = hijriDisplayOffset(settings.prayer, d);
   const greg = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const hijri = hijriFormatted(d, offset);
-  const occ = topOccasion(d, offset);
   const OccIcon = occ ? ICON_MAP[occ.icon] || Sparkles : null;
-
-  const handleCta = () => {
-    if (!occ) return;
-    if (occ.cta?.kind === "list") {
-      const list = lists.find((l) => l.id === occ.cta.id);
-      if (list) {
-        startList(list);
-        return;
-      }
-    }
-    const target = occ.cta?.kind === "occasion" ? occ.cta.id : occ.id;
-    navigate(`/library?occasion=${encodeURIComponent(target)}`);
-  };
 
   return (
     <header>
@@ -67,8 +51,8 @@ export const HomeIntro = () => {
           <div className="min-w-0 flex-1">
             <p className="font-display text-xl leading-snug text-ink">{occ.label}</p>
             <p className="mt-1 text-[0.9375rem] leading-relaxed text-muted">{occ.desc}</p>
-            <Button variant="link" size="sm" iconRight={ArrowRight} onClick={handleCta} className="-ml-2 mt-2">
-              {occ.cta?.label || "Open"}
+            <Button variant="link" size="sm" iconRight={ArrowRight} onClick={() => startList(occ.set)} className="-ml-2 mt-2">
+              {occ.set.name}
             </Button>
           </div>
         </div>

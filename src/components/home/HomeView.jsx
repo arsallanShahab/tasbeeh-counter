@@ -10,6 +10,11 @@ import {
   Search,
   X,
   ChevronDown,
+  Star,
+  Moon,
+  Sun,
+  Mountain,
+  ExternalLink,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -17,6 +22,7 @@ import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
 import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
+import { useOccasions } from "../../hooks/useOccasions";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
 import {
   Panel,
@@ -51,6 +57,8 @@ const FREQUENT_MAX = 10;
 
 // Pinned rows shown before "Show all"; a search appears past this.
 const PINNED_PEEK = 4;
+
+const OCC_ICONS = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
 
 const setTotal = (l) =>
   l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
@@ -129,6 +137,10 @@ export const HomeView = () => {
     .sort((a, b) => b.n - a.n || b.last - a.last)
     .slice(0, FREQUENT_MAX);
 
+  // A seasonal set leads when the Hijri date calls for one; others follow it.
+  const occasions = useOccasions();
+  const [occ, ...alsoOcc] = occasions;
+
   const sug = suggestionFor(d.getHours());
   const suggest = lists.find((l) => l.id === sug.id) || lists[0];
 
@@ -196,6 +208,7 @@ export const HomeView = () => {
         </Panel>
       );
     }
+    if (occ) return renderOccasion();
     if (!suggest) return null;
     const first = dById(suggest.steps[0]?.dhikr);
     const total = setTotal(suggest);
@@ -244,6 +257,79 @@ export const HomeView = () => {
             Other sets
           </Button>
         </div>
+      </Panel>
+    );
+  };
+
+  const renderOccasion = () => {
+    const set = occ.set;
+    const first = dById(set.steps[0]?.dhikr);
+    const total = setTotal(set);
+    const Icon = OCC_ICONS[occ.icon] || Sparkles;
+    return (
+      <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+        <p className="eyebrow flex items-center gap-2 text-gold">
+          <Icon size={14} strokeWidth={2} aria-hidden="true" />
+          <span>{occ.label}</span>
+        </p>
+        <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
+          {set.name}
+        </h2>
+        <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted">{occ.desc}</p>
+        <p className="numerals mt-2 text-sm text-muted">
+          {set.steps.length} {set.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)} {total === 1 ? "count" : "counts"}
+          {total >= 20 && ` · ${durationLabel(total)}`}
+        </p>
+        {first && (
+          // Short du'as in full; clamping clips the harakat, so long ones stay on one line.
+          <p
+            dir="rtl"
+            lang="ar"
+            className={`mt-6 font-arabic text-[1.75rem] leading-[1.9] text-ink ${first.arabic.length > 60 ? "truncate" : ""}`}
+          >
+            {first.arabic}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Button size="lg" icon={Play} onClick={() => startList(set)} className="flex-1 sm:flex-none">
+            Begin
+          </Button>
+          {occ.link ? (
+            <a href={occ.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-lg">
+              {occ.link.label}
+              <ExternalLink size={18} aria-hidden="true" />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          ) : (
+            <Button variant="ghost" size="lg" onClick={() => openLibrary(occ.browse)}>
+              Other sets
+            </Button>
+          )}
+        </div>
+        {alsoOcc.length > 0 && (
+          <div className="mt-6 border-t border-line pt-3">
+            <p className="eyebrow pb-1 pt-2">Also today</p>
+            {alsoOcc.map((o) => {
+              const AlsoIcon = OCC_ICONS[o.icon] || Sparkles;
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => startList(o.set)}
+                  aria-label={`Begin ${o.set.name}, ${o.label}`}
+                  className="row-interactive -mx-3 flex min-h-12 w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 py-2 text-left"
+                >
+                  <AlsoIcon size={16} strokeWidth={1.75} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.9375rem] font-medium text-ink">{o.label}</span>
+                    <span className="block truncate text-sm text-muted">{o.set.name}</span>
+                  </span>
+                  <ArrowRight size={16} className="shrink-0 text-muted" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Panel>
     );
   };
@@ -596,6 +682,8 @@ export const HomeView = () => {
   const homeSections = resolveHomeSections(settings?.homeSections);
   const visible = homeSections.filter((s) => s.visible && renderers[s.key]);
   const showLead = resumable || visible.some((s) => s.key === "suggested");
+  // The intro carries the occasion only when the lead card can't.
+  const introOcc = !showLead || resumable ? occ : null;
   const render = (keys) =>
     visible.filter((s) => keys.includes(s.key)).map((s) => renderers[s.key]());
 
@@ -624,7 +712,7 @@ export const HomeView = () => {
     return (
       <div className="space-y-12">
         {seoTitle}
-        <HomeIntro />
+        <HomeIntro occasion={introOcc} />
         <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-12">
           <div className="space-y-12">
             {showLead && renderLead()}
@@ -642,7 +730,7 @@ export const HomeView = () => {
   return (
     <div className="space-y-10">
       {seoTitle}
-      <HomeIntro />
+      <HomeIntro occasion={introOcc} />
       {showLead && renderLead()}
       {visible.map((s) => renderers[s.key]())}
       {footer}

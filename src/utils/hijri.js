@@ -71,144 +71,140 @@ export function hijriShort(date = new Date(), offset = 0) {
 }
 
 /* ─── Occasions ───────────────────────────────────────────────────────────
-   Each occasion carries presentation (icon key, accent) and a contextual CTA
-   that maps to existing library content:
-     cta.kind === "list"     → start that list immediately (startList)
-     cta.kind === "occasion" → browse that occasion collection (Library)
-   They're returned most-significant first; the UI shows the top one. */
-export function detectOccasions(date = new Date(), offset = 0) {
+   Each occasion names the seed set Today leads with (`setId`), the Library
+   collection to browse, and an optional outside link. `night` is 1 after
+   Maghrib, when the Islamic day has already begun: the Hijri `offset` then
+   includes it, and Friday starts on Thursday evening. Most significant first. */
+const ordinal = (n) => ["first", "second", "third"][n - 1];
+const nth = (n) => `${n}${(n % 100 < 11 || n % 100 > 13) && ["th", "st", "nd", "rd"][n % 10] || "th"}`;
+
+export function detectOccasions(date = new Date(), offset = 0, night = 0) {
   const greg = new Date(date);
-  const isFriday = greg.getDay() === 5;
   const { day, month, ok } = hijriParts(date, offset);
   const out = [];
+  const add = (o) => out.push(o);
 
   const ramadan = ok && month === 9;
   const lastTen = ramadan && day >= 21;
-  const oddNight = lastTen && day % 2 === 1; // 21,23,25,27,29 — likely Qadr
-  const whiteDays = ok && (day === 13 || day === 14 || day === 15);
   const dhulHijjah = ok && month === 12;
-  const firstTenDhulHijjah = dhulHijjah && day <= 10;
-  const arafah = dhulHijjah && day === 9;
-  const eidAdha = dhulHijjah && day === 10;
-  const eidFitr = ok && month === 10 && day === 1;
-  const ashura = ok && month === 1 && (day === 9 || day === 10);
-  const muharram = ok && month === 1 && day <= 10;
+  // Jumuʿah runs from Maghrib on Thursday to Maghrib on Friday.
+  const friday = night ? greg.getDay() === 4 : greg.getDay() === 5;
+  // Fasting is not allowed on the Days of Tashreeq (11 to 13 Dhul-Hijjah).
+  const whiteDay = ok && day >= 13 && day <= 15 && !ramadan && !(dhulHijjah && day === 13);
 
-  // Highest significance first.
-  if (eidFitr) {
-    out.push({
+  if (ok && month === 10 && day === 1) {
+    add({
       id: "eid-fitr",
       label: "Eid al-Fitr Mubarak",
-      desc: "Glorify Allah with the Takbir of Eid.",
+      desc: "Say the Takbir from the sighting of the moon until the Eid prayer begins.",
       icon: "sparkles",
-      accent: "var(--gold)",
-      cta: { kind: "list", id: "tahleel-100", label: "Recite Takbir" },
+      setId: "eid-takbir",
+      browse: "eid",
     });
   }
-  if (eidAdha) {
-    out.push({
+  if (dhulHijjah && day === 10) {
+    add({
       id: "eid-adha",
       label: "Eid al-Adha Mubarak",
-      desc: "Days of Takbir, Tahmid and Tahlil.",
+      desc: "The Day of Sacrifice. Say the Takbir on the way to the prayer and after every salah.",
       icon: "sparkles",
-      accent: "var(--gold)",
-      cta: { kind: "list", id: "tahleel-100", label: "Recite Takbir" },
+      setId: "eid-takbir",
+      browse: "eid",
     });
   }
-  if (arafah) {
-    out.push({
+  if (dhulHijjah && day === 9) {
+    add({
       id: "arafah",
       label: "Day of ʿArafah",
-      desc: "The best du'a is that of ʿArafah — make tahlil abundantly.",
+      desc: "The best du'a is the du'a of ʿArafah, and fasting today expiates two years. (Tirmidhi 3585, Muslim 1162)",
       icon: "mountain",
-      accent: "var(--primary)",
-      cta: { kind: "list", id: "tahleel-100", label: "Begin Tahlil" },
+      setId: "arafah-day",
+      browse: "dhul-hijjah",
     });
   }
-  if (oddNight) {
-    out.push({
-      id: "laylatul-qadr",
-      label: "A Night of the Last Ten",
-      desc: "Seek Laylat al-Qadr: “Allahumma innaka ʿAfuwwun…”",
-      icon: "star",
-      accent: "var(--gold)",
-      cta: { kind: "list", id: "laylatul-qadr", label: "Laylat al-Qadr du'a" },
-    });
-  } else if (lastTen) {
-    out.push({
+  if (lastTen) {
+    const odd = night && day % 2 === 1;
+    add({
       id: "last-ten",
-      label: "The Last Ten Nights",
-      desc: "Increase in worship — the night of decree is near.",
-      icon: "moon",
-      accent: "var(--gold)",
-      cta: { kind: "list", id: "laylatul-qadr", label: "Laylat al-Qadr du'a" },
-    });
-  } else if (ramadan) {
-    out.push({
-      id: "ramadan",
-      label: "Ramadan Mubarak",
-      desc: "A month of mercy, fasting and the Qur'an.",
-      icon: "moon",
-      accent: "var(--primary)",
-      cta: { kind: "occasion", id: "ramadan", label: "Ramadan adhkar" },
-    });
-  }
-  if (ashura) {
-    out.push({
-      id: "ashura",
-      label: day === 10 ? "Day of ʿAshura" : "Eve of ʿAshura",
-      desc: "A recommended day of fasting and remembrance.",
-      icon: "moon",
-      accent: "var(--primary)",
-      cta: { kind: "occasion", id: "general", label: "Browse dhikr" },
-    });
-  }
-  if (isFriday) {
-    out.push({
-      id: "friday",
-      label: "Jumuʿah Mubarak",
-      desc: "Read Surah al-Kahf and send abundant Salawat.",
+      label: odd ? `The ${nth(day)} night of Ramadan` : "The Last Ten Nights",
+      desc: odd
+        ? "An odd night of the last ten: seek Laylat al-Qadr. ʿA'ishah was taught to say: Allahumma innaka ʿAfuwwun. (Tirmidhi 3513)"
+        : "Seek Laylat al-Qadr in the odd nights, and say much: Allahumma innaka ʿAfuwwun. (Tirmidhi 3513)",
       icon: "star",
-      accent: "var(--primary)",
-      cta: { kind: "list", id: "friday-salawat", label: "Friday Salawat ×100" },
+      setId: "last-ten-nights",
+      browse: "ramadan",
     });
   }
-  if (firstTenDhulHijjah && !arafah && !eidAdha) {
-    out.push({
+  if (dhulHijjah && day >= 11 && day <= 13) {
+    add({
+      id: "tashreeq",
+      label: "Days of Tashreeq",
+      desc: "Days of eating, drinking and remembering Allah. Say the Takbir after every salah. (Muslim 1141)",
+      icon: "sparkles",
+      setId: "eid-takbir",
+      browse: "eid",
+    });
+  }
+  if (dhulHijjah && day <= 8) {
+    add({
       id: "dhul-hijjah",
-      label: "First Ten of Dhul-Hijjah",
-      desc: "The most beloved days — abundant Takbir & dhikr.",
+      label: `Day ${day} of Dhul-Hijjah`,
+      desc: "The best ten days of the year: say much tahlil, takbir and tahmid in them. (Ahmad 5446)",
       icon: "mountain",
-      accent: "var(--primary)",
-      cta: { kind: "list", id: "tahleel-100", label: "Begin Tahlil" },
+      setId: "dhul-hijjah-ten",
+      browse: "dhul-hijjah",
     });
   }
-  if (muharram && !ashura) {
-    out.push({
-      id: "muharram",
-      label: "Sacred Month of Muharram",
-      desc: "Increase in voluntary fasting and dhikr.",
+  if (friday) {
+    add({
+      id: "friday",
+      label: night ? "The night of Jumuʿah" : "Jumuʿah Mubarak",
+      desc: "Send abundant salawat, and read Surah al-Kahf for a light that lasts until the next Friday. (Abu Dawud 1047, al-Hakim)",
+      icon: "star",
+      setId: "friday-salawat",
+      browse: "friday",
+      link: { label: "Read Surah al-Kahf", href: "https://quran.com/18" },
+    });
+  }
+  if (ok && month === 1 && (day === 9 || day === 10)) {
+    add({
+      id: "ashura",
+      label: day === 10 ? "Day of ʿAshura" : "Tasuʿa, the 9th of Muharram",
+      desc: "Fasting ʿAshura expiates the year before; fast the 9th with it. (Muslim 1162, 1134)",
       icon: "moon",
-      accent: "var(--primary)",
-      cta: { kind: "occasion", id: "general", label: "Browse dhikr" },
+      setId: "iftar",
+      browse: "fasting",
     });
   }
-  if (whiteDays && !ramadan) {
-    out.push({
+  if (ramadan && !lastTen) {
+    add({
+      id: "ramadan",
+      label: `Ramadan, day ${day}`,
+      desc: "A month of mercy, fasting and the Qur'an. Break your fast with the du'a of the Prophet ﷺ.",
+      icon: "moon",
+      setId: "iftar",
+      browse: "ramadan",
+    });
+  }
+  if (whiteDay) {
+    const n = day - 12;
+    add({
       id: "white-days",
-      label: "The White Days (Ayyam al-Bid)",
-      desc: "Sunnah to fast the 13th, 14th & 15th.",
+      label: `The White Days, ${ordinal(n)} of three`,
+      desc: night
+        ? "Fasting tomorrow is Sunnah: the 13th, 14th and 15th of every month. (Tirmidhi 761)"
+        : "Sunnah to fast the 13th, 14th and 15th; it is like fasting the whole year. At Maghrib, break your fast with this du'a. (Tirmidhi 761)",
       icon: "sun",
-      accent: "var(--gold)",
-      cta: { kind: "list", id: "tasbeeh-100", label: "Tasbih ×100" },
+      setId: "iftar",
+      browse: "fasting",
     });
   }
 
   return out;
 }
 
-export function topOccasion(date = new Date(), offset = 0) {
-  return detectOccasions(date, offset)[0] || null;
+export function topOccasion(date = new Date(), offset = 0, night = 0) {
+  return detectOccasions(date, offset, night)[0] || null;
 }
 
 /* ─── Regional offset ──────────────────────────────────────────────────────

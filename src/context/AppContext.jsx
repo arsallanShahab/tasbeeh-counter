@@ -158,6 +158,18 @@ export const AppProvider = ({ children }) => {
         setSession(store.get("session", null));
         setComplete(store.get("complete", false));
       }
+
+      // One-time add of the seasonal dhikr and sets, keeping everything else as is.
+      if (!store.get("seeds_seasonal_v1", false)) {
+        const dIds = ["takbir_eid", "arafah_dua", "iftar_dua"];
+        const lIds = ["dhul-hijjah-ten", "arafah-day", "eid-takbir", "last-ten-nights", "iftar"];
+        const missing = (have, seed, ids) => seed.filter((x) => ids.includes(x.id) && !have.some((h) => h.id === x.id));
+        loadedDhikrs = [...loadedDhikrs, ...missing(loadedDhikrs, SEED_DHIKRS, dIds)];
+        loadedLists = [...loadedLists, ...missing(loadedLists, SEED_LISTS, lIds)];
+        store.set("dhikrs", loadedDhikrs);
+        store.set("lists", loadedLists);
+        store.set("seeds_seasonal_v1", true);
+      }
       const loadedNamesSession = store.get("names_session", null);
       if (loadedNamesSession) {
         setNamesSession(loadedNamesSession);
