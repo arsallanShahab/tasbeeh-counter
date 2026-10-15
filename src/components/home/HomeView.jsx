@@ -285,7 +285,7 @@ export const HomeView = () => {
           <p
             dir="rtl"
             lang="ar"
-            className={`mt-6 font-arabic text-[1.75rem] leading-[1.9] text-ink ${first.arabic.length > 60 ? "truncate" : ""}`}
+            className={`mt-6 font-arabic text-[1.75rem] leading-[1.9] text-ink ${first.arabic.replace(/[\u064B-\u065F\u0670]/g, "").length > 60 ? "truncate" : ""}`}
           >
             {first.arabic}
           </p>
