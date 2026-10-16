@@ -1,7 +1,6 @@
 import { Star, Moon, Sun, Sparkles, Mountain, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { BrandMark } from "../common/BrandMark";
-import { Button } from "../common/Button";
 import { hijriFormatted } from "../../utils/hijri";
 import { hijriDisplayOffset } from "../../utils/prayerTimes";
 import { useNow } from "../../hooks/useNow";
@@ -26,7 +25,7 @@ export const HomeIntro = ({ occasion: occ = null }) => {
 
   return (
     <header>
-      <div className="mb-8 lg:hidden">
+      <div className="mb-5 lg:hidden">
         <BrandMark />
       </div>
 
@@ -39,23 +38,24 @@ export const HomeIntro = ({ occasion: occ = null }) => {
           </>
         )}
       </p>
-      <p className="mt-3 font-display text-[2.75rem] leading-[1.02] font-medium tracking-[-0.015em] text-ink lg:text-6xl">
+      <p className="mt-2 font-display text-[2.5rem] leading-[1.02] font-medium tracking-[-0.015em] text-ink lg:text-6xl">
         {greet}.
       </p>
 
       {occ && (
-        <div className="mt-6 flex items-start gap-4 border-t border-line pt-5">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-gold">
-            {OccIcon && <OccIcon size={19} strokeWidth={1.75} aria-hidden="true" />}
+        <button
+          type="button"
+          onClick={() => startList(occ.set)}
+          aria-label={`Begin ${occ.set.name}, ${occ.label}`}
+          className="row-interactive -mx-3 mt-4 flex min-h-12 w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 py-2 text-left"
+        >
+          {OccIcon && <OccIcon size={18} strokeWidth={1.75} className="shrink-0 text-gold" aria-hidden="true" />}
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.9375rem] font-medium text-ink">{occ.label}</span>
+            <span className="block truncate text-sm text-muted">{occ.set.name}</span>
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-xl leading-snug text-ink">{occ.label}</p>
-            <p className="mt-1 text-[0.9375rem] leading-relaxed text-muted">{occ.desc}</p>
-            <Button variant="link" size="sm" iconRight={ArrowRight} onClick={() => startList(occ.set)} className="-ml-2 mt-2">
-              {occ.set.name}
-            </Button>
-          </div>
-        </div>
+          <ArrowRight size={16} className="shrink-0 text-muted" aria-hidden="true" />
+        </button>
       )}
     </header>
   );

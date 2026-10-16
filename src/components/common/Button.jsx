@@ -6,6 +6,7 @@ const cx = (...parts) => parts.filter(Boolean).join(" ");
 /* Button variants map to intent, not to colour:
    primary   the one affirmative action on a surface
    secondary a neutral alternative
+   tonal     neutral filled, the second action beside a primary
    ghost     low-emphasis, toolbar-like
    link      inline text action ("Manage", "See all")
    danger    anything destructive, in the trigger and its confirmation alike */

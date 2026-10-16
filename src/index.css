@@ -182,6 +182,20 @@ button:disabled {
     background: color-mix(in srgb, var(--surface2) 80%, var(--line));
   }
 
+  /* Neutral filled secondary, for the second action beside a primary. */
+  .btn-tonal {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  @media (hover: hover) {
+    .btn-tonal:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--surface2) 82%, var(--line-strong));
+    }
+  }
+  .btn-tonal:active:not(:disabled) {
+    background: color-mix(in srgb, var(--surface2) 70%, var(--line-strong));
+  }
+
   .btn-ghost {
     background: transparent;
     color: var(--text);

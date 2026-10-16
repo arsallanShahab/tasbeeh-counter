@@ -124,21 +124,21 @@ export const PrayerTimesCard = () => {
     <section aria-labelledby="prayer-h" className="space-y-4">
       <SectionHeader id="prayer-h" title="Prayer times" action={actions} />
       <Panel className="overflow-hidden">
-        <div className="flex items-end justify-between gap-4 px-5 pb-4 pt-5">
+        <div className="flex items-end justify-between gap-4 px-4 pb-3 pt-4">
           <div className="min-w-0">
             <p className="text-sm text-muted">
               Next{loc.label ? ` in ${loc.label}` : ""}
             </p>
             <p className="mt-1 flex items-baseline gap-2.5">
-              <span className="font-display text-[2rem] leading-none font-medium text-ink">{PRAYER_LABELS[next.key]}</span>
+              <span className="font-display text-[1.625rem] leading-none font-medium text-ink">{PRAYER_LABELS[next.key]}</span>
               <span dir="rtl" lang="ar" className="font-arabic text-xl text-muted">
                 {PRAYER_ARABIC[next.key]}
               </span>
             </p>
           </div>
           <div className="text-right">
-            <p className="numerals font-display text-[2rem] leading-none text-accent">{fmtTime(next.time, p.hour12)}</p>
-            <p className="numerals mt-1.5 text-sm text-muted">in {fmtCountdown(countdownMs)}</p>
+            <p className="numerals font-display text-[1.625rem] leading-none text-accent">{fmtTime(next.time, p.hour12)}</p>
+            <p className="numerals mt-1 text-sm text-muted">in {fmtCountdown(countdownMs)}</p>
           </div>
         </div>
         <ol className="grid grid-cols-6 border-t border-line">

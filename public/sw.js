@@ -10,8 +10,7 @@ const ASSETS = [
   "/favicon-64.png",
   "/icon-192.png",
   "/icon-512.png",
-  "/apple-touch-icon.png",
-  "/manifest.json"
+  "/apple-touch-icon.png"
 ];
 
 // ─── Install ─────────────────────────────────────────────────────────
@@ -47,6 +46,11 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.pathname === "/version.json") {
     e.respondWith(fetch(e.request, { cache: "no-store" }));
+    return;
+  }
+  // The manifest sets the installed app's colours; a stale copy keeps old ones.
+  if (url.pathname === "/manifest.json") {
+    e.respondWith(fetch(e.request, { cache: "no-store" }).catch(() => caches.match(e.request)));
     return;
   }
 

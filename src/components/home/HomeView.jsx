@@ -175,16 +175,16 @@ export const HomeView = () => {
           key="lead"
           as="section"
           aria-labelledby="lead-h"
-          className="p-6 lg:p-8"
+          className="p-5 lg:p-8"
         >
           <p className="eyebrow">Continue where you left off</p>
           <h2
             id="lead-h"
-            className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
+            className="mt-2 font-display text-[1.75rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
           >
             {session.title}
           </h2>
-          <p className="numerals mt-2 text-[0.9375rem] text-muted">
+          <p className="numerals mt-1 truncate text-sm text-muted">
             {session.steps.length > 1
               ? `Step ${i + 1} of ${session.steps.length}`
               : "Single dhikr"}
@@ -195,13 +195,12 @@ export const HomeView = () => {
             value={done}
             max={total}
             label="Session progress"
-            className="mt-5"
+            className="mt-4"
           />
           <Button
-            size="lg"
             icon={Play}
             onClick={() => setView("counter")}
-            className="mt-6 w-full sm:w-auto"
+            className="mt-4 w-full sm:w-auto"
           >
             Continue
           </Button>
@@ -217,16 +216,16 @@ export const HomeView = () => {
         key="lead"
         as="section"
         aria-labelledby="lead-h"
-        className="p-6 lg:p-8"
+        className="p-5 lg:p-8"
       >
         <p className="eyebrow">{sug.when}</p>
         <h2
           id="lead-h"
-          className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
+          className="mt-2 font-display text-[1.75rem] leading-tight font-medium text-ink lg:text-[2.5rem]"
         >
           {suggest.name}
         </h2>
-        <p className="numerals mt-2 text-[0.9375rem] text-muted">
+        <p className="numerals mt-1 text-sm text-muted">
           {suggest.steps.length}{" "}
           {suggest.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)}{" "}
           counts · {durationLabel(total)}
@@ -235,14 +234,13 @@ export const HomeView = () => {
           <p
             dir="rtl"
             lang="ar"
-            className="mt-6 truncate font-arabic text-[1.75rem] leading-[1.9] text-ink"
+            className="mt-4 truncate font-arabic text-[1.5rem] leading-[1.9] text-ink"
           >
             {first.arabic}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button
-            size="lg"
             icon={Play}
             onClick={() => startList(suggest)}
             className="flex-1 sm:flex-none"
@@ -250,8 +248,7 @@ export const HomeView = () => {
             Begin
           </Button>
           <Button
-            variant="ghost"
-            size="lg"
+            variant="tonal"
             onClick={() => openLibrary(suggest.occasion)}
           >
             Other sets
@@ -267,16 +264,16 @@ export const HomeView = () => {
     const total = setTotal(set);
     const Icon = OCC_ICONS[occ.icon] || Sparkles;
     return (
-      <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-6 lg:p-8">
+      <Panel key="lead" as="section" aria-labelledby="lead-h" className="p-5 lg:p-8">
         <p className="eyebrow flex items-center gap-2 text-gold">
           <Icon size={14} strokeWidth={2} aria-hidden="true" />
           <span>{occ.label}</span>
         </p>
-        <h2 id="lead-h" className="mt-3 font-display text-[2rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
+        <h2 id="lead-h" className="mt-2 font-display text-[1.75rem] leading-tight font-medium text-ink lg:text-[2.5rem]">
           {set.name}
         </h2>
-        <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted">{occ.desc}</p>
-        <p className="numerals mt-2 text-sm text-muted">
+        <p className="mt-1.5 max-w-[60ch] text-sm leading-relaxed text-muted">{occ.desc}</p>
+        <p className="numerals mt-1.5 text-sm text-muted">
           {set.steps.length} {set.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)} {total === 1 ? "count" : "counts"}
           {total >= 20 && ` · ${durationLabel(total)}`}
         </p>
@@ -285,29 +282,29 @@ export const HomeView = () => {
           <p
             dir="rtl"
             lang="ar"
-            className={`mt-6 font-arabic text-[1.75rem] leading-[1.9] text-ink ${first.arabic.replace(/[\u064B-\u065F\u0670]/g, "").length > 60 ? "truncate" : ""}`}
+            className={`mt-4 font-arabic text-[1.5rem] leading-[1.9] text-ink ${first.arabic.replace(/[\u064B-\u065F\u0670]/g, "").length > 60 ? "truncate" : ""}`}
           >
             {first.arabic}
           </p>
         )}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button size="lg" icon={Play} onClick={() => startList(set)} className="flex-1 sm:flex-none">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button icon={Play} onClick={() => startList(set)} className="flex-1 sm:flex-none">
             Begin
           </Button>
           {occ.link ? (
-            <a href={occ.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-lg">
+            <a href={occ.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-tonal btn-md">
               {occ.link.label}
-              <ExternalLink size={18} aria-hidden="true" />
+              <ExternalLink size={16} aria-hidden="true" />
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           ) : (
-            <Button variant="ghost" size="lg" onClick={() => openLibrary(occ.browse)}>
+            <Button variant="tonal" onClick={() => openLibrary(occ.browse)}>
               Other sets
             </Button>
           )}
         </div>
         {alsoOcc.length > 0 && (
-          <div className="mt-6 border-t border-line pt-3">
+          <div className="mt-4 border-t border-line pt-2">
             <p className="eyebrow pb-1 pt-2">Also today</p>
             {alsoOcc.map((o) => {
               const AlsoIcon = OCC_ICONS[o.icon] || Sparkles;
@@ -339,7 +336,7 @@ export const HomeView = () => {
     <section key="streak" aria-label="Daily progress" className="space-y-4">
       <div className="flex items-end justify-between gap-6">
         <div>
-          <p className="numerals font-display text-[2.75rem] leading-none text-ink">
+          <p className="numerals font-display text-[2.25rem] leading-none text-ink">
             {fmt(today)}
           </p>
           <p className="numerals mt-2 text-sm text-muted">
@@ -511,13 +508,13 @@ export const HomeView = () => {
                   type="button"
                   onClick={() => (isList ? startList(data) : startDhikr(data))}
                   aria-label={`Begin ${name}, ${usage}`}
-                  className="row-interactive flex h-[8.75rem] w-[10.5rem] flex-col justify-between rounded-2xl border border-line bg-surface p-4 text-left lg:w-full"
+                  className="row-interactive flex h-[7.5rem] w-[10rem] flex-col justify-between rounded-2xl border border-line bg-surface p-3.5 text-left lg:w-full"
                 >
                   <span className="flex w-full items-start justify-between">
                     {isList ? (
-                      <IconTile icon={ICONS[data.icon] || Sparkles} size={36} />
+                      <IconTile icon={ICONS[data.icon] || Sparkles} size={32} />
                     ) : (
-                      <DhikrTile size={36} />
+                      <DhikrTile size={32} />
                     )}
                     <span
                       className="numerals font-display text-lg leading-none text-muted"
@@ -574,27 +571,17 @@ export const HomeView = () => {
   const renderRemedies = () => (
     <section key="remedies" aria-labelledby="remedies-h" className="space-y-4">
       <SectionHeader id="remedies-h" title="When the heart needs it" />
-      <ul className="grid grid-cols-1 border-t border-line sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-1 xl:grid-cols-2">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => (
-          <li key={key} className="border-b border-line">
+          <li key={key} className="min-w-0">
             <button
               type="button"
               onClick={() => openLibrary(key)}
-              className="group flex w-full items-center gap-4 py-4 text-left"
+              aria-label={`${rem.short || rem.label}: ${rem.desc}`}
+              className="row-interactive flex min-h-14 w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left"
             >
-              <span className="min-w-0 flex-1">
-                <span className="block font-display text-lg leading-snug text-ink">
-                  {rem.short || rem.label}
-                </span>
-                <span className="mt-0.5 block text-sm leading-snug text-muted">
-                  {rem.desc}
-                </span>
-              </span>
-              <ArrowRight
-                size={18}
-                className="shrink-0 text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-ink"
-                aria-hidden="true"
-              />
+              <span className="min-w-0 font-display text-[1.0625rem] leading-snug text-ink">{rem.short || rem.label}</span>
+              <ArrowRight size={16} className="shrink-0 text-muted" aria-hidden="true" />
             </button>
           </li>
         ))}
@@ -614,7 +601,7 @@ export const HomeView = () => {
         className="rounded-2xl border border-line bg-surface p-1.5"
       >
         {/* Inner rule: a manuscript-style double border. */}
-        <div className="relative overflow-hidden rounded-[0.875rem] border border-[color-mix(in_srgb,var(--gold)_38%,var(--line))] px-6 pb-7 pt-8 text-center">
+        <div className="relative overflow-hidden rounded-[0.875rem] border border-[color-mix(in_srgb,var(--gold)_38%,var(--line))] px-5 pb-5 pt-6 text-center">
           <div className="relative">
             <p className="eyebrow flex items-center justify-center gap-2 text-gold">
               <span>Name of the day</span>
@@ -627,20 +614,20 @@ export const HomeView = () => {
             <p
               dir="rtl"
               lang="ar"
-              className="mt-7 font-arabic text-[3.75rem] leading-[1.45] text-ink"
+              className="mt-4 font-arabic text-[3rem] leading-[1.45] text-ink"
             >
               {name.arabic}
             </p>
             <h2
               id="name-h"
-              className="mt-2 font-display text-[1.75rem] leading-tight text-ink"
+              className="mt-1 font-display text-[1.5rem] leading-tight text-ink"
             >
               {name.tr}
             </h2>
             <p className="mx-auto mt-1.5 max-w-[30ch] text-[0.9375rem] leading-relaxed text-muted">
               {settings.lang === "ur" ? name.ur || name.en : name.en}
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               <Button
                 variant="secondary"
                 size="sm"
@@ -728,7 +715,7 @@ export const HomeView = () => {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {seoTitle}
       <HomeIntro occasion={introOcc} />
       {showLead && renderLead()}
