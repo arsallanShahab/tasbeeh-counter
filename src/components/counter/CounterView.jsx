@@ -16,6 +16,7 @@ import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
 import CounterStylePicker from "./CounterStylePicker";
 import DuaSheet from "../duas/DuaSheet";
+import { stepSignature } from "../../utils/haptics";
 import { ArabicFontPicker, ControlLabel, FieldToggles, LanguageControl, TextSizeControls } from "../settings/ReadingControls";
 import { useToast } from "../common/toastContext";
 
@@ -303,7 +304,7 @@ export const CounterView = () => {
                     onClick={() => {
                       setSession((cur) => ({ ...cur, stepIndex: idx }));
                       setComplete(false);
-                      vibe(6);
+                      vibe(settings.stepRhythm && session.steps.length > 1 ? stepSignature(idx) : 6);
                     }}
                     className="group block w-full pt-2 text-left"
                   >

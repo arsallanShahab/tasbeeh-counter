@@ -12,6 +12,7 @@ import {
   Mountain,
   ExternalLink,
   Share2,
+  Smartphone,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -87,7 +88,7 @@ export const HomeView = () => {
   const occasions = useOccasions();
   const [occ, ...alsoOcc] = occasions;
   const [duaOpen, setDuaOpen] = useState(false);
-  const [sharingName, setSharingName] = useState(false);
+  const [sharingName, setSharingName] = useState(null); // "card" | "wallpaper"
   const nameIdx = dayOfYear(d) % SEED_NAMES_OF_ALLAH.length;
   const nameCard = useMemo(() => {
     const n = SEED_NAMES_OF_ALLAH[nameIdx];
@@ -351,8 +352,11 @@ export const HomeView = () => {
               >
                 All 99
               </Button>
-              <Button variant="link" size="sm" icon={Share2} onClick={() => setSharingName(true)}>
+              <Button variant="link" size="sm" icon={Share2} onClick={() => setSharingName("card")}>
                 Share
+              </Button>
+              <Button variant="link" size="sm" icon={Smartphone} onClick={() => setSharingName("wallpaper")}>
+                Wallpaper
               </Button>
             </div>
           </div>
@@ -427,7 +431,7 @@ export const HomeView = () => {
         </div>
         {footer}
         <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
-        <ShareSheet open={sharingName} onClose={() => setSharingName(false)} card={nameCard} />
+        <ShareSheet open={!!sharingName} onClose={() => setSharingName(null)} card={nameCard} initialFormat={sharingName || "card"} />
       </div>
     );
   }
@@ -440,7 +444,7 @@ export const HomeView = () => {
       {visible.map((s) => renderers[s.key]())}
       {footer}
       <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
-      <ShareSheet open={sharingName} onClose={() => setSharingName(false)} card={nameCard} />
+      <ShareSheet open={!!sharingName} onClose={() => setSharingName(null)} card={nameCard} initialFormat={sharingName || "card"} />
     </div>
   );
 };

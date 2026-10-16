@@ -634,6 +634,14 @@ export const SettingsView = () => {
       <Group>
         <Panel className="divide-y divide-line">
           <ToggleRow label="Vibrate on each count" hint="A stronger pulse when a count is complete." on={settings.haptics} onChange={() => set("haptics", !settings.haptics)} />
+          {settings.haptics && (
+            <ToggleRow
+              label="Feel which dhikr you're on"
+              hint="In a set, each count taps once for the first dhikr, twice for the second, up to four. A new dhikr starts with longer pulses."
+              on={!!settings.stepRhythm}
+              onChange={() => set("stepRhythm", !settings.stepRhythm)}
+            />
+          )}
           <ToggleRow label="Click sound" on={settings.sound} onChange={() => set("sound", !settings.sound)} />
           <ToggleRow
             label="Move on automatically"

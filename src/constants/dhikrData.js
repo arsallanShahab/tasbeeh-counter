@@ -1414,6 +1414,7 @@ export const DEFAULT_SETTINGS = {
   duaList: [],
   reflectionSeen: null,
   haptics: true,
+  stepRhythm: false, // tap out which dhikr of a set you are on
   sound: false,
   autoAdvance: true,
   loop: true,

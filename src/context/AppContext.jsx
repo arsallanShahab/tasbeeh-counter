@@ -7,6 +7,7 @@ import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
+import { countRhythm, stepSignature, toVibrate } from "../utils/haptics";
 import { DAILY_IDS } from "../constants/dailyDuas";
 import { regionalHijriOffset } from "../utils/hijri";
 import { WebHaptics } from "web-haptics";
@@ -374,7 +375,7 @@ export const AppProvider = ({ children }) => {
       console.warn("Haptics trigger failed:", e);
       // Fallback to standard vibration if web-haptics fails
       if (navigator.vibrate) {
-        navigator.vibrate(pattern);
+        navigator.vibrate(pattern?.pattern ? toVibrate(pattern) : pattern);
       }
     }
   }, [settings.haptics]);
@@ -522,6 +523,8 @@ export const AppProvider = ({ children }) => {
       };
     });
 
+    // In a set, each count can tap out which dhikr this is (see utils/haptics).
+    const rhythm = settings.stepRhythm && s.steps.length > 1;
     if (reached) {
       vibe([0, 38, 28, 38]);
       click();
@@ -552,6 +555,7 @@ export const AppProvider = ({ children }) => {
             if (nextIndex >= cur.steps.length) return cur; // Boundary guard
             return { ...cur, stepIndex: nextIndex };
           });
+          if (rhythm) vibe(stepSignature(i + 1));
         }, 420);
       } else if (s.steps.length === 1 && settings.loop) {
         setTimeout(() => {
@@ -568,11 +572,11 @@ export const AppProvider = ({ children }) => {
         setTimeout(() => setComplete(true), 250);
       }
     } else {
-      vibe(8);
+      vibe(rhythm && i > 0 ? countRhythm(i) : 8);
       click();
     }
 
-  }, [settings.autoAdvance, settings.loop, vibe, click]);
+  }, [settings.autoAdvance, settings.loop, settings.stepRhythm, vibe, click]);
 
   const decrement = useCallback(() => {
     const s = sessionRef.current;
@@ -628,10 +632,10 @@ export const AppProvider = ({ children }) => {
     if (nextIndex !== s.stepIndex) {
       sessionRef.current = { ...s, stepIndex: nextIndex };
       setSession((cur) => (cur ? { ...cur, stepIndex: nextIndex } : cur));
-      vibe(8);
+      vibe(settings.stepRhythm && s.steps.length > 1 ? stepSignature(nextIndex) : 8);
     }
     setComplete(false);
-  }, [vibe]);
+  }, [vibe, settings.stepRhythm]);
 
   const applyTarget = useCallback((val) => {
     const v = Math.max(1, Math.round(Number(val) || 0));

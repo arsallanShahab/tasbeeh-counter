@@ -11,11 +11,18 @@ import Seg from "./Seg";
 
 /* Preview and send a share card. `card` is { eyebrow, arabic, title, meaning,
    source, filename }. The look follows the theme in light or dark. */
-export const ShareSheet = ({ open, onClose, card }) => {
+export const ShareSheet = ({ open, onClose, card, initialFormat = "card" }) => {
   const { settings } = useApp();
   const toast = useToast();
   const appearance = useEffectiveAppearance(settings.appearance);
   const [look, setLook] = useState(appearance);
+  const [format, setFormat] = useState(initialFormat);
+  const [openedAs, setOpenedAs] = useState(open);
+  if (open !== openedAs) {
+    setOpenedAs(open);
+    if (open) setFormat(initialFormat);
+  }
+  const wallpaper = format === "wallpaper";
   const [withTitle, setWithTitle] = useState(true);
   const [withMeaning, setWithMeaning] = useState(true);
   const [image, setImage] = useState(null); // { blob, url, left }
@@ -34,6 +41,7 @@ export const ShareSheet = ({ open, onClose, card }) => {
       meaning: withMeaning ? card.meaning : "",
       vars: theme[look] || theme.light,
       arabicStack: font.stack,
+      format,
     }).then(({ blob, left }) => {
       if (gone || !blob) return;
       url = URL.createObjectURL(blob);
@@ -43,23 +51,48 @@ export const ShareSheet = ({ open, onClose, card }) => {
       gone = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [open, card, look, withTitle, withMeaning, theme, font.stack]);
+  }, [open, card, look, withTitle, withMeaning, theme, font.stack, format]);
 
   const send = async (mode) => {
     if (!image) return;
     setBusy(true);
     const text = card.title ? `${card.title}` : "";
-    const result = await shareImage(image.blob, card.filename, text, mode === "save");
+    const filename = wallpaper ? card.filename.replace(/\.png$/, "-wallpaper.png") : card.filename;
+    const result = await shareImage(image.blob, filename, text, mode === "save");
     setBusy(false);
     if (result === "saved") toast("Image saved");
   };
   const canShareFiles = typeof navigator !== "undefined" && !!navigator.canShare;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Share as image" description="A card in your theme, ready for WhatsApp or anywhere else.">
-      <div className="mx-auto w-full max-w-[18rem] overflow-hidden rounded-xl border border-line bg-sunken" style={{ aspectRatio: "1080 / 1350" }}>
-        {image ? <img src={image.url} alt="Preview of the share card" className="h-full w-full object-cover" /> : null}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Share as image"
+      description={wallpaper ? "A phone wallpaper in your theme, with room for the clock." : "A card in your theme, ready for WhatsApp or anywhere else."}
+    >
+      <Seg
+        label="Image type"
+        size="sm"
+        value={format}
+        onChange={setFormat}
+        options={[
+          { v: "card", l: "Card" },
+          { v: "wallpaper", l: "Wallpaper" },
+        ]}
+        className="mb-4"
+      />
+      <div
+        className={`mx-auto w-full overflow-hidden rounded-xl border border-line bg-sunken ${wallpaper ? "max-w-[10.5rem]" : "max-w-[18rem]"}`}
+        style={{ aspectRatio: wallpaper ? "1170 / 2532" : "1080 / 1350" }}
+      >
+        {image ? <img src={image.url} alt={wallpaper ? "Preview of the wallpaper" : "Preview of the share card"} className="h-full w-full object-cover" /> : null}
       </div>
+      {wallpaper && (
+        <p className="mx-auto mt-3 max-w-[20rem] text-center text-[0.8125rem] leading-snug text-muted">
+          Save it, then set it as your wallpaper from Photos or Gallery.
+        </p>
+      )}
 
       {image?.left?.length > 0 && (
         <p className="mx-auto mt-3 max-w-[18rem] text-center text-[0.8125rem] leading-snug text-muted">
