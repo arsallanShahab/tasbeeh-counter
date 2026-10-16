@@ -20,7 +20,7 @@ import CounterStylePicker from "../counter/CounterStylePicker";
 import { ArabicFontPicker, TextSizeControls, LanguageControl } from "./ReadingControls";
 import {
   THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
-  OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS,
+  HOME_SECTIONS,
 } from "../../constants/dhikrData";
 import { useEffectiveAppearance } from "../../utils/theme";
 import {
@@ -540,7 +540,6 @@ export const SettingsView = () => {
   const visibleFieldCount = fieldOrder.filter((k) => fieldVisible[k] !== false).length;
 
   const homeSections = resolveHomeSections(settings.homeSections);
-  const quick = (settings.quickCollections && settings.quickCollections.length ? settings.quickCollections : DEFAULT_QUICK_COLLECTIONS).filter((k) => OCCASIONS[k]);
 
   const sectionReading = (
     <div className="space-y-10">
@@ -577,27 +576,6 @@ export const SettingsView = () => {
         />
       </Group>
 
-      <Group title="Collections on Today" description="Shortcuts on Today that open the library at one category.">
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(OCCASIONS)
-            .filter(([k]) => k !== "names-of-allah")
-            .map(([k, v]) => {
-              const on = quick.includes(k);
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  className="chip"
-                  aria-pressed={on}
-                  onClick={() => set("quickCollections", on ? quick.filter((x) => x !== k) : [...quick, k])}
-                >
-                  {on && <Check size={14} aria-hidden="true" />}
-                  {v}
-                </button>
-              );
-            })}
-        </div>
-      </Group>
     </div>
   );
 

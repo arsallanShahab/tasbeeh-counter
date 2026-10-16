@@ -1,74 +1,63 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronUp, Pencil, ArrowRight, FolderPlus,
-} from "lucide-react";
+import { Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronLeft, Pencil, ArrowRight, FolderPlus } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { OCCASIONS, ICONS } from "../../constants/dhikrData";
+import { SHELVES, shelfByKey, shelfOfOccasion } from "../../constants/shelves";
+import { DAILY_CATS } from "../../constants/dailyDuas";
 import { fmt } from "../../utils/stats";
 import { PageHeader, SectionHeader, ListGroup, ListRow, IconTile, DhikrTile, EmptyState } from "../common/Layout";
 import { Button, IconButton } from "../common/Button";
-import { Seg } from "../common/Seg";
 import { useToast } from "../common/toastContext";
 import ItemSheet from "./ItemSheet";
 import DailyDuas from "./DailyDuas";
-
-const TABS = [
-  { v: "mine", l: "Mine" },
-  { v: "sets", l: "Sets" },
-  { v: "dhikrs", l: "Dhikr" },
-  { v: "names", l: "Names" },
-  { v: "daily", l: "Daily" },
-];
-
-/* Occasion order for grouping and for the category list. */
-const OCC_ORDER = [
-  "morning", "evening", "after-salah", "friday", "sleep", "ramadan", "high-reward", "protection",
-  "forgiveness", "repentance", "distress", "anxiety", "grief", "gratitude", "guidance", "knowledge",
-  "family", "tawheed", "salah", "gathering", "general", "custom",
-];
-const occRank = (k) => {
-  const i = OCC_ORDER.indexOf(k);
-  return i === -1 ? 99 : i;
-};
+import PinnedList from "./PinnedList";
+import DhikrReader from "../counter/DhikrReader";
+import ShelfArt from "../common/ShelfArt";
 
 const isCustom = (id) => typeof id === "string" && id.startsWith("c_");
 const setTotal = (l) => l.steps.reduce((acc, s) => acc + (Number(s.target) || 0), 0);
+const isName = (d) => d.tags?.includes("names-of-allah");
+const isDaily = (d) => d.tags?.includes("daily");
+const PEEK = 6; // rows shown per group before "Show all"
+const SET_PEEK = 4; // set cards shown per group before "Show all"
+const durationLabel = (n) => `about ${Math.max(1, Math.round((n * 1.3) / 60))} min`;
 
+/* The Library: a fixed list of shelves organised by purpose, a shelf view
+   that groups its items by occasion, and one search across everything. */
 export const LibraryView = () => {
-  const {
-    dhikrs, lists, pinned, setPinned, dById, togglePin, startList, startDhikr, openEditor,
-    settings, searchQuery, setSearchQuery, activeOccasion, setActiveOccasion, setView,
-  } = useApp();
+  const { dhikrs, lists, pinned, dById, togglePin, startList, startDhikr, openEditor, settings, searchQuery, setSearchQuery, setView } = useApp();
   const toast = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
 
-  const tabParam = searchParams.get("tab");
-  const tab = TABS.some((t) => t.v === tabParam) ? tabParam : "sets";
+  // Old links (?tab=, ?occasion=) land on the matching shelf.
+  const legacyTab = { mine: "yours", daily: "moments", names: "names" }[params.get("tab")];
+  const occParam = params.get("occasion");
+  const shelf = shelfByKey(params.get("shelf") || legacyTab || (occParam && shelfOfOccasion(occParam)) || "");
+  const sub = params.get("sub") || (occParam && occParam !== "all" ? occParam : "all");
 
-  const [reorder, setReorder] = useState(false);
-  const [openGroups, setOpenGroups] = useState(() => new Set(["morning", "evening"]));
-
-  const setTab = (v) =>
-    setSearchParams(
+  const openShelf = (key) => {
+    setSearchQuery("");
+    setParams(() => (key ? new URLSearchParams({ shelf: key }) : new URLSearchParams()));
+    window.scrollTo({ top: 0 });
+  };
+  const setSub = (s) =>
+    setParams(
       (prev) => {
-        const next = new URLSearchParams(prev);
-        if (v === "sets") next.delete("tab");
-        else next.set("tab", v);
-        if (v === "mine") next.delete("occasion");
-        return next;
+        const n = new URLSearchParams(prev);
+        n.delete("occasion");
+        n.delete("tab");
+        if (shelf) n.set("shelf", shelf.key);
+        if (s === "all") n.delete("sub");
+        else n.set("sub", s);
+        return n;
       },
       { replace: true }
     );
 
-  // A category filter only applies to the browse tabs.
-  useEffect(() => {
-    if (tab === "mine" && activeOccasion !== "all") setTab("sets");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOccasion]);
-
-  // The detail sheet is local state; the Sheet handles the back gesture.
-  const [item, setItem] = useState(null); // { kind, id } | null
+  const [expanded, setExpanded] = useState(() => new Set());
+  const [item, setItem] = useState(null); // { kind, id }
+  const [reading, setReading] = useState(null); // a daily du'a
   const openItem = (kind, id) => setItem({ kind, id });
   const closeItem = useCallback(() => setItem(null), []);
 
@@ -78,109 +67,13 @@ export const LibraryView = () => {
     toast(was ? `Removed “${label}” from Today` : `Pinned “${label}” to Today`);
   };
 
-  const q = searchQuery.trim().toLowerCase();
-  const filtering = q.length > 0 || activeOccasion !== "all";
-
-  const matchText = (d) =>
-    !q ||
-    d.tr.toLowerCase().includes(q) ||
-    (d.en && d.en.toLowerCase().includes(q)) ||
-    d.arabic.includes(searchQuery.trim()) ||
-    (d.ur && d.ur.includes(searchQuery.trim()));
-
-  const filteredLists = useMemo(
-    () =>
-      lists.filter((l) => {
-        const text =
-          !q ||
-          l.name.toLowerCase().includes(q) ||
-          l.steps.some((s) => dById(s.dhikr)?.tr.toLowerCase().includes(q));
-        const occ = activeOccasion === "all" || l.occasion === activeOccasion;
-        return text && occ;
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lists, q, activeOccasion, dhikrs]
-  );
-
-  const filteredDhikrs = useMemo(
-    () =>
-      dhikrs.filter(
-        (d) =>
-          !d.tags?.includes("names-of-allah") &&
-          !d.tags?.includes("daily") &&
-          matchText(d) &&
-          (activeOccasion === "all" || d.tags?.includes(activeOccasion))
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dhikrs, q, activeOccasion, searchQuery]
-  );
-
-  const filteredNames = useMemo(
-    () =>
-      dhikrs.filter(
-        (d) =>
-          d.tags?.includes("names-of-allah") &&
-          matchText(d) &&
-          (activeOccasion === "all" || d.tags?.includes(activeOccasion))
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dhikrs, q, activeOccasion, searchQuery]
-  );
-
-  const groupedDhikrs = useMemo(() => {
-    if (filtering) return null;
-    const groups = {};
-    filteredDhikrs.forEach((d) => {
-      const tag = isCustom(d.id) ? "custom" : (d.tags && d.tags.find((t) => OCCASIONS[t] && t !== "custom")) || "general";
-      (groups[tag] ||= []).push(d);
-    });
-    return Object.entries(groups).sort(([a], [b]) => occRank(a) - occRank(b));
-  }, [filteredDhikrs, filtering]);
-
-  const pinnedItems = pinned
-    .map((id) => {
-      const l = lists.find((x) => x.id === id);
-      if (l) return { kind: "list", data: l };
-      const d = dhikrs.find((x) => x.id === id);
-      if (d) return { kind: "dhikr", data: d };
-      return null;
-    })
-    .filter(Boolean);
-  const mySets = lists.filter((l) => isCustom(l.id));
-  const myDhikrs = dhikrs.filter((d) => isCustom(d.id) || (d.tags?.includes("custom") && !d.tags?.includes("names-of-allah")));
-
-  const movePinned = (idx, dir) => {
-    const j = idx + dir;
-    if (j < 0 || j >= pinned.length) return;
-    setPinned((p) => {
-      const next = [...p];
-      [next[idx], next[j]] = [next[j], next[idx]];
-      return next;
-    });
-  };
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setActiveOccasion("all");
-  };
-
-  const categories = Object.entries(OCCASIONS)
-    .filter(([k]) => k !== "names-of-allah")
-    .sort(([a], [b]) => occRank(a) - occRank(b));
+  const meaning = (d) => (settings.lang === "ur" ? d.ur || d.en : d.en);
+  const plainDhikrs = useMemo(() => dhikrs.filter((d) => !isName(d) && !isDaily(d)), [dhikrs]);
 
   /* ── Rows ─────────────────────────────────────────────────────────────── */
   const pinBtn = (id, label) => {
     const on = pinned.includes(id);
-    return (
-      <IconButton
-        icon={Pin}
-        label={on ? `Unpin ${label}` : `Pin ${label} to Today`}
-        pressed={on}
-        size="sm"
-        onClick={() => onPin(id, label)}
-        className={on ? "" : "text-muted"}
-      />
-    );
+    return <IconButton icon={Pin} label={on ? `Unpin ${label}` : `Pin ${label} to Today`} pressed={on} size="sm" onClick={() => onPin(id, label)} className={on ? "" : "text-muted"} />;
   };
 
   const setRow = (l) => {
@@ -188,52 +81,52 @@ export const LibraryView = () => {
     const names = l.steps.map((s) => dById(s.dhikr)?.tr).filter(Boolean);
     return (
       <ListRow
-        key={l.id}
+        key={`set-${l.id}`}
         leading={<IconTile icon={Ico} tone={isCustom(l.id) ? "accent" : "neutral"} />}
         title={l.name}
-        subtitle={names.length ? `×${fmt(setTotal(l))} · ${names.join(" · ")}` : "No dhikr yet"}
+        subtitle={names.length ? `Set · ×${fmt(setTotal(l))} · ${names.join(" · ")}` : "Set · no dhikr yet"}
         onClick={() => openItem("list", l.id)}
-        ariaLabel={`${l.name}, details`}
+        ariaLabel={`${l.name}, set, details`}
         trailing={
           <>
             {pinBtn(l.id, l.name)}
-            <IconButton
-              icon={Play}
-              label={`Begin ${l.name}`}
-              size="sm"
-              onClick={() => startList(l)}
-              disabled={l.steps.length === 0}
-            />
+            <IconButton icon={Play} label={`Begin ${l.name}`} size="sm" onClick={() => startList(l)} disabled={l.steps.length === 0} />
           </>
         }
       />
     );
   };
 
+  // Same three lines as a pinned row: name, meaning, then count and time.
   const dhikrRow = (d) => (
-    <ListRow
-      key={d.id}
-      title={d.tr}
-      subtitle={`×${fmt(d.target)}${(settings.lang === "ur" ? d.ur || d.en : d.en) ? ` · ${settings.lang === "ur" ? d.ur || d.en : d.en}` : ""}`}
-      onClick={() => openItem("dhikr", d.id)}
-      ariaLabel={`${d.tr}, details`}
-      trailing={
-        <>
-          {pinBtn(d.id, d.tr)}
-          <IconButton icon={Play} label={`Begin ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
-        </>
-      }
-    />
+    <div key={`dhikr-${d.id}`} className="flex items-center gap-1 pr-2">
+      <button type="button" onClick={() => openItem("dhikr", d.id)} aria-label={`${d.tr}, details`} className="row-interactive flex min-h-[4.5rem] min-w-0 flex-1 items-center gap-3.5 py-3 pl-4 text-left">
+        <DhikrTile />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[0.9375rem] font-medium text-ink">{d.tr}</span>
+          {meaning(d) && <span className="block truncate text-sm text-muted">{meaning(d)}</span>}
+          <span className="numerals mt-0.5 block truncate text-[0.8125rem] text-muted">
+            ×{fmt(d.target)}
+            {d.target >= 20 ? ` · about ${durationLabel(d.target).replace("about ", "")}` : ""}
+            {pinned.includes(d.id) ? " · On Today" : ""}
+          </span>
+        </span>
+      </button>
+      {pinBtn(d.id, d.tr)}
+      <IconButton icon={Play} label={`Begin ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
+    </div>
+  );
+
+  const dailyRow = (d) => (
+    <ListRow key={`daily-${d.id}`} title={d.moment} subtitle={`${DAILY_CATS[d.cat] || "Du'a"} · ${d.tr}`} chevron onClick={() => setReading(d)} ariaLabel={`Read: ${d.moment}`} />
   );
 
   const nameRow = (d) => (
     <ListRow
-      key={d.id}
-      leading={
-        <span className="numerals w-8 text-center font-display text-lg text-muted">{d.id.replace("name_", "")}</span>
-      }
+      key={`name-${d.id}`}
+      leading={<span className="numerals w-8 text-center font-display text-lg text-muted">{d.id.replace("name_", "")}</span>}
       title={d.tr}
-      subtitle={settings.lang === "ur" ? d.ur || d.en : d.en}
+      subtitle={meaning(d)}
       onClick={() => openItem("dhikr", d.id)}
       ariaLabel={`${d.tr}, details`}
       trailing={
@@ -247,83 +140,148 @@ export const LibraryView = () => {
     />
   );
 
-  const noResults = (
-    <EmptyState
-      icon={Search}
-      title="Nothing matches"
-      body={q ? `No results for “${searchQuery.trim()}”${activeOccasion !== "all" ? ` in ${OCCASIONS[activeOccasion]}` : ""}.` : "This category is empty in this tab."}
-      action={
-        <Button variant="secondary" size="sm" onClick={clearFilters}>
-          Clear search and filters
-        </Button>
-      }
-    />
+  const toggle = (id) =>
+    setExpanded((x) => {
+      const n = new Set(x);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const moreButton = (id, open, total, noun = "") => (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={id}
+      onClick={() => toggle(id)}
+      className="row-interactive flex min-h-12 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-accent"
+    >
+      {open ? "Show fewer" : `Show all ${total}${noun}`}
+      <ChevronDown size={16} aria-hidden="true" className={open ? "rotate-180" : ""} />
+    </button>
   );
 
-  /* ── Tab bodies ───────────────────────────────────────────────────────── */
-  const mine = (
-    <div className="space-y-10">
-      <section aria-labelledby="pinned-h" className="space-y-4">
-        <SectionHeader
-          id="pinned-h"
-          title="Pinned to Today"
-          count={pinnedItems.length || null}
-          action={
-            pinnedItems.length > 1 && (
-              <Button variant="link" size="sm" onClick={() => setReorder((v) => !v)} aria-pressed={reorder}>
-                {reorder ? "Done" : "Reorder"}
-              </Button>
-            )
-          }
-        />
-        <p className="-mt-2 text-sm text-muted">These appear on Today, in this order.</p>
-        {pinnedItems.length === 0 ? (
-          <EmptyState
-            icon={Pin}
-            title="Nothing pinned yet"
-            body="Pin a set or a dhikr you recite every day. Use the pin on any row in Sets or Dhikr."
-            action={
-              <Button variant="secondary" size="sm" onClick={() => setTab("sets")}>
-                Browse sets
-              </Button>
-            }
-          />
-        ) : (
-          <ListGroup>
-            {pinnedItems.map(({ kind, data }, idx) => {
-              const isList = kind === "list";
-              const label = isList ? data.name : data.tr;
-              const Ico = isList ? ICONS[data.icon] || Sparkles : null;
-              return (
-                <ListRow
-                  key={data.id}
-                  leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
-                  title={label}
-                  subtitle={isList ? `${data.steps.length} dhikr · ×${fmt(setTotal(data))}` : `×${fmt(data.target)}`}
-                  onClick={reorder ? undefined : () => openItem(kind, data.id)}
-                  ariaLabel={`${label}, details`}
-                  trailing={
-                    reorder ? (
-                      <>
-                        <IconButton icon={ChevronUp} label={`Move ${label} up`} size="sm" disabled={idx === 0} onClick={() => movePinned(idx, -1)} />
-                        <IconButton
-                          icon={ChevronDown}
-                          label={`Move ${label} down`}
-                          size="sm"
-                          disabled={idx === pinnedItems.length - 1}
-                          onClick={() => movePinned(idx, 1)}
-                        />
-                      </>
-                    ) : (
-                      pinBtn(data.id, label)
-                    )
-                  }
-                />
-              );
-            })}
-          </ListGroup>
+  // Rows that show the first few and open fully on request.
+  const rowList = (id, rows) => {
+    const open = expanded.has(id);
+    return (
+      <ListGroup id={id}>
+        {open ? rows : rows.slice(0, PEEK)}
+        {rows.length > PEEK && moreButton(id, open, rows.length)}
+      </ListGroup>
+    );
+  };
+  const group = (id, title, rows) => (
+    <section key={id} aria-labelledby={`g-${id}`} className="space-y-3">
+      <SectionHeader id={`g-${id}`} title={title} count={rows.length} />
+      {rowList(`gl-${id}`, rows)}
+    </section>
+  );
+
+  // A ready-made set as a card: what it holds and how long it takes, with Begin.
+  const setCard = (l) => {
+    const Ico = ICONS[l.icon] || Sparkles;
+    const total = setTotal(l);
+    const names = l.steps.map((st) => dById(st.dhikr)?.tr).filter(Boolean);
+    return (
+      <li key={`card-${l.id}`} className="flex min-w-0 flex-col rounded-2xl border border-line bg-surface">
+        <button type="button" onClick={() => openItem("list", l.id)} aria-label={`${l.name}, set, details`} className="row-interactive flex min-w-0 flex-1 items-start gap-3.5 rounded-t-2xl p-4 text-left">
+          <IconTile icon={Ico} tone={isCustom(l.id) ? "accent" : "neutral"} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-base leading-snug font-medium text-ink [overflow-wrap:anywhere]">{l.name}</span>
+            <span className="numerals mt-0.5 block text-sm text-muted">
+              {l.steps.length} dhikr · {fmt(total)} counts{total >= 20 ? ` · ${durationLabel(total)}` : ""}
+            </span>
+            {names.length > 0 && <span className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted">{names.join(" · ")}</span>}
+          </span>
+        </button>
+        <div className="flex items-center justify-between gap-2 border-t border-line py-1.5 pl-2 pr-2">
+          {pinBtn(l.id, l.name)}
+          <Button size="sm" icon={Play} onClick={() => startList(l)} disabled={l.steps.length === 0}>
+            Begin
+          </Button>
+        </div>
+      </li>
+    );
+  };
+
+  // One occasion: its ready-made sets first, then its single dhikr.
+  const occasionGroup = (id, title, sets, ds) => {
+    const setsId = `sets-${id}`;
+    const setsOpen = expanded.has(setsId);
+    // The two labels only help when a group holds both kinds.
+    const both = sets.length > 0 && ds.length > 0;
+    return (
+      <section key={id} aria-labelledby={`g-${id}`} className="space-y-4">
+        <SectionHeader id={`g-${id}`} title={title} count={sets.length + ds.length} />
+        {sets.length > 0 && (
+          <div className="space-y-2.5">
+            {both && <h3 className="eyebrow">Ready-made sets</h3>}
+            <ul id={setsId} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {(setsOpen ? sets : sets.slice(0, SET_PEEK)).map(setCard)}
+            </ul>
+            {sets.length > SET_PEEK && <div className="overflow-hidden rounded-2xl border border-line">{moreButton(setsId, setsOpen, sets.length, " sets")}</div>}
+          </div>
+        )}
+        {ds.length > 0 && (
+          <div className="space-y-2.5">
+            {both && <h3 className="eyebrow">Single dhikr</h3>}
+            {rowList(`gl-${id}`, ds.map(dhikrRow))}
+          </div>
         )}
       </section>
+    );
+  };
+
+  /* ── Counts per shelf ─────────────────────────────────────────────────── */
+  const pinnedItems = pinned
+    .map((id) => {
+      const l = lists.find((x) => x.id === id);
+      if (l) return { kind: "list", data: l };
+      const d = dhikrs.find((x) => x.id === id);
+      return d ? { kind: "dhikr", data: d } : null;
+    })
+    .filter(Boolean);
+  const mySets = lists.filter((l) => isCustom(l.id));
+  const myDhikrs = dhikrs.filter((d) => isCustom(d.id) || (d.tags?.includes("custom") && !isName(d)));
+
+  // For an occasion shelf: each set and dhikr under the first occasion of the
+  // shelf it belongs to, so nothing repeats in the All view.
+  const shelfGroups = (s, only) => {
+    const occs = only && only !== "all" ? [only] : s.occasions;
+    const seen = new Set();
+    return occs
+      .map((o) => {
+        const sets = lists.filter((l) => !isCustom(l.id) && l.occasion === o);
+        const ds = plainDhikrs.filter((d) => d.tags?.includes(o) && (only !== "all" || !seen.has(d.id)));
+        ds.forEach((d) => seen.add(d.id));
+        return [o, sets, ds];
+      })
+      .filter(([, a, b]) => a.length + b.length);
+  };
+  const countOf = (s) => {
+    if (s.key === "yours") return pinnedItems.length + mySets.length + myDhikrs.length;
+    if (s.key === "moments") return dhikrs.filter(isDaily).length;
+    if (s.key === "names") return dhikrs.filter(isName).length;
+    return shelfGroups(s, "all").reduce((a, [, x, y]) => a + x.length + y.length, 0);
+  };
+
+  /* ── Search across everything ─────────────────────────────────────────── */
+  const q = searchQuery.trim().toLowerCase();
+  const raw = searchQuery.trim();
+  const hit = (...vals) => vals.some((v) => v && String(v).toLowerCase().includes(q));
+  const results = q
+    ? {
+        sets: lists.filter((l) => hit(l.name, OCCASIONS[l.occasion]) || l.steps.some((s) => hit(dById(s.dhikr)?.tr))),
+        dhikr: plainDhikrs.filter((d) => hit(d.tr, d.en, d.ur) || d.arabic.includes(raw)),
+        daily: dhikrs.filter((d) => isDaily(d) && (hit(d.moment, d.tr, d.en, DAILY_CATS[d.cat]) || d.arabic.includes(raw))),
+        names: dhikrs.filter((d) => isName(d) && (hit(d.tr, d.en, d.ur) || d.arabic.includes(raw))),
+      }
+    : null;
+  const resultCount = results ? results.sets.length + results.dhikr.length + results.daily.length + results.names.length : 0;
+
+  /* ── Shelf bodies ─────────────────────────────────────────────────────── */
+  const yours = (
+    <div className="space-y-10">
+      <PinnedList onDetails={openItem} onBrowse={() => openShelf("routine")} />
 
       <section aria-labelledby="created-h" className="space-y-4">
         <SectionHeader id="created-h" title="Made by you" count={mySets.length + myDhikrs.length || null} />
@@ -386,106 +344,120 @@ export const LibraryView = () => {
     </div>
   );
 
-  const sets =
-    filteredLists.length === 0 ? (
-      noResults
-    ) : (
-      <ListGroup>
-        {filteredLists.map((l) => (
-          setRow(l)
-        ))}
-      </ListGroup>
-    );
-
-  const dhikrBody =
-    filteredDhikrs.length === 0 ? (
-      noResults
-    ) : groupedDhikrs ? (
-      <div className="space-y-3">
-        {groupedDhikrs.map(([occ, items]) => {
-          const open = openGroups.has(occ);
-          const panelId = `grp-${occ}`;
-          return (
-            <section key={occ}>
-              <h2>
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  aria-controls={panelId}
-                  onClick={() =>
-                    setOpenGroups((s) => {
-                      const next = new Set(s);
-                      next.has(occ) ? next.delete(occ) : next.add(occ);
-                      return next;
-                    })
-                  }
-                  className="flex h-12 w-full items-center justify-between gap-3 border-b border-line text-left"
-                >
-                  <span className="font-display text-lg text-ink">
-                    {OCCASIONS[occ] || occ}
-                    <span className="numerals ml-2 font-body text-sm text-muted">{items.length}</span>
-                  </span>
-                  <ChevronDown
-                    size={18}
-                    className={`text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-                    aria-hidden="true"
-                  />
-                </button>
-              </h2>
-              {open && (
-                <ListGroup id={panelId} className="mt-3">
-                  {items.map((d) => (
-                    dhikrRow(d)
-                  ))}
-                </ListGroup>
-              )}
-            </section>
-          );
-        })}
-      </div>
-    ) : (
-      <ListGroup>
-        {filteredDhikrs.map((d) => (
-          dhikrRow(d)
-        ))}
-      </ListGroup>
-    );
-
-  const names = (
+  const namesBody = (
     <div className="space-y-4">
-      {!filtering && (
-        <button
-          type="button"
-          onClick={() => setView("names")}
-          className="group flex w-full items-center gap-4 rounded-2xl bg-sunken px-5 py-5 text-left"
-        >
-          <span dir="rtl" lang="ar" className="font-arabic text-3xl leading-none text-ink">
-            الله
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-xl text-ink">Reflect on the 99 Names</span>
-            <span className="mt-0.5 block text-sm text-muted">One Name at a time, with its meaning and virtue.</span>
-          </span>
-          <ArrowRight size={18} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-        </button>
-      )}
-      {filteredNames.length === 0 ? (
-        noResults
-      ) : (
-        <ListGroup>
-          {filteredNames.map((d) => (
-            nameRow(d)
+      <button type="button" onClick={() => setView("names")} className="group flex w-full items-center gap-4 rounded-2xl bg-sunken px-5 py-5 text-left">
+        <span dir="rtl" lang="ar" className="font-arabic text-3xl leading-none text-ink">
+          الله
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-xl text-ink">Reflect on the 99 Names</span>
+          <span className="mt-0.5 block text-sm text-muted">One Name at a time, with its meaning and virtue.</span>
+        </span>
+        <ArrowRight size={18} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+      </button>
+      <ListGroup>{dhikrs.filter(isName).map(nameRow)}</ListGroup>
+    </div>
+  );
+
+  const occasionBody = (s) => {
+    const all = shelfGroups(s, "all");
+    const groups = shelfGroups(s, sub);
+    return (
+      <div className="space-y-8">
+        <div className="scroll-fade-x -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none" role="group" aria-label={`${s.title}: occasions`}>
+          {[["all", "All"], ...all.map(([o]) => [o, OCCASIONS[o] || o])].map(([k, v]) => (
+            <button key={k} type="button" className="chip" aria-pressed={sub === k} onClick={() => setSub(k)}>
+              {v}
+            </button>
           ))}
-        </ListGroup>
+        </div>
+        {groups.length === 0 ? (
+          <EmptyState icon={Sparkles} title="Nothing here yet" body="This part of the library is empty for now." />
+        ) : (
+          groups.map(([o, sets, ds]) => occasionGroup(`${s.key}-${o}`, OCCASIONS[o] || o, sets, ds))
+        )}
+      </div>
+    );
+  };
+
+  /* ── Views ────────────────────────────────────────────────────────────── */
+  const searchBox = (
+    <div className="relative">
+      <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search dhikr, sets, du'as, Names"
+        aria-label="Search the library"
+        className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
+      />
+      {searchQuery && (
+        <button type="button" onClick={() => setSearchQuery("")} aria-label="Clear search" className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted">
+          <X size={16} aria-hidden="true" />
+        </button>
       )}
     </div>
   );
 
-  const counts = { mine: null, sets: filteredLists.length, dhikrs: filteredDhikrs.length, names: filteredNames.length };
+  const searchView =
+    results &&
+    (resultCount === 0 ? (
+      <EmptyState
+        icon={Search}
+        title="Nothing matches"
+        body={`No results for “${raw}”. Try a shorter word, or browse the shelves.`}
+        action={
+          <Button variant="secondary" size="sm" onClick={() => setSearchQuery("")}>
+            Clear search
+          </Button>
+        }
+      />
+    ) : (
+      <div className="space-y-8">
+        <p className="numerals text-sm text-muted" aria-live="polite">
+          {fmt(resultCount)} {resultCount === 1 ? "result" : "results"} across the library
+        </p>
+        {results.sets.length > 0 && group("r-sets", "Sets", results.sets.map(setRow))}
+        {results.dhikr.length > 0 && group("r-dhikr", "Dhikr", results.dhikr.map(dhikrRow))}
+        {results.daily.length > 0 && group("r-daily", "Du'as for daily life", results.daily.map(dailyRow))}
+        {results.names.length > 0 && group("r-names", "Names of Allah", results.names.map(nameRow))}
+      </div>
+    ));
 
-  /* ── Layout ───────────────────────────────────────────────────────────── */
+  const shelvesView = (
+    <ListGroup>
+      {SHELVES.map((s) => (
+        <ListRow
+          key={s.key}
+          leading={<ShelfArt shelf={s.key} size={48} fallback={<IconTile icon={s.icon} tone={s.key === "yours" ? "accent" : "neutral"} size={48} />} />}
+          title={s.title}
+          subtitle={s.desc}
+          meta={fmt(countOf(s))}
+          chevron
+          onClick={() => openShelf(s.key)}
+          ariaLabel={`${s.title}, ${countOf(s)} items`}
+        />
+      ))}
+    </ListGroup>
+  );
+
+  const shelfView = shelf && (
+    <div className="space-y-6">
+      <div>
+        <Button variant="link" size="sm" icon={ChevronLeft} className="-ml-3" onClick={() => openShelf(null)}>
+          Library
+        </Button>
+        <h2 className="mt-1 font-display text-[2rem] leading-tight text-ink">{shelf.title}</h2>
+        <p className="mt-1 text-[0.9375rem] text-muted">{shelf.desc}</p>
+      </div>
+      {shelf.key === "yours" ? yours : shelf.key === "moments" ? <DailyDuas /> : shelf.key === "names" ? namesBody : occasionBody(shelf)}
+    </div>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Library"
         actions={
@@ -499,95 +471,11 @@ export const LibraryView = () => {
           </>
         }
       />
-
-      <div className="space-y-4">
-        <Seg
-          label="Library section"
-          value={tab}
-          onChange={setTab}
-          options={TABS.map((t) => ({ ...t, l: counts[t.v] != null && filtering ? `${t.l} ${counts[t.v]}` : t.l }))}
-        />
-
-        {tab !== "mine" && (
-          <div className="relative">
-            <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={tab === "names" ? "Search the 99 Names" : tab === "daily" ? "Search: travel, rain, eating…" : "Search by name, meaning or Arabic"}
-              aria-label="Search the library"
-              className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className={tab !== "mine" && tab !== "daily" ? "lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-10" : ""}>
-        {tab !== "mine" && tab !== "daily" && (
-          <>
-            {/* Desktop: category index in its own column. */}
-            <nav aria-label="Categories" className="hidden lg:sticky lg:top-12 lg:block">
-              <p className="eyebrow mb-3">Categories</p>
-              <ul className="space-y-0.5">
-                {[["all", "All"], ...categories].map(([k, v]) => {
-                  const on = activeOccasion === k;
-                  return (
-                    <li key={k}>
-                      <button
-                        type="button"
-                        onClick={() => setActiveOccasion(k)}
-                        aria-current={on ? "true" : undefined}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                          on ? "bg-sunken font-semibold text-ink" : "text-muted hover:text-ink"
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
-
-            {/* Phone: one scrolling strip of category chips. */}
-            <div className="scroll-fade-x -mx-5 mb-6 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:hidden" role="group" aria-label="Categories">
-              {[["all", "All"], ...categories].map(([k, v]) => (
-                <button key={k} type="button" className="chip" aria-pressed={activeOccasion === k} onClick={() => setActiveOccasion(k)}>
-                  {v}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="min-w-0">
-          {filtering && tab !== "mine" && tab !== "daily" && (
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="numerals text-sm text-muted" aria-live="polite">
-                {fmt(counts[tab])} {counts[tab] === 1 ? "result" : "results"}
-                {activeOccasion !== "all" && ` in ${OCCASIONS[activeOccasion]}`}
-              </p>
-              <Button variant="link" size="sm" onClick={clearFilters}>
-                Clear
-              </Button>
-            </div>
-          )}
-          {tab === "mine" ? mine : tab === "sets" ? sets : tab === "dhikrs" ? dhikrBody : tab === "daily" ? <DailyDuas query={searchQuery} /> : names}
-        </div>
-      </div>
+      {searchBox}
+      <div className="min-w-0">{results ? searchView : shelf ? shelfView : shelvesView}</div>
 
       <ItemSheet item={item} onClose={closeItem} />
+      <DhikrReader open={!!reading} onClose={() => setReading(null)} d={reading} lang={settings.lang} arabicScale={settings.arabicScale ?? 1} textScale={settings.textScale ?? 1} />
     </div>
   );
 };

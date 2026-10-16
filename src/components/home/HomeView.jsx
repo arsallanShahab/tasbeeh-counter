@@ -4,12 +4,8 @@ import {
   ArrowRight,
   Play,
   Flame,
-  Pin,
   Sparkles,
   Plus,
-  Search,
-  X,
-  ChevronDown,
   Star,
   Moon,
   Sun,
@@ -22,6 +18,8 @@ import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
 import AdhkarChecklist from "./AdhkarChecklist";
+import YourDhikr from "./YourDhikr";
+import Explore from "./Explore";
 import DuaSection from "../duas/DuaSection";
 import DuaSheet from "../duas/DuaSheet";
 import WeekReflection from "../stats/WeekReflection";
@@ -30,23 +28,10 @@ import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
 import { useOccasions } from "../../hooks/useOccasions";
 import PrayerTimesCard from "../prayer/PrayerTimesCard";
-import {
-  Panel,
-  SectionHeader,
-  ListGroup,
-  ListRow,
-  IconTile,
-  DhikrTile,
-  ProgressBar,
-} from "../common/Layout";
+import { Panel, ProgressBar } from "../common/Layout";
+import { shelfOfOccasion } from "../../constants/shelves";
 import { Button } from "../common/Button";
-import {
-  ICONS,
-  OCCASIONS,
-  DEFAULT_QUICK_COLLECTIONS,
-  EMOTIONAL_REMEDIES,
-  SEED_NAMES_OF_ALLAH,
-} from "../../constants/dhikrData";
+import { SEED_NAMES_OF_ALLAH } from "../../constants/dhikrData";
 
 /* Which set fits this hour. Ids must exist in SEED_LISTS. */
 const suggestionFor = (hr) => {
@@ -58,11 +43,6 @@ const suggestionFor = (hr) => {
     return { id: "evening-short", when: "For this evening" };
   return { id: "before-sleep", when: "Before you sleep" };
 };
-
-const FREQUENT_MAX = 10;
-
-// Pinned rows shown before "Show all"; a search appears past this.
-const PINNED_PEEK = 4;
 
 const OCC_ICONS = { star: Star, moon: Moon, sun: Sun, sparkles: Sparkles, mountain: Mountain };
 
@@ -84,11 +64,8 @@ export const HomeView = () => {
   const {
     setView,
     lists,
-    dhikrs,
-    pinned,
     stats,
     startList,
-    startDhikr,
     setSearchQuery,
     session,
     complete,
@@ -106,44 +83,6 @@ export const HomeView = () => {
   const today = stats.byDate[dateKey()] || 0;
   const streak = computeStreak(stats.byDate);
 
-  const pinnedItems = pinned
-    .map((id) => {
-      const list = lists.find((l) => l.id === id);
-      if (list) return { type: "list", data: list };
-      const dhikr = dhikrs.find((x) => x.id === id);
-      if (dhikr) return { type: "dhikr", data: dhikr };
-      return null;
-    })
-    .filter(Boolean);
-
-  const [pinQuery, setPinQuery] = useState("");
-  const [pinAll, setPinAll] = useState(false);
-  const pq = pinQuery.trim().toLowerCase();
-  const pinMatches = pq
-    ? pinnedItems.filter(({ type, data }) =>
-        (type === "list"
-          ? [data.name, ...data.steps.map((s) => dById(s.dhikr)?.tr)]
-          : [data.tr, data.en, data.arabic]
-        ).some((v) => v && v.toLowerCase().includes(pq)),
-      )
-    : pinnedItems;
-  const pinShown = pq || pinAll ? pinMatches : pinMatches.slice(0, PINNED_PEEK);
-
-  // Ranked by completed sets and rounds; the latest breaks ties.
-  const completed = stats.completed || {};
-  const frequent = [
-    ...lists.map((l) => ({ type: "list", data: l })),
-    ...dhikrs.map((x) => ({ type: "dhikr", data: x })),
-  ]
-    .map((f) => ({
-      ...f,
-      n: completed[f.data.id]?.n || 0,
-      last: completed[f.data.id]?.last || 0,
-    }))
-    .filter((f) => f.n > 0)
-    .sort((a, b) => b.n - a.n || b.last - a.last)
-    .slice(0, FREQUENT_MAX);
-
   // A seasonal set leads when the Hijri date calls for one; others follow it.
   const occasions = useOccasions();
   const [occ, ...alsoOcc] = occasions;
@@ -160,19 +99,11 @@ export const HomeView = () => {
 
   const resumable = session && !complete && session.counts.some((c) => c > 0);
 
-  const quickKeys =
-    settings?.quickCollections && settings.quickCollections.length > 0
-      ? settings.quickCollections
-      : DEFAULT_QUICK_COLLECTIONS;
-  const quick = quickKeys.filter((k) => OCCASIONS[k]);
-
+  // "Other sets" opens the shelf and occasion the lead belongs to.
   const openLibrary = (occasion) => {
     setSearchQuery("");
-    navigate(
-      occasion
-        ? `/library?occasion=${encodeURIComponent(occasion)}`
-        : "/library",
-    );
+    const shelf = occasion && shelfOfOccasion(occasion);
+    navigate(shelf ? `/library?shelf=${shelf}&sub=${encodeURIComponent(occasion)}` : "/library");
   };
 
   /* ── Lead: the one thing to do now. A session in progress wins over the
@@ -351,259 +282,18 @@ export const HomeView = () => {
 
   /* ── Daily progress: one line of figures, no card ───────────────────── */
   const renderProgress = () => (
-    <section key="streak" aria-label="Daily progress" className="space-y-4">
-      <div className="flex items-end justify-between gap-6">
-        <div>
-          <p className="numerals font-display text-[2.25rem] leading-none text-ink">
-            {fmt(today)}
-          </p>
-          <p className="numerals mt-2 text-sm text-muted">
-            of {fmt(goal)} today
-          </p>
-        </div>
-        <dl className="flex gap-6 text-right">
-          <div>
-            <dt className="text-sm text-muted">Streak</dt>
-            <dd className="numerals mt-1 flex items-center justify-end gap-1 font-display text-2xl leading-none text-ink">
-              {streak > 0 && (
-                <Flame size={16} className="text-gold" aria-hidden="true" />
-              )}
-              {streak}
-              <span className="sr-only"> days</span>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-sm text-muted">All time</dt>
-            <dd className="numerals mt-1 font-display text-2xl leading-none text-ink">
-              {fmt(stats.total)}
-            </dd>
-          </div>
-        </dl>
+    <section key="streak" aria-label="Daily progress" className="space-y-2.5">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="numerals text-[0.9375rem] text-muted">
+          <span className="font-display text-2xl text-ink">{fmt(today)}</span> of {fmt(goal)} today
+        </p>
+        <p className="numerals flex items-center gap-1 text-sm text-muted">
+          {streak > 0 && <Flame size={14} className="text-gold" aria-hidden="true" />}
+          {streak} {streak === 1 ? "day" : "days"} · {fmt(stats.total)} all time
+        </p>
       </div>
-      <ProgressBar
-        value={today}
-        max={goal}
-        label="Today's goal"
-        tone={today >= goal ? "gold" : "accent"}
-      />
-      {today >= goal && (
-        <p className="text-sm text-muted">
-          Today&rsquo;s goal is complete. Alhamdulillah.
-        </p>
-      )}
-    </section>
-  );
-
-  const renderPinned = () => (
-    <section key="pinned" aria-labelledby="pinned-h" className="space-y-4">
-      <SectionHeader
-        id="pinned-h"
-        title="Your dhikr"
-        count={pinnedItems.length > PINNED_PEEK ? pinnedItems.length : null}
-        action={
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => navigate("/library?tab=mine")}
-          >
-            Manage
-          </Button>
-        }
-      />
-      {pinnedItems.length === 0 ? (
-        <Panel className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-muted">
-            <Pin size={18} strokeWidth={1.75} aria-hidden="true" />
-          </span>
-          <p className="flex-1 text-[0.9375rem] leading-relaxed text-muted">
-            Pin the sets you recite every day and they&rsquo;ll wait for you
-            here.
-          </p>
-          <Button variant="secondary" size="sm" onClick={() => openLibrary()}>
-            Browse library
-          </Button>
-        </Panel>
-      ) : (
-        <>
-          {pinnedItems.length > PINNED_PEEK && (
-            <div className="relative">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                aria-hidden="true"
-              />
-              <input
-                type="search"
-                value={pinQuery}
-                onChange={(e) => setPinQuery(e.target.value)}
-                placeholder={`Find in your ${pinnedItems.length}`}
-                aria-label="Find in your dhikr"
-                className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
-              />
-              {pinQuery && (
-                <button
-                  type="button"
-                  onClick={() => setPinQuery("")}
-                  aria-label="Clear search"
-                  className="icon-btn absolute right-1.5 top-1/2 h-9 w-9 -translate-y-1/2 text-muted"
-                >
-                  <X size={16} aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          )}
-          {pinShown.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-line px-5 py-6 text-center text-[0.9375rem] text-muted">
-              Nothing pinned matches &ldquo;{pinQuery.trim()}&rdquo;. Try a
-              shorter word.
-            </p>
-          ) : (
-            <ListGroup id="pinned-list">
-              {pinShown.map(({ type, data }) => {
-                const isList = type === "list";
-                const Ico = isList ? ICONS[data.icon] || Sparkles : null;
-                const count = isList ? setTotal(data) : data.target;
-                return (
-                  <ListRow
-                    key={data.id}
-                    leading={isList ? <IconTile icon={Ico} /> : <DhikrTile />}
-                    title={isList ? data.name : data.tr}
-                    subtitle={
-                      isList
-                        ? data.steps
-                            .map((s) => dById(s.dhikr)?.tr)
-                            .filter(Boolean)
-                            .join(" · ") || "No dhikr yet"
-                        : data.en
-                    }
-                    meta={`×${fmt(count)}`}
-                    onClick={() =>
-                      isList ? startList(data) : startDhikr(data)
-                    }
-                    ariaLabel={`Begin ${isList ? data.name : data.tr}`}
-                  />
-                );
-              })}
-              {!pq && pinMatches.length > PINNED_PEEK && (
-                <button
-                  type="button"
-                  onClick={() => setPinAll((v) => !v)}
-                  aria-expanded={pinAll}
-                  aria-controls="pinned-list"
-                  className="row-interactive flex min-h-12 w-full items-center justify-center gap-1.5 px-4 text-sm font-medium text-accent"
-                >
-                  {pinAll ? "Show fewer" : `Show all ${pinMatches.length}`}
-                  <ChevronDown
-                    size={16}
-                    aria-hidden="true"
-                    className={pinAll ? "rotate-180" : ""}
-                  />
-                </button>
-              )}
-            </ListGroup>
-          )}
-        </>
-      )}
-    </section>
-  );
-
-  const renderFrequent = () => (
-    <section key="frequent" aria-labelledby="frequent-h" className="space-y-4">
-      <SectionHeader id="frequent-h" title="Most recited" />
-      {frequent.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-line px-5 py-5 text-[0.9375rem] leading-relaxed text-muted">
-          Finish a set and it appears here, ranked by how often you complete it.
-        </p>
-      ) : (
-        <ol className="scroll-fade-x -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:mask-none">
-          {frequent.map(({ type, data, n }, i) => {
-            const isList = type === "list";
-            const name = isList ? data.name : data.tr;
-            const usage = `Completed ${fmt(n)} ${n === 1 ? "time" : "times"}`;
-            return (
-              <li key={data.id} className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => (isList ? startList(data) : startDhikr(data))}
-                  aria-label={`Begin ${name}, ${usage}`}
-                  className="row-interactive flex h-[7.5rem] w-[10rem] flex-col justify-between rounded-2xl border border-line bg-surface p-3.5 text-left lg:w-full"
-                >
-                  <span className="flex w-full items-start justify-between">
-                    {isList ? (
-                      <IconTile icon={ICONS[data.icon] || Sparkles} size={32} />
-                    ) : (
-                      <DhikrTile size={32} />
-                    )}
-                    <span
-                      className="numerals font-display text-lg leading-none text-muted"
-                      aria-hidden="true"
-                    >
-                      {i + 1}
-                    </span>
-                  </span>
-                  <span className="min-w-0">
-                    <span className="line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]">
-                      {name}
-                    </span>
-                    <span className="numerals mt-1 block truncate text-sm text-muted">
-                      {usage}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-    </section>
-  );
-
-  const renderQuick = () =>
-    quick.length > 0 && (
-      <section key="quick" aria-labelledby="quick-h" className="space-y-4">
-        <SectionHeader
-          id="quick-h"
-          title="Collections"
-          action={
-            <Button variant="link" size="sm" onClick={() => openLibrary()}>
-              All sets
-            </Button>
-          }
-        />
-        <div className="scroll-fade-x -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 no-scrollbar lg:mx-0 lg:flex-wrap lg:px-0 lg:mask-none">
-          {quick.map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => openLibrary(k)}
-              className="chip"
-            >
-              {OCCASIONS[k]}
-            </button>
-          ))}
-        </div>
-      </section>
-    );
-
-  /* Remedies read as an index: "When you are anxious", not six cards. */
-  const renderRemedies = () => (
-    <section key="remedies" aria-labelledby="remedies-h" className="space-y-4">
-      <SectionHeader id="remedies-h" title="When the heart needs it" />
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {Object.entries(EMOTIONAL_REMEDIES).map(([key, rem]) => (
-          <li key={key} className="min-w-0">
-            <button
-              type="button"
-              onClick={() => openLibrary(key)}
-              aria-label={`${rem.short || rem.label}: ${rem.desc}`}
-              className="row-interactive flex min-h-14 w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left"
-            >
-              <span className="min-w-0 font-display text-[1.0625rem] leading-snug text-ink">{rem.short || rem.label}</span>
-              <ArrowRight size={16} className="shrink-0 text-muted" aria-hidden="true" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      <ProgressBar value={today} max={goal} label="Today's goal" tone={today >= goal ? "gold" : "accent"} />
+      {today >= goal && <p className="text-sm text-muted">Today&rsquo;s goal is complete. Alhamdulillah.</p>}
     </section>
   );
 
@@ -680,8 +370,8 @@ export const HomeView = () => {
     suggested: () => null, // the lead below replaces the old suggested card
     prayer: renderPrayer,
     streak: renderProgress,
-    pinned: renderPinned,
-    frequent: renderFrequent,
+    yours: () => <YourDhikr key="yours" />,
+    explore: () => <Explore key="explore" />,
     adhkar: () => <AdhkarChecklist key="adhkar" />,
     duas: () => <DuaSection key="duas" />,
     // Fridays only, until put away for the week.
@@ -689,8 +379,6 @@ export const HomeView = () => {
       d.getDay() === 5 && settings.reflectionSeen !== dateKey(d) ? (
         <WeekReflection key="reflection" variant="today" onDismiss={() => setSettings((s) => ({ ...s, reflectionSeen: dateKey(d) }))} />
       ) : null,
-    quick: renderQuick,
-    remedies: renderRemedies,
     asmaul_husna: renderName,
   };
 
@@ -709,7 +397,7 @@ export const HomeView = () => {
         variant="link"
         size="sm"
         icon={Plus}
-        onClick={() => navigate("/library?tab=mine")}
+        onClick={() => navigate("/library?shelf=yours")}
         className="-ml-2"
       >
         Create your own set
@@ -731,7 +419,7 @@ export const HomeView = () => {
         <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-12">
           <div className="space-y-12">
             {showLead && renderLead()}
-            {render(["reflection", "adhkar", "duas", "frequent", "pinned", "quick", "remedies"])}
+            {render(["reflection", "adhkar", "yours", "duas", "explore"])}
           </div>
           <aside className="sticky top-12 space-y-12">
             {render(["streak", "prayer", "asmaul_husna"])}

@@ -1295,31 +1295,27 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 // independently above the configurable stack.
 export const HOME_SECTIONS = {
   prayer: { label: "Prayer times" },
+  suggested: { label: "Recite now" },
   streak: { label: "Daily progress" },
   adhkar: { label: "Today's adhkar" },
   reflection: { label: "Friday reflection" },
+  yours: { label: "Your dhikr" },
   duas: { label: "Your du'a list" },
-  frequent: { label: "Most recited" },
-  pinned: { label: "Your dhikr" },
-  suggested: { label: "Recite now" },
-  quick: { label: "Collections" },
-  remedies: { label: "Remedies for the Heart" },
+  explore: { label: "Explore" },
   asmaul_husna: { label: "Name of the day" },
 };
 // Every section is visible by default so users discover all features; they can
 // hide any in Settings → Display → Home Layout. The discovery launchers also
 // live in the Library, but stay on here unless the user turns them off.
 export const DEFAULT_HOME_SECTIONS = [
+  { key: "suggested", visible: true },
   { key: "prayer", visible: true },
   { key: "streak", visible: true },
   { key: "adhkar", visible: true },
   { key: "reflection", visible: true },
+  { key: "yours", visible: true },
   { key: "duas", visible: true },
-  { key: "frequent", visible: true },
-  { key: "pinned", visible: true },
-  { key: "suggested", visible: true },
-  { key: "quick", visible: true },
-  { key: "remedies", visible: true },
+  { key: "explore", visible: true },
   { key: "asmaul_husna", visible: true },
 ];
 

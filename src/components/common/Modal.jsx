@@ -20,6 +20,11 @@ const openSheets = [];
    its depth, so the system back gesture, the Android back button and the
    browser's Back all close the top sheet instead of leaving the page. Closing
    a sheet any other way pops its entry again, so history stays clean. */
+// A sheet that closes by a button pops its entry with history.back(), which
+// lands a moment later. A sheet opened in that moment waits for it, or the pop
+// would close the new sheet instead.
+let pendingBack = null;
+
 function useBackToClose(open, onClose) {
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -28,9 +33,10 @@ function useBackToClose(open, onClose) {
 
   useEffect(() => {
     if (!open || typeof window === "undefined") return;
-    const depth = (window.history.state?.sheetDepth || 0) + 1;
-    window.history.pushState({ ...window.history.state, sheetDepth: depth }, "");
+    let depth = 0;
     let poppedAway = false;
+    let started = false;
+    let cancelled = false;
 
     const onPop = () => {
       if ((window.history.state?.sheetDepth || 0) < depth) {
@@ -38,13 +44,38 @@ function useBackToClose(open, onClose) {
         onCloseRef.current?.();
       }
     };
-    window.addEventListener("popstate", onPop);
+    const start = () => {
+      if (cancelled) return;
+      depth = (window.history.state?.sheetDepth || 0) + 1;
+      window.history.pushState({ ...window.history.state, sheetDepth: depth }, "");
+      window.addEventListener("popstate", onPop);
+      started = true;
+    };
+    if (pendingBack) pendingBack.then(start);
+    else start();
 
     return () => {
+      cancelled = true;
+      if (!started) return;
       window.removeEventListener("popstate", onPop);
       // Closed by a button, the scrim, Escape or a drag: drop our entry. If a
       // navigation already replaced it, there is nothing of ours to pop.
-      if (!poppedAway && window.history.state?.sheetDepth === depth) window.history.back();
+      if (!poppedAway && window.history.state?.sheetDepth === depth) {
+        const settled = new Promise((resolve) => {
+          const done = () => {
+            window.removeEventListener("popstate", done);
+            clearTimeout(t);
+            resolve();
+          };
+          const t = setTimeout(done, 500);
+          window.addEventListener("popstate", done);
+        });
+        pendingBack = settled;
+        settled.then(() => {
+          if (pendingBack === settled) pendingBack = null;
+        });
+        window.history.back();
+      }
     };
   }, [open]);
 }
@@ -176,7 +207,12 @@ export const Sheet = ({
               )}
               <div className={`flex items-start justify-between gap-4 px-6 pt-3 lg:pt-6 ${hideTitle ? "pb-0" : "pb-4"}`}>
                 <div className={`min-w-0 ${hideTitle ? "sr-only" : ""}`}>
-                  <h2 id={titleId} className="font-display text-2xl leading-tight font-medium text-ink">
+                  <h2
+                    id={titleId}
+                    className={`font-display font-medium text-ink ${
+                      typeof title === "string" && title.length > 48 ? "line-clamp-3 text-lg leading-snug" : "text-2xl leading-tight"
+                    }`}
+                  >
                     {title}
                   </h2>
                   {description && (

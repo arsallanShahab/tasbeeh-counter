@@ -8,6 +8,7 @@ import { OCCASIONS } from "../../constants/dhikrData";
 import { fmt } from "../../utils/stats";
 
 const isCustom = (id) => typeof id === "string" && id.startsWith("c_");
+const minutes = (n) => Math.max(1, Math.round((n * 1.3) / 60));
 
 const Prose = ({ label, children }) => (
   <div>
@@ -73,10 +74,16 @@ export const ItemSheet = ({ item, onClose }) => {
   if (!data) return <Sheet open={false} onClose={onClose} title="" />;
 
   const total = kind === "list" ? data.steps.reduce((a, s) => a + (Number(s.target) || 0), 0) : data.target;
-  const description =
+  // Each part stays whole ("about 2 min"); lines break only between parts.
+  const keep = (t) => t.replace(/ /g, " ");
+  const description = (
     kind === "list"
-      ? `${OCCASIONS[data.occasion] || "Custom"} · ${data.steps.length} ${data.steps.length === 1 ? "dhikr" : "dhikrs"} · ${fmt(total)} counts`
-      : `${custom ? "Your dhikr" : "Dhikr"} · ${fmt(data.target)} times`;
+      ? [OCCASIONS[data.occasion] || "Custom", `${data.steps.length} ${data.steps.length === 1 ? "dhikr" : "dhikrs"}`, `${fmt(total)} counts`, total >= 20 && `about ${minutes(total)} min`]
+      : [custom ? "Your dhikr" : "Dhikr", `${fmt(data.target)} times`, data.target >= 20 && `about ${minutes(data.target)} min`]
+  )
+    .filter(Boolean)
+    .map(keep)
+    .join(" · ");
 
   const footer = (
     <div className="flex flex-col gap-3">
@@ -84,16 +91,16 @@ export const ItemSheet = ({ item, onClose }) => {
         Begin
       </Button>
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" icon={isPinned ? PinOff : Pin} onClick={onPin} aria-pressed={isPinned}>
+        <Button variant="tonal" size="sm" icon={isPinned ? PinOff : Pin} onClick={onPin} aria-pressed={isPinned}>
           {isPinned ? "Unpin" : "Pin to Today"}
         </Button>
         {custom ? (
-          <Button variant="secondary" size="sm" icon={Pencil} onClick={() => openEditor(kind, data.id)}>
+          <Button variant="tonal" size="sm" icon={Pencil} onClick={() => openEditor(kind, data.id)}>
             Edit
           </Button>
         ) : (
           kind === "list" && (
-            <Button variant="secondary" size="sm" icon={Copy} onClick={onCustomise}>
+            <Button variant="tonal" size="sm" icon={Copy} onClick={onCustomise}>
               Customise a copy
             </Button>
           )
@@ -113,26 +120,27 @@ export const ItemSheet = ({ item, onClose }) => {
         data.steps.length === 0 ? (
           <p className="text-[0.9375rem] text-muted">This set has no dhikr yet. Edit it to add some.</p>
         ) : (
+          // One block per step: its place and count on top, then the text.
           <ol className="divide-y divide-line border-y border-line">
             {data.steps.map((s, i) => {
               const d = dById(s.dhikr);
               return (
-                <li key={`${s.dhikr}-${i}`} className="flex items-start gap-4 py-4">
-                  <span className="numerals w-6 shrink-0 pt-1 font-display text-lg text-muted">{i + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    {d ? (
-                      <>
-                        <p dir="rtl" lang="ar" className="font-arabic text-2xl leading-[1.9] text-ink">
-                          {d.arabic}
-                        </p>
-                        <p className="mt-1 text-[0.9375rem] font-medium text-ink">{d.tr}</p>
-                        {d.en && <p className="mt-0.5 text-sm leading-relaxed text-muted">{d.en}</p>}
-                      </>
-                    ) : (
-                      <p className="text-[0.9375rem] text-muted">This dhikr was removed.</p>
-                    )}
+                <li key={`${s.dhikr}-${i}`} className="py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="eyebrow numerals">{data.steps.length > 1 ? `Step ${i + 1} of ${data.steps.length}` : "Recite"}</span>
+                    <span className="numerals rounded-full bg-sunken px-2.5 py-0.5 text-sm font-semibold text-ink">×{fmt(s.target)}</span>
                   </div>
-                  <span className="numerals shrink-0 pt-1 text-[0.9375rem] font-semibold text-ink">×{s.target}</span>
+                  {d ? (
+                    <>
+                      <p dir="rtl" lang="ar" className="mt-2 text-right font-arabic text-2xl leading-[1.9] text-ink">
+                        {d.arabic}
+                      </p>
+                      <p className="mt-1 text-[0.9375rem] font-medium text-ink">{d.tr}</p>
+                      {d.en && <p className="mt-0.5 text-sm leading-relaxed text-muted">{d.en}</p>}
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[0.9375rem] text-muted">This dhikr was removed.</p>
+                  )}
                 </li>
               );
             })}

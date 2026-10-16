@@ -63,14 +63,15 @@ export const DuaSection = () => {
             )}
           </ListGroup>
         ) : (
-          <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-line px-5 py-5 sm:flex-row sm:items-center">
-            <p className="flex-1 text-[0.9375rem] leading-relaxed text-muted">
-              Keep a list of what you want to ask Allah for, and read through it at the times du'a is answered.
-            </p>
-            <Button variant="tonal" size="sm" onClick={() => setOpen(true)}>
-              Add a du'a
-            </Button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="row-interactive flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-line px-4 py-3 text-left"
+          >
+            <HandHeart size={18} strokeWidth={1.75} className="shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-[0.9375rem] leading-snug text-muted">Keep a list of what you want to ask Allah for.</span>
+            <span className="shrink-0 text-sm font-medium text-accent">Add</span>
+          </button>
         )}
       </section>
       <DuaSheet open={open} onClose={() => setOpen(false)} moment={moment} />
