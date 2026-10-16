@@ -20,6 +20,10 @@ import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { fmt, computeStreak, dateKey } from "../../utils/stats";
 import HomeIntro from "./HomeIntro";
+import AdhkarChecklist from "./AdhkarChecklist";
+import DuaSection from "../duas/DuaSection";
+import DuaSheet from "../duas/DuaSheet";
+import WeekReflection from "../stats/WeekReflection";
 import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
 import { useOccasions } from "../../hooks/useOccasions";
@@ -89,6 +93,7 @@ export const HomeView = () => {
     settings,
     dById,
     startNamesSession,
+    setSettings,
   } = useApp();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
@@ -140,6 +145,7 @@ export const HomeView = () => {
   // A seasonal set leads when the Hijri date calls for one; others follow it.
   const occasions = useOccasions();
   const [occ, ...alsoOcc] = occasions;
+  const [duaOpen, setDuaOpen] = useState(false);
 
   const sug = suggestionFor(d.getHours());
   const suggest = lists.find((l) => l.id === sug.id) || lists[0];
@@ -291,7 +297,11 @@ export const HomeView = () => {
           <Button icon={Play} onClick={() => startList(set)} className="flex-1 sm:flex-none">
             Begin
           </Button>
-          {occ.link ? (
+          {occ.duas ? (
+            <Button variant="tonal" onClick={() => setDuaOpen(true)}>
+              Your du'a list
+            </Button>
+          ) : occ.link ? (
             <a href={occ.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-tonal btn-md">
               {occ.link.label}
               <ExternalLink size={16} aria-hidden="true" />
@@ -661,6 +671,13 @@ export const HomeView = () => {
     streak: renderProgress,
     pinned: renderPinned,
     frequent: renderFrequent,
+    adhkar: () => <AdhkarChecklist key="adhkar" />,
+    duas: () => <DuaSection key="duas" />,
+    // Fridays only, until put away for the week.
+    reflection: () =>
+      d.getDay() === 5 && settings.reflectionSeen !== dateKey(d) ? (
+        <WeekReflection key="reflection" variant="today" onDismiss={() => setSettings((s) => ({ ...s, reflectionSeen: dateKey(d) }))} />
+      ) : null,
     quick: renderQuick,
     remedies: renderRemedies,
     asmaul_husna: renderName,
@@ -703,13 +720,14 @@ export const HomeView = () => {
         <div className="grid grid-cols-[minmax(0,1fr)_22rem] items-start gap-12">
           <div className="space-y-12">
             {showLead && renderLead()}
-            {render(["frequent", "pinned", "quick", "remedies"])}
+            {render(["reflection", "adhkar", "duas", "frequent", "pinned", "quick", "remedies"])}
           </div>
           <aside className="sticky top-12 space-y-12">
             {render(["streak", "prayer", "asmaul_husna"])}
           </aside>
         </div>
         {footer}
+        <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
       </div>
     );
   }
@@ -721,6 +739,7 @@ export const HomeView = () => {
       {showLead && renderLead()}
       {visible.map((s) => renderers[s.key]())}
       {footer}
+      <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
     </div>
   );
 };

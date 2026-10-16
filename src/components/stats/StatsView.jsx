@@ -5,8 +5,10 @@ import { useApp } from "../../context/AppContext";
 import { PageHeader, SectionHeader, Panel, ProgressBar, EmptyState } from "../common/Layout";
 import { Button } from "../common/Button";
 import { TextInput } from "../common/Field";
+import YearCalendar from "./YearCalendar";
+import WeekReflection from "./WeekReflection";
 import {
-  fmt, computeStreak, bestStreak, last7, lastN, dateKey, activeDayCount, avgPerActiveDay,
+  fmt, computeStreak, bestStreak, last7, dateKey, activeDayCount, avgPerActiveDay,
   yesterdayCount, weekTotal, nextMilestone, prevMilestone,
 } from "../../utils/stats";
 
@@ -78,49 +80,6 @@ const Figure = ({ label, value, note }) => (
     {note && <dd className="mt-1.5 text-[0.8125rem] text-muted">{note}</dd>}
   </div>
 );
-
-/* Twelve weeks, one cell per day. Intensity is a single ink, so it reads in
-   any theme and needs no legend of colours: the legend is the scale. */
-const Heatmap = ({ byDate }) => {
-  const cells = lastN(byDate, 84);
-  const max = Math.max(1, ...cells.map((c) => c.count));
-  const level = (n) => (n <= 0 ? 0 : Math.min(4, Math.ceil((n / max) * 4)));
-  const shade = ["var(--surface2)", "28%", "50%", "74%", "100%"];
-  const bg = (lv) => (lv === 0 ? shade[0] : `color-mix(in srgb, var(--primary) ${shade[lv]}, var(--surface2))`);
-  const weeks = [];
-  for (let i = 0; i < 12; i++) weeks.push(cells.slice(i * 7, i * 7 + 7));
-  const activeDays = cells.filter((c) => c.count > 0).length;
-
-  return (
-    <div>
-      <div
-        className="grid grid-flow-col grid-rows-7 gap-1"
-        style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}
-        role="img"
-        aria-label={`Activity over the last 12 weeks: ${activeDays} active days.`}
-      >
-        {weeks.flat().map((day) => (
-          <span
-            key={day.key}
-            title={`${day.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}: ${fmt(day.count)}`}
-            className="aspect-square rounded-[3px]"
-            style={{ background: bg(level(day.count)) }}
-          />
-        ))}
-      </div>
-      <div className="mt-3 flex items-center justify-between text-[0.8125rem] text-muted" aria-hidden="true">
-        <span>12 weeks ago</span>
-        <span className="flex items-center gap-1">
-          Less
-          {[0, 1, 2, 3, 4].map((lv) => (
-            <span key={lv} className="h-3 w-3 rounded-[3px]" style={{ background: bg(lv) }} />
-          ))}
-          More
-        </span>
-      </div>
-    </div>
-  );
-};
 
 export const StatsView = () => {
   const { stats, dById, settings, setSettings, lists, startList, setView } = useApp();
@@ -231,13 +190,21 @@ export const StatsView = () => {
           </div>
         </section>
 
-        <section aria-labelledby="act-h" className="space-y-5">
-          <SectionHeader id="act-h" title="Activity" />
-          <Heatmap byDate={stats.byDate} />
-        </section>
+        <Panel as="section" aria-labelledby="ms-h" className="self-end p-6">
+          <h2 id="ms-h" className="eyebrow">
+            Next milestone
+          </h2>
+          <p className="numerals mt-3 font-display text-[2.5rem] leading-none text-ink">{fmt(next)}</p>
+          <ProgressBar value={stats.total - prev} max={Math.max(1, next - prev)} label="Progress to next milestone" tone="gold" className="mt-5" />
+          <p className="numerals mt-3 text-sm text-muted">{fmt(Math.max(0, next - stats.total))} counts away</p>
+        </Panel>
       </div>
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <WeekReflection />
+
+      <YearCalendar />
+
+      <div>
         <section aria-labelledby="top-h" className="space-y-4">
           <SectionHeader id="top-h" title="Most recited" />
           <ol className="divide-y divide-line border-y border-line">
@@ -258,15 +225,6 @@ export const StatsView = () => {
             })}
           </ol>
         </section>
-
-        <Panel as="section" aria-labelledby="ms-h" className="self-start p-6">
-          <h2 id="ms-h" className="eyebrow">
-            Next milestone
-          </h2>
-          <p className="numerals mt-3 font-display text-[2.5rem] leading-none text-ink">{fmt(next)}</p>
-          <ProgressBar value={stats.total - prev} max={Math.max(1, next - prev)} label="Progress to next milestone" tone="gold" className="mt-5" />
-          <p className="numerals mt-3 text-sm text-muted">{fmt(Math.max(0, next - stats.total))} counts away</p>
-        </Panel>
       </div>
     </div>
   );

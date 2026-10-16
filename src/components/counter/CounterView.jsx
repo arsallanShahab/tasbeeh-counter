@@ -15,6 +15,7 @@ import BeadStrand from "./BeadStrand";
 import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
 import CounterStylePicker from "./CounterStylePicker";
+import DuaSheet from "../duas/DuaSheet";
 import { ArabicFontPicker, ControlLabel, FieldToggles, LanguageControl, TextSizeControls } from "../settings/ReadingControls";
 import { useToast } from "../common/toastContext";
 
@@ -31,6 +32,7 @@ export const CounterView = () => {
   const [readerOpen, setReaderOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
+  const [duaOpen, setDuaOpen] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
   const tapStart = useRef(null);
@@ -404,7 +406,19 @@ export const CounterView = () => {
             {session.steps.length === 1 ? "dhikr" : "dhikr"}.
           </p>
         </div>
+        {/* A finished set is a good moment to ask. */}
+        <Button
+          variant="link"
+          size="sm"
+          iconRight={ArrowRight}
+          className="-ml-2 mt-3"
+          // Opens over the summary; closing it comes back here.
+          onClick={() => setDuaOpen(true)}
+        >
+          {(settings.duaList || []).some((x) => !x.answeredAt) ? "Make du'a from your list" : "Start a du'a list"}
+        </Button>
       </Sheet>
+      <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
 
       {/* Target */}
       <Sheet

@@ -5,9 +5,17 @@ import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_
 import { store } from "../utils/storage";
 import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
-import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity } from "../utils/prayerTimes";
+import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
+import { lastThird } from "../utils/duaTimes";
 import { regionalHijriOffset } from "../utils/hijri";
 import { WebHaptics } from "web-haptics";
+
+// Counts per dhikr per day, for the weekly reflection; about two months are kept.
+const bumpDay = (all = {}, day, id, by) => {
+  const next = { ...all, [day]: { ...(all[day] || {}), [id]: Math.max(0, ((all[day] || {})[id] || 0) + by) } };
+  if (!all[day]) for (const k of Object.keys(next).sort().slice(0, -60)) delete next[k];
+  return next;
+};
 
 const AppContext = createContext(null);
 
@@ -159,16 +167,18 @@ export const AppProvider = ({ children }) => {
         setComplete(store.get("complete", false));
       }
 
-      // One-time add of the seasonal dhikr and sets, keeping everything else as is.
-      if (!store.get("seeds_seasonal_v1", false)) {
-        const dIds = ["takbir_eid", "arafah_dua", "iftar_dua"];
-        const lIds = ["dhul-hijjah-ten", "arafah-day", "eid-takbir", "last-ten-nights", "iftar"];
-        const missing = (have, seed, ids) => seed.filter((x) => ids.includes(x.id) && !have.some((h) => h.id === x.id));
+      // One-time adds of newer built-in dhikr and sets, keeping everything else as is.
+      const missing = (have, seed, ids) => seed.filter((x) => ids.includes(x.id) && !have.some((h) => h.id === x.id));
+      for (const [flag, dIds, lIds] of [
+        ["seeds_seasonal_v1", ["takbir_eid", "arafah_dua", "iftar_dua"], ["dhul-hijjah-ten", "arafah-day", "eid-takbir", "last-ten-nights", "iftar"]],
+        ["seeds_night_v1", ["waking_night"], ["tahajjud"]],
+      ]) {
+        if (store.get(flag, false)) continue;
         loadedDhikrs = [...loadedDhikrs, ...missing(loadedDhikrs, SEED_DHIKRS, dIds)];
         loadedLists = [...loadedLists, ...missing(loadedLists, SEED_LISTS, lIds)];
         store.set("dhikrs", loadedDhikrs);
         store.set("lists", loadedLists);
-        store.set("seeds_seasonal_v1", true);
+        store.set(flag, true);
       }
       const loadedNamesSession = store.get("names_session", null);
       if (loadedNamesSession) {
@@ -505,7 +515,8 @@ export const AppProvider = ({ children }) => {
         ...st,
         total: st.total + 1,
         byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
-        perDhikr: { ...st.perDhikr, [dId]: (st.perDhikr[dId] || 0) + 1 }
+        perDhikr: { ...st.perDhikr, [dId]: (st.perDhikr[dId] || 0) + 1 },
+        dayDhikr: bumpDay(st.dayDhikr, k, dId, 1)
       };
     });
 
@@ -520,8 +531,14 @@ export const AppProvider = ({ children }) => {
         sessionRef.current = { ...sessionRef.current, recordedLoop: s.loops[i] };
         setSession((cur) => cur && { ...cur, recordedLoop: s.loops[i] });
         setStats((st) => {
+          const now = Date.now();
           const d = st.completed || {};
-          return { ...st, completed: { ...d, [key]: { n: (d[key]?.n || 0) + 1, last: Date.now() } } };
+          // A dated log feeds the daily adhkar checklist and the calendar; about a year is kept.
+          const dk = dateKey(new Date(now));
+          const log = { ...(st.doneLog || {}), [dk]: [...(st.doneLog?.[dk] || []), { id: key, t: now }] };
+          const days = Object.keys(log).sort();
+          for (const old of days.slice(0, Math.max(0, days.length - 400))) delete log[old];
+          return { ...st, completed: { ...d, [key]: { n: (d[key]?.n || 0) + 1, last: now } }, doneLog: log };
         });
       }
 
@@ -580,7 +597,8 @@ export const AppProvider = ({ children }) => {
         ...st,
         total: Math.max(0, st.total - 1),
         byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
-        perDhikr: { ...st.perDhikr, [dId]: Math.max(0, (st.perDhikr[dId] || 0) - 1) }
+        perDhikr: { ...st.perDhikr, [dId]: Math.max(0, (st.perDhikr[dId] || 0) - 1) },
+        dayDhikr: bumpDay(st.dayDhikr, k, dId, -1)
       };
     });
 
@@ -967,7 +985,8 @@ export const AppProvider = ({ children }) => {
      prayer-time reminders are switched on. */
   const prayerRemindersOn =
     !!settings.prayer?.enabled && !!settings.prayer?.reminders?.enabled;
-  const notificationsActive = !!settings.alertsEnabled || prayerRemindersOn;
+  const lastThirdOn = !!settings.prayer?.enabled && !!settings.prayer?.reminders?.lastThird;
+  const notificationsActive = !!settings.alertsEnabled || prayerRemindersOn || lastThirdOn;
 
   /* Regenerate prayer-time alerts whenever the prayer config changes, then
      again at the next midnight and on app focus (prayer times are date- and
@@ -977,7 +996,7 @@ export const AppProvider = ({ children }) => {
     const p = settings.prayer;
     const loc = p?.location;
     const ready =
-      prayerRemindersOn && loc && loc.lat != null && loc.lng != null;
+      (prayerRemindersOn || lastThirdOn) && loc && loc.lat != null && loc.lng != null;
     if (!ready) {
       setPrayerAlerts([]);
       return;
@@ -993,7 +1012,22 @@ export const AppProvider = ({ children }) => {
           highLatRule: p.highLatRule,
           offsets: p.offsets,
         });
-        setPrayerAlerts(buildPrayerAlerts(p, schedule));
+        const night = lastThirdOn ? lastThird(p, new Date(new Date().setHours(23, 59, 0, 0))) : null;
+        setPrayerAlerts([
+          ...(prayerRemindersOn ? buildPrayerAlerts(p, schedule) : []),
+          ...(night
+            ? [{
+                id: "prayer-last-third",
+                prayer: true,
+                title: "The last third of the night",
+                body: "A time when du'a is answered. Tap for the night adhkar.",
+                time: fmtHHMM(night.start),
+                enabled: true,
+                targetType: "list",
+                targetId: "tahajjud",
+              }]
+            : []),
+        ]);
       } catch (e) {
         console.warn("Prayer alert build failed:", e);
         setPrayerAlerts([]);
@@ -1016,7 +1050,7 @@ export const AppProvider = ({ children }) => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", recompute);
     };
-  }, [loaded, settings.prayer, prayerRemindersOn]);
+  }, [loaded, settings.prayer, prayerRemindersOn, lastThirdOn]);
 
   /* Manual daily reminders + computed prayer reminders, fired through one
      pipeline (foreground loop + service worker). */
@@ -1191,7 +1225,8 @@ export const AppProvider = ({ children }) => {
         ...st,
         total: st.total + 1,
         byDate: { ...st.byDate, [k]: (st.byDate[k] || 0) + 1 },
-        perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 }
+        perDhikr: { ...st.perDhikr, [activeName.id]: (st.perDhikr[activeName.id] || 0) + 1 },
+        dayDhikr: bumpDay(st.dayDhikr, k, activeName.id, 1)
       };
     });
 
@@ -1228,7 +1263,8 @@ export const AppProvider = ({ children }) => {
         ...st,
         total: Math.max(0, st.total - 1),
         byDate: { ...st.byDate, [k]: Math.max(0, (st.byDate[k] || 0) - 1) },
-        perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) }
+        perDhikr: { ...st.perDhikr, [activeName.id]: Math.max(0, (st.perDhikr[activeName.id] || 0) - 1) },
+        dayDhikr: bumpDay(st.dayDhikr, k, activeName.id, -1)
       };
     });
 

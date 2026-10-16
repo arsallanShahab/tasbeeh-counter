@@ -873,6 +873,20 @@ export const SEED_DHIKRS = [
     hadith: "When the Prophet ﷺ broke his fast he would say this. (Abu Dawud 2357, hasan)",
     story: "Said at the moment of iftar, after the first sip of water or bite of a date.",
     benefits: "Closes a day of fasting with gratitude and hope for its reward."
+  },
+
+  // The night: said on waking for tahajjud.
+  {
+    id: "waking_night",
+    tr: "La ilaha illallahu wahdahu la sharika lah, lahul mulku wa lahul hamd, wa huwa ala kulli shay'in qadir. Alhamdulillah, wa subhanallah, wa la ilaha illallah, wallahu akbar, wa la hawla wa la quwwata illa billah",
+    arabic:
+      "لَا إِلَٰهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ، الْحَمْدُ لِلّٰهِ، وَسُبْحَانَ اللّٰهِ، وَلَا إِلَٰهَ إِلَّا اللّٰهُ، وَاللّٰهُ أَكْبَرُ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ",
+    en: "None has the right to be worshipped but Allah alone, without partner; His is the dominion and His the praise, and He has power over all things. Praise be to Allah, glory be to Allah, there is no god but Allah, Allah is the Greatest, and there is no might nor power except with Allah",
+    target: 1,
+    tags: ["night"],
+    hadith: "The Prophet ﷺ said: 'Whoever wakes at night and says this, then says: O Allah, forgive me, or makes du'a, it is answered; and if he makes wudu and prays, his prayer is accepted.' (Bukhari 1154)",
+    story: "The words for the moment you wake in the night, before standing for tahajjud.",
+    benefits: "Opens the night with tawheed and praise, and the du'a after it is answered."
   }
 ];
 
@@ -1206,6 +1220,18 @@ export const SEED_LISTS = [
   },
 
   {
+    id: "tahajjud",
+    name: "Waking for Tahajjud",
+    occasion: "night",
+    icon: "moon",
+    steps: [
+      { dhikr: "waking_night", target: 1 },
+      { dhikr: "astaghfirullah", target: 100 },
+      { dhikr: "salawat", target: 10 }
+    ]
+  },
+
+  {
     id: "iftar",
     name: "Breaking the Fast",
     occasion: "fasting",
@@ -1223,7 +1249,7 @@ export const OCCASIONS = {
   anxiety: "Anxiety", protection: "Protection", ramadan: "Ramadan", family: "Family",
   knowledge: "Knowledge", salah: "In Salah", "high-reward": "High Reward", gathering: "Gathering",
   grief: "In Grief", guidance: "Seeking Guidance", "names-of-allah": "99 Names",
-  "dhul-hijjah": "Dhul-Hijjah", eid: "Eid", fasting: "Fasting"
+  "dhul-hijjah": "Dhul-Hijjah", eid: "Eid", fasting: "Fasting", night: "The Night"
 };
 
 export const ICONS = { sun: Sun, moon: Moon, sunrise: Sunrise, sunset: Sunset, heart: Heart, star: Star, sparkles: Sparkles, mosque: BookOpen, shield: Shield, trophy: Trophy };
@@ -1255,7 +1281,8 @@ export const OCCASION_ICONS = {
   "names-of-allah": Sparkles,
   "dhul-hijjah": Sun,
   eid: Sparkles,
-  fasting: Sunset
+  fasting: Sunset,
+  night: Moon
 };
 
 export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "friday"];
@@ -1266,6 +1293,9 @@ export const DEFAULT_QUICK_COLLECTIONS = ["morning", "evening", "after-salah", "
 export const HOME_SECTIONS = {
   prayer: { label: "Prayer times" },
   streak: { label: "Daily progress" },
+  adhkar: { label: "Today's adhkar" },
+  reflection: { label: "Friday reflection" },
+  duas: { label: "Your du'a list" },
   frequent: { label: "Most recited" },
   pinned: { label: "Your dhikr" },
   suggested: { label: "Recite now" },
@@ -1279,6 +1309,9 @@ export const HOME_SECTIONS = {
 export const DEFAULT_HOME_SECTIONS = [
   { key: "prayer", visible: true },
   { key: "streak", visible: true },
+  { key: "adhkar", visible: true },
+  { key: "reflection", visible: true },
+  { key: "duas", visible: true },
   { key: "frequent", visible: true },
   { key: "pinned", visible: true },
   { key: "suggested", visible: true },
@@ -1378,6 +1411,9 @@ export const DEFAULT_SETTINGS = {
   quickCollections: DEFAULT_QUICK_COLLECTIONS,
   homeSections: DEFAULT_HOME_SECTIONS,
   dailyGoal: 100,
+  adhkarSlots: ["fajr", "morning", "dhuhr", "asr", "evening", "maghrib", "isha", "sleep"],
+  duaList: [],
+  reflectionSeen: null,
   haptics: true,
   sound: false,
   autoAdvance: true,
@@ -1409,6 +1445,7 @@ export const DEFAULT_SETTINGS = {
       enabled: false,
       before: 0,             // minutes before adhan
       prayers: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
+      lastThird: false,      // a reminder when the last third of the night begins
     },
   },
 };

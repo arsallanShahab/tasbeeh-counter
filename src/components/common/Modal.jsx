@@ -13,6 +13,9 @@ const SHEET_OUT = { duration: 0.26, ease: [0.4, 0, 1, 1] };
 const DIALOG_IN = { duration: 0.24, ease: [0.22, 1, 0.36, 1] };
 const DIALOG_OUT = { duration: 0.16, ease: [0.4, 0, 1, 1] };
 
+// Open sheets, oldest first: only the top one answers Escape and traps Tab.
+const openSheets = [];
+
 /* Back gesture support. Each open sheet pushes one history entry tagged with
    its depth, so the system back gesture, the Android back button and the
    browser's Back all close the top sheet instead of leaving the page. Closing
@@ -90,9 +93,12 @@ export const Sheet = ({
       (target || root).focus({ preventScroll: true });
     }, 60);
 
+    const me = {};
+    openSheets.push(me);
     const onKey = (e) => {
+      if (openSheets[openSheets.length - 1] !== me) return;
       if (e.key === "Escape") {
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         onCloseRef.current?.();
         return;
       }
@@ -113,6 +119,7 @@ export const Sheet = ({
 
     return () => {
       clearTimeout(t);
+      openSheets.splice(openSheets.indexOf(me), 1);
       window.removeEventListener("keydown", onKey, true);
       document.body.style.overflow = prevOverflow;
       if (opener && typeof opener.focus === "function" && document.contains(opener)) {

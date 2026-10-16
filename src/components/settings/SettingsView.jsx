@@ -380,6 +380,12 @@ const PrayerSettings = () => {
               </div>
             </>
           )}
+          <ToggleRow
+            label="Last third of the night"
+            hint={hasLoc ? "A quiet reminder when it begins, with the night adhkar." : "Set your location first: it is worked out from Maghrib and Fajr."}
+            on={!!p.reminders?.lastThird}
+            onChange={() => hasLoc && setReminders({ lastThird: !p.reminders?.lastThird })}
+          />
         </Panel>
       </Group>
     </div>
