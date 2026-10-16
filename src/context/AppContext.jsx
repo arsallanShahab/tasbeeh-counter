@@ -7,6 +7,7 @@ import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
+import { DAILY_IDS } from "../constants/dailyDuas";
 import { regionalHijriOffset } from "../utils/hijri";
 import { WebHaptics } from "web-haptics";
 
@@ -172,6 +173,7 @@ export const AppProvider = ({ children }) => {
       for (const [flag, dIds, lIds] of [
         ["seeds_seasonal_v1", ["takbir_eid", "arafah_dua", "iftar_dua"], ["dhul-hijjah-ten", "arafah-day", "eid-takbir", "last-ten-nights", "iftar"]],
         ["seeds_night_v1", ["waking_night"], ["tahajjud"]],
+        ["seeds_daily_v1", DAILY_IDS, []],
       ]) {
         if (store.get(flag, false)) continue;
         loadedDhikrs = [...loadedDhikrs, ...missing(loadedDhikrs, SEED_DHIKRS, dIds)];

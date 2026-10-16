@@ -1,12 +1,31 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Share2 } from "lucide-react";
 import { Sheet } from "../common/Modal";
 import { Seg } from "../common/Seg";
+import { Button } from "../common/Button";
+import ShareSheet from "../common/ShareSheet";
+
+// The reference at the end of a hadith, such as "Bukhari 1145".
+const refOf = (h) => (h?.match(/\(([^()]*\d[^()]*)\)\s*$/) || [])[1] || "";
 
 /* The full text of a dhikr, with its virtue and background when the library
    has them. A sheet over the counter, so closing it returns you mid-count. */
 export const DhikrReader = ({ open, onClose, d, lang = "both", arabicScale = 1, textScale = 1 }) => {
   const [tab, setTab] = useState("text");
   const [forId, setForId] = useState(d?.id);
+  const [sharing, setSharing] = useState(false);
+  const card = useMemo(
+    () =>
+      d && {
+        eyebrow: d.moment || "",
+        arabic: d.arabic,
+        title: d.tr,
+        meaning: d.en,
+        source: refOf(d.hadith),
+        filename: `${(d.moment || d.tr).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "dhikr"}.png`,
+      },
+    [d]
+  );
   if (d?.id !== forId) {
     setForId(d?.id);
     setTab("text");
@@ -19,11 +38,12 @@ export const DhikrReader = ({ open, onClose, d, lang = "both", arabicScale = 1, 
   const tabs = [
     { v: "text", l: "Text" },
     ...(hasVirtue ? [{ v: "virtue", l: "Virtue" }] : []),
-    ...(hasStory ? [{ v: "story", l: "Background" }] : []),
+    ...(hasStory ? [{ v: "story", l: d.moment ? "When" : "Background" }] : []),
   ];
 
   return (
-    <Sheet open={open} onClose={onClose} title={d.tr} size="lg">
+    <>
+    <Sheet open={open} onClose={onClose} title={d.moment || d.tr} size="lg">
       {tabs.length > 1 && <Seg label="Reader section" value={tab} onChange={setTab} options={tabs} className="mb-6" />}
 
       {tab === "text" && (
@@ -55,6 +75,9 @@ export const DhikrReader = ({ open, onClose, d, lang = "both", arabicScale = 1, 
               </section>
             )}
           </div>
+          <Button variant="tonal" size="sm" icon={Share2} onClick={() => setSharing(true)}>
+            Share as image
+          </Button>
         </div>
       )}
 
@@ -76,6 +99,8 @@ export const DhikrReader = ({ open, onClose, d, lang = "both", arabicScale = 1, 
 
       {tab === "story" && d.story && <p className="max-w-[65ch] text-base leading-relaxed text-ink">{d.story}</p>}
     </Sheet>
+    <ShareSheet open={open && sharing} onClose={() => setSharing(false)} card={card} />
+    </>
   );
 };
 

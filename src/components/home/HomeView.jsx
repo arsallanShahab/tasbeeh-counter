@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -15,6 +15,7 @@ import {
   Sun,
   Mountain,
   ExternalLink,
+  Share2,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -24,6 +25,7 @@ import AdhkarChecklist from "./AdhkarChecklist";
 import DuaSection from "../duas/DuaSection";
 import DuaSheet from "../duas/DuaSheet";
 import WeekReflection from "../stats/WeekReflection";
+import ShareSheet from "../common/ShareSheet";
 import { resolveHomeSections } from "../../utils/homeSections";
 import { useNow } from "../../hooks/useNow";
 import { useOccasions } from "../../hooks/useOccasions";
@@ -146,6 +148,12 @@ export const HomeView = () => {
   const occasions = useOccasions();
   const [occ, ...alsoOcc] = occasions;
   const [duaOpen, setDuaOpen] = useState(false);
+  const [sharingName, setSharingName] = useState(false);
+  const nameIdx = dayOfYear(d) % SEED_NAMES_OF_ALLAH.length;
+  const nameCard = useMemo(() => {
+    const n = SEED_NAMES_OF_ALLAH[nameIdx];
+    return n && { eyebrow: `Name of the day · ${nameIdx + 1} of 99`, arabic: n.arabic, title: n.tr, meaning: n.en, source: "", filename: `${n.tr.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png` };
+  }, [nameIdx]);
 
   const sug = suggestionFor(d.getHours());
   const suggest = lists.find((l) => l.id === sug.id) || lists[0];
@@ -653,6 +661,9 @@ export const HomeView = () => {
               >
                 All 99
               </Button>
+              <Button variant="link" size="sm" icon={Share2} onClick={() => setSharingName(true)}>
+                Share
+              </Button>
             </div>
           </div>
         </div>
@@ -728,6 +739,7 @@ export const HomeView = () => {
         </div>
         {footer}
         <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
+        <ShareSheet open={sharingName} onClose={() => setSharingName(false)} card={nameCard} />
       </div>
     );
   }
@@ -740,6 +752,7 @@ export const HomeView = () => {
       {visible.map((s) => renderers[s.key]())}
       {footer}
       <DuaSheet open={duaOpen} onClose={() => setDuaOpen(false)} />
+      <ShareSheet open={sharingName} onClose={() => setSharingName(false)} card={nameCard} />
     </div>
   );
 };

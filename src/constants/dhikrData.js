@@ -1,3 +1,4 @@
+import { DAILY_DUAS } from "./dailyDuas";
 import {
   Sun, Moon, Sunrise, Sunset, Heart, Star, Sparkles, BookOpen, Shield, Trophy
 } from "lucide-react";
@@ -887,7 +888,9 @@ export const SEED_DHIKRS = [
     hadith: "The Prophet ﷺ said: 'Whoever wakes at night and says this, then says: O Allah, forgive me, or makes du'a, it is answered; and if he makes wudu and prays, his prayer is accepted.' (Bukhari 1154)",
     story: "The words for the moment you wake in the night, before standing for tahajjud.",
     benefits: "Opens the night with tawheed and praise, and the du'a after it is answered."
-  }
+  },
+
+  ...DAILY_DUAS
 ];
 
 export const SEED_LISTS = [

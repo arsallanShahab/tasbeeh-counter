@@ -11,12 +11,14 @@ import { Button, IconButton } from "../common/Button";
 import { Seg } from "../common/Seg";
 import { useToast } from "../common/toastContext";
 import ItemSheet from "./ItemSheet";
+import DailyDuas from "./DailyDuas";
 
 const TABS = [
   { v: "mine", l: "Mine" },
   { v: "sets", l: "Sets" },
   { v: "dhikrs", l: "Dhikr" },
   { v: "names", l: "Names" },
+  { v: "daily", l: "Daily" },
 ];
 
 /* Occasion order for grouping and for the category list. */
@@ -105,6 +107,7 @@ export const LibraryView = () => {
       dhikrs.filter(
         (d) =>
           !d.tags?.includes("names-of-allah") &&
+          !d.tags?.includes("daily") &&
           matchText(d) &&
           (activeOccasion === "all" || d.tags?.includes(activeOccasion))
       ),
@@ -512,7 +515,7 @@ export const LibraryView = () => {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={tab === "names" ? "Search the 99 Names" : "Search by name, meaning or Arabic"}
+              placeholder={tab === "names" ? "Search the 99 Names" : tab === "daily" ? "Search: travel, rain, eating…" : "Search by name, meaning or Arabic"}
               aria-label="Search the library"
               className="field-input pl-11 pr-11 [&::-webkit-search-cancel-button]:hidden"
             />
@@ -530,8 +533,8 @@ export const LibraryView = () => {
         )}
       </div>
 
-      <div className={tab !== "mine" ? "lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-10" : ""}>
-        {tab !== "mine" && (
+      <div className={tab !== "mine" && tab !== "daily" ? "lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-start lg:gap-10" : ""}>
+        {tab !== "mine" && tab !== "daily" && (
           <>
             {/* Desktop: category index in its own column. */}
             <nav aria-label="Categories" className="hidden lg:sticky lg:top-12 lg:block">
@@ -569,7 +572,7 @@ export const LibraryView = () => {
         )}
 
         <div className="min-w-0">
-          {filtering && tab !== "mine" && (
+          {filtering && tab !== "mine" && tab !== "daily" && (
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="numerals text-sm text-muted" aria-live="polite">
                 {fmt(counts[tab])} {counts[tab] === 1 ? "result" : "results"}
@@ -580,7 +583,7 @@ export const LibraryView = () => {
               </Button>
             </div>
           )}
-          {tab === "mine" ? mine : tab === "sets" ? sets : tab === "dhikrs" ? dhikrBody : names}
+          {tab === "mine" ? mine : tab === "sets" ? sets : tab === "dhikrs" ? dhikrBody : tab === "daily" ? <DailyDuas query={searchQuery} /> : names}
         </div>
       </div>
 
