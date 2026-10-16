@@ -49,6 +49,12 @@ export function buildCustom(dark, gold) {
   };
 }
 
+// How the next bead stands out; older saves used glow, ring, pulse and plain.
+const OLD_MARKS = { glow: "raised", pulse: "raised", ring: "rim", plain: "none" };
+export function beadMark(v) {
+  return OLD_MARKS[v] || v || "raised";
+}
+
 export function resolveBeadTheme(settings) {
   if (settings.beadTheme === "custom") {
     const c = settings.customBead || { dark: "#15302a", gold: "#d8a93a" };

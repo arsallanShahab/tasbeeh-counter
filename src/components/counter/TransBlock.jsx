@@ -2,24 +2,28 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE } from "../../constants/dhikrData";
 
+const rem = (base, scale) => ({ fontSize: `${base * scale}rem` });
+
 const FIELD_RENDERERS = {
-  arabic: (d, { size }) => (
-    <p
-      dir="rtl"
-      lang="ar"
-      className={`font-arabic text-ink ${size === "lg" ? "text-[2.5rem] leading-[1.85]" : "text-[2rem] leading-[1.85]"}`}
-    >
+  arabic: (d, { size, arabicScale }) => (
+    <p dir="rtl" lang="ar" className="font-arabic leading-[1.85] text-ink" style={rem(size === "lg" ? 2.5 : 2, arabicScale)}>
       {d.arabic}
     </p>
   ),
-  translit: (d) => <p className="font-display text-xl leading-snug italic text-ink">{d.tr}</p>,
-  translation: (d, { lang }) => (
+  translit: (d, { textScale }) => (
+    <p className="font-display leading-snug italic text-ink" style={rem(1.25, textScale)}>
+      {d.tr}
+    </p>
+  ),
+  translation: (d, { lang, textScale }) => (
     <div className="space-y-1.5">
       {(lang === "en" || lang === "both") && d.en && (
-        <p className="mx-auto max-w-[44ch] text-[0.9375rem] leading-relaxed text-muted">{d.en}</p>
+        <p className="mx-auto max-w-[44ch] leading-relaxed text-muted" style={rem(0.9375, textScale)}>
+          {d.en}
+        </p>
       )}
       {(lang === "ur" || lang === "both") && d.ur && (
-        <p dir="rtl" lang="ur" className="font-urdu text-lg leading-loose text-muted">
+        <p dir="rtl" lang="ur" className="font-urdu leading-loose text-muted" style={rem(1.125, textScale)}>
           {d.ur}
         </p>
       )}
@@ -39,6 +43,9 @@ export const TransBlock = ({
   fieldVisible = DEFAULT_DHIKR_FIELD_VISIBLE,
   collapsedMax = COLLAPSED_MAX,
   size = "md",
+  arabicScale = 1,
+  textScale = 1,
+  fade = "to-page", // the surface it sits on, so the fade blends in
   onOpenReader,
 }) => {
   const [overflowing, setOverflowing] = useState(false);
@@ -51,7 +58,7 @@ export const TransBlock = ({
     const ro = new ResizeObserver(measure);
     ro.observe(innerRef.current);
     return () => ro.disconnect();
-  }, [d?.id, lang, fieldOrder, fieldVisible, collapsedMax]);
+  }, [d?.id, lang, fieldOrder, fieldVisible, collapsedMax, arabicScale, textScale]);
 
   if (!d) return null;
 
@@ -68,14 +75,14 @@ export const TransBlock = ({
         <span ref={innerRef} className="flex flex-col items-stretch gap-3 px-1">
           {visibleFields.map((key) => (
             <span key={`${d.id}-${key}`} className="block">
-              {FIELD_RENDERERS[key](d, { lang, size })}
+              {FIELD_RENDERERS[key](d, { lang, size, arabicScale, textScale })}
             </span>
           ))}
         </span>
         {overflowing && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent to-page"
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-b from-transparent ${fade}`}
           />
         )}
       </span>

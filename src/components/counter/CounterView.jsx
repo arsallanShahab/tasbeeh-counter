@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimate } from "motion/react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import {
-  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, Hand, BookOpen, Palette,
+  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, Hand, BookOpen, Palette, ALargeSmall, ArrowRight,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -15,6 +15,7 @@ import BeadStrand from "./BeadStrand";
 import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
 import CounterStylePicker from "./CounterStylePicker";
+import { ArabicFontPicker, ControlLabel, FieldToggles, LanguageControl, TextSizeControls } from "../settings/ReadingControls";
 import { useToast } from "../common/toastContext";
 
 const PRESETS = [33, 100, 300, 1000];
@@ -29,6 +30,8 @@ export const CounterView = () => {
   const isDesktop = useIsDesktop();
   const [readerOpen, setReaderOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [displayOpen, setDisplayOpen] = useState(false);
+  const navigate = useNavigate();
   const toast = useToast();
   const tapStart = useRef(null);
 
@@ -277,6 +280,7 @@ export const CounterView = () => {
             </p>
           )}
         </div>
+        <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
         <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} className="-mr-2" />
       </header>
 
@@ -341,6 +345,8 @@ export const CounterView = () => {
                   fieldVisible={settings.dhikrFieldVisible}
                   collapsedMax={isDesktop ? 440 : 200}
                   size={isDesktop ? "lg" : "md"}
+                  arabicScale={settings.arabicScale ?? 1}
+                  textScale={settings.textScale ?? 1}
                   onOpenReader={settings.fullScreenTap ? undefined : () => setReaderOpen(true)}
                 />
               ) : (
@@ -451,7 +457,59 @@ export const CounterView = () => {
         <CounterStylePicker />
       </Sheet>
 
-      <DhikrReader open={readerOpen} onClose={() => setReaderOpen(false)} d={d} lang={settings.lang} />
+      {/* Display: a live preview of the current dhikr above the controls. */}
+      <Sheet open={displayOpen} onClose={() => setDisplayOpen(false)} title="Display" description="Changes apply straight away.">
+        {d && (
+          <div className="mb-6 rounded-2xl bg-sunken px-4 py-4">
+            <TransBlock
+              d={d}
+              lang={settings.lang}
+              fieldOrder={settings.dhikrFieldOrder}
+              fieldVisible={settings.dhikrFieldVisible}
+              collapsedMax={150}
+              fade="to-sunken"
+              arabicScale={settings.arabicScale ?? 1}
+              textScale={settings.textScale ?? 1}
+            />
+          </div>
+        )}
+        <div className="space-y-6">
+          <TextSizeControls />
+          <div>
+            <ControlLabel hint="Keep at least one">Show while counting</ControlLabel>
+            <FieldToggles />
+          </div>
+          <div>
+            <ControlLabel>Translation</ControlLabel>
+            <LanguageControl />
+          </div>
+          <div>
+            <ControlLabel>Arabic typeface</ControlLabel>
+            <ArabicFontPicker layout="rail" />
+          </div>
+          <Button
+            variant="link"
+            size="sm"
+            iconRight={ArrowRight}
+            className="-ml-2"
+            onClick={() => {
+              setDisplayOpen(false);
+              navigate("/settings?panel=display");
+            }}
+          >
+            Reorder lines in Settings
+          </Button>
+        </div>
+      </Sheet>
+
+      <DhikrReader
+        open={readerOpen}
+        onClose={() => setReaderOpen(false)}
+        d={d}
+        lang={settings.lang}
+        arabicScale={settings.arabicScale ?? 1}
+        textScale={settings.textScale ?? 1}
+      />
     </div>
   );
 };

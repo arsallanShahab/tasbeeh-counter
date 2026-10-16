@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { beadMark } from "../../utils/theme";
 
 // Beads on the ring, as on a real misbaha.
 export const BEADS = 33;
@@ -25,7 +26,8 @@ export const BeadGradients = ({ id, theme }) => (
   </defs>
 );
 
-export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, onDec, children, label }) => {
+export const BeadRing = ({ count, target, theme, activeStyle = "raised", onInc, onDec, children, label }) => {
+  const mark = beadMark(activeStyle);
   const N = BEADS;
   const STEP = (2 * Math.PI) / N;
   const STEP_DEG = 360 / N;
@@ -158,29 +160,31 @@ export const BeadRing = ({ count, target, theme, activeStyle = "glow", onInc, on
             const y = 100 + R * Math.sin(a);
             const isFront = i === front;
             const on = isLit(i);
-            const r = isFront ? beadR * 1.32 : on ? beadR * 1.02 : beadR * 0.94;
+            const frontR = mark === "raised" ? 1.32 : mark === "none" ? 1.02 : 1.14;
+            const r = isFront ? beadR * frontR : on ? beadR * 1.02 : beadR * 0.94;
+            const out = (d) => [x + Math.cos(a) * d, y + Math.sin(a) * d];
             return (
               <g key={i}>
-                {isFront && activeStyle === "glow" && (
-                  <circle cx={x} cy={y} r={beadR * 2} fill={theme.glow} opacity="0.16" />
-                )}
-                {isFront && activeStyle === "pulse" && !reduced && (
-                  <motion.circle
-                    cx={x}
-                    cy={y}
-                    fill={theme.glow}
-                    initial={{ r: beadR, opacity: 0.35 }}
-                    animate={{ r: beadR * 2.4, opacity: 0 }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                {/* Rim light and marker sit on the outer side of the ring. */}
+                {isFront && mark === "rim" && (
+                  <path
+                    d={(() => {
+                      const rr = r + 1.3;
+                      const at = (d) => [x + rr * Math.cos(a + d), y + rr * Math.sin(a + d)].map((v) => v.toFixed(2)).join(" ");
+                      return `M${at(-1.25)} A${rr} ${rr} 0 0 1 ${at(1.25)}`;
+                    })()}
+                    fill="none"
+                    stroke={theme.glow}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    opacity="0.95"
                   />
                 )}
-                {isFront && activeStyle === "ring" && (
-                  <circle cx={x} cy={y} r={beadR * 1.75} fill="none" stroke={theme.glow} strokeWidth="1.2" opacity="0.8" />
-                )}
+                {isFront && mark === "marker" && <circle cx={out(r * 1.9)[0]} cy={out(r * 1.9)[1]} r={beadR * 0.24} fill={theme.glow} />}
                 <motion.circle
                   cx={x}
                   cy={y}
-                  fill={`url(#${gid}-${isFront ? "front" : on ? "gold" : "dark"})`}
+                  fill={`url(#${gid}-${isFront && mark !== "none" ? "front" : on ? "gold" : "dark"})`}
                   stroke="#0006"
                   strokeWidth="0.4"
                   initial={false}

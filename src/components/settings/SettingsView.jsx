@@ -9,7 +9,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 import { parseBackup, readFileAsText } from "../../utils/backup";
-import { useGoogleFonts } from "../../utils/fonts";
 import { PageHeader, Panel, ListGroup, ListRow, IconTile } from "../common/Layout";
 import { Button, IconButton } from "../common/Button";
 import { Field, TextInput, Select, Stepper } from "../common/Field";
@@ -18,8 +17,9 @@ import { useToast } from "../common/toastContext";
 import Toggle from "../common/Toggle";
 import Seg from "../common/Seg";
 import CounterStylePicker from "../counter/CounterStylePicker";
+import { ArabicFontPicker, TextSizeControls, LanguageControl } from "./ReadingControls";
 import {
-  THEMES, ARABIC_FONTS, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
+  THEMES, DHIKR_FIELDS, DEFAULT_DHIKR_FIELD_ORDER, DEFAULT_DHIKR_FIELD_VISIBLE,
   OCCASIONS, DEFAULT_QUICK_COLLECTIONS, HOME_SECTIONS,
 } from "../../constants/dhikrData";
 import { useEffectiveAppearance } from "../../utils/theme";
@@ -538,47 +538,16 @@ export const SettingsView = () => {
 
   const sectionReading = (
     <div className="space-y-10">
-      <ReadingFonts />
       <Group title="Translation">
-        <Seg
-          label="Translation language"
-          value={settings.lang}
-          onChange={(v) => set("lang", v)}
-          options={[
-            { v: "en", l: "English" },
-            { v: "ur", l: "اردو", dir: "rtl" },
-            { v: "both", l: "Both" },
-          ]}
-        />
+        <LanguageControl />
+      </Group>
+
+      <Group title="Text size" description="For the counter and the reader.">
+        <TextSizeControls />
       </Group>
 
       <Group title="Arabic typeface" description="Used for Arabic everywhere: the counter, the library and the 99 Names.">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Arabic typeface">
-          {ARABIC_FONTS.map((f) => {
-            const on = (settings.arabicFont || "amiri") === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => set("arabicFont", f.id)}
-                className={`flex flex-col gap-1 rounded-xl border p-3 text-left transition-colors ${
-                  on ? "border-ink bg-surface" : "border-line hover:border-line-strong"
-                }`}
-              >
-                <span dir="rtl" lang="ar" className="block w-full truncate text-[1.6rem] leading-[1.7] text-ink" style={{ fontFamily: f.stack }}>
-                  بِسْمِ اللّٰهِ
-                </span>
-                <span className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-ink">{f.name}</span>
-                  {on && <Check size={15} className="shrink-0 text-accent" aria-hidden="true" />}
-                </span>
-                <span className="truncate text-[0.8125rem] text-muted">{f.sub}</span>
-              </button>
-            );
-          })}
-        </div>
+        <ArabicFontPicker />
       </Group>
 
       <Group title="While counting" description="What appears above the counter, in this order. Keep at least one.">
@@ -1106,9 +1075,5 @@ export const SettingsView = () => {
 };
 
 /* Loads every Arabic typeface so the font picker can preview each one. */
-const ReadingFonts = () => {
-  useGoogleFonts(ARABIC_FONTS.map((f) => f.gf));
-  return null;
-};
 
 export default SettingsView;

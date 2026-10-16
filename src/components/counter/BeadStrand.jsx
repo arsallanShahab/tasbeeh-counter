@@ -1,7 +1,7 @@
 import { memo, useEffect, useId, useRef, useState } from "react";
 import { motion, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { BeadGradients } from "./BeadRing";
-import { shade } from "../../utils/theme";
+import { beadMark, shade } from "../../utils/theme";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
 
 // A circular arc (constant curvature) in a 340 x 240 view box, so the string
@@ -65,6 +65,12 @@ const makeGeom = (R) => {
 const GEOM_DESKTOP = makeGeom(9.4);
 const GEOM_MOBILE = makeGeom(12);
 
+// An arc of a circle of radius `r` around the bead, between two angles (degrees).
+const rimArc = (r, from, to) => {
+  const p = (d) => `${(r * Math.cos((d * Math.PI) / 180)).toFixed(2)} ${(r * Math.sin((d * Math.PI) / 180)).toFixed(2)}`;
+  return `M${p(from)} A${r} ${r} 0 0 1 ${p(to)}`;
+};
+
 // 0 at rest, 1 halfway across the gap.
 const liftOf = (g, o) => {
   const p = o - g;
@@ -74,7 +80,7 @@ const liftOf = (g, o) => {
 // One bead with a soft contact shadow, moved as a single transformed group
 // (no per-circle attribute updates). Memoised, so only beads whose look
 // changes re-render on a count.
-const FlowBead = memo(function FlowBead({ g, geom, offset, countedFrom, darkFill, goldFill, halo, haloColor, shadowId }) {
+const FlowBead = memo(function FlowBead({ g, geom, offset, countedFrom, darkFill, goldFill, highlight, haloColor, shadowId }) {
   const { R, placeOf } = geom;
   const x = useTransform(offset, (o) => pointAt(placeOf(g, o))[0]);
   const baseY = useTransform(offset, (o) => pointAt(placeOf(g, o))[1]);
@@ -94,10 +100,37 @@ const FlowBead = memo(function FlowBead({ g, geom, offset, countedFrom, darkFill
         <ellipse rx={R * 1.05} ry={R * 0.55} fill={`url(#${shadowId})`} opacity="0.9" />
       </motion.g>
       <motion.g style={{ x, y, scale }}>
-        {halo && <circle r={R * 1.65} fill="none" stroke={haloColor} strokeWidth="1" opacity="0.5" />}
-        <circle r={R} fill={darkFill} stroke="#0005" strokeWidth="0.4" />
-        <motion.circle r={R} fill={goldFill} style={{ opacity: gold }} />
-        <motion.circle cx={-R * 0.3} cy={-R * 0.34} r={R * 0.26} fill="#fff" style={{ opacity: shine }} />
+        <motion.g
+          initial={false}
+          animate={highlight === "raised" ? { scale: 1.16, y: -R * 0.3 } : { scale: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <circle r={R} fill={darkFill} stroke="#0005" strokeWidth="0.4" />
+          <motion.circle r={R} fill={goldFill} style={{ opacity: gold }} />
+          <motion.circle cx={-R * 0.3} cy={-R * 0.34} r={R * 0.26} fill="#fff" style={{ opacity: shine }} />
+          {highlight === "rim" && (
+            <motion.path
+              d={rimArc(R + 1.4, -160, -20)}
+              fill="none"
+              stroke={haloColor}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.95 }}
+              transition={{ duration: 0.25 }}
+            />
+          )}
+          {highlight === "marker" && (
+            <motion.circle
+              cy={-R * 1.55}
+              r={R * 0.2}
+              fill={haloColor}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            />
+          )}
+        </motion.g>
       </motion.g>
     </motion.g>
   );
@@ -115,7 +148,7 @@ const Cord = ({ color }) => (
 
 // Beads on an arched string that runs edge to edge. Each count carries the
 // next bead across the gap at the crown, from left to right.
-export const BeadStrand = ({ count, target, theme, activeStyle = "glow", onInc, onDec, children, label }) => {
+export const BeadStrand = ({ count, target, theme, activeStyle = "raised", onInc, onDec, children, label }) => {
   const gid = useId().replace(/:/g, "");
   const reduced = useReducedMotion();
   const wrap = useRef(null);
@@ -216,7 +249,7 @@ export const BeadStrand = ({ count, target, theme, activeStyle = "glow", onInc, 
               countedFrom={ticks - count}
               darkFill={`url(#${gid}-dark)`}
               goldFill={`url(#${gid}-gold)`}
-              halo={isNext && activeStyle !== "plain"}
+              highlight={isNext ? beadMark(activeStyle) : null}
               haloColor={theme.glow}
               shadowId={`${gid}-shadow`}
             />

@@ -4,7 +4,7 @@ import { Seg } from "../common/Seg";
 
 /* The full text of a dhikr, with its virtue and background when the library
    has them. A sheet over the counter, so closing it returns you mid-count. */
-export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
+export const DhikrReader = ({ open, onClose, d, lang = "both", arabicScale = 1, textScale = 1 }) => {
   const [tab, setTab] = useState("text");
   const [forId, setForId] = useState(d?.id);
   if (d?.id !== forId) {
@@ -28,24 +28,28 @@ export const DhikrReader = ({ open, onClose, d, lang = "both" }) => {
 
       {tab === "text" && (
         <div className="space-y-6">
-          <p dir="rtl" lang="ar" className="text-center font-arabic text-[2.25rem] leading-[1.95] text-ink">
+          <p dir="rtl" lang="ar" className="text-center font-arabic leading-[1.95] text-ink" style={{ fontSize: `${2.25 * arabicScale}rem` }}>
             {d.arabic}
           </p>
           <div className="space-y-5 border-t border-line pt-6">
             <section>
               <h3 className="eyebrow mb-2">Transliteration</h3>
-              <p className="font-display text-xl leading-relaxed italic text-ink">{d.tr}</p>
+              <p className="font-display leading-relaxed italic text-ink" style={{ fontSize: `${1.25 * textScale}rem` }}>
+                {d.tr}
+              </p>
             </section>
             {(lang === "en" || lang === "both") && d.en && (
               <section>
                 <h3 className="eyebrow mb-2">Meaning</h3>
-                <p className="max-w-[65ch] text-base leading-relaxed text-ink">{d.en}</p>
+                <p className="max-w-[65ch] leading-relaxed text-ink" style={{ fontSize: `${textScale}rem` }}>
+                  {d.en}
+                </p>
               </section>
             )}
             {(lang === "ur" || lang === "both") && d.ur && (
               <section>
                 <h3 className="eyebrow mb-2">Urdu</h3>
-                <p dir="rtl" lang="ur" className="font-urdu text-xl text-ink">
+                <p dir="rtl" lang="ur" className="font-urdu text-ink" style={{ fontSize: `${1.25 * textScale}rem` }}>
                   {d.ur}
                 </p>
               </section>

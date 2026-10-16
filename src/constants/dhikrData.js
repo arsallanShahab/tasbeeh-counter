@@ -1370,6 +1370,8 @@ export const DEFAULT_SETTINGS = {
   theme: "qalam",
   appearance: "system",
   arabicFont: "amiri",
+  arabicScale: 1,
+  textScale: 1,
   translit: true,
   dhikrFieldOrder: DEFAULT_DHIKR_FIELD_ORDER,
   dhikrFieldVisible: DEFAULT_DHIKR_FIELD_VISIBLE,
@@ -1382,7 +1384,7 @@ export const DEFAULT_SETTINGS = {
   loop: true,
   counterStyle: "strand",
   beadTheme: "onyx",
-  activeStyle: "glow",
+  activeStyle: "raised",
   customBead: { dark: "#15302a", gold: "#d8a93a" },
   alertsEnabled: true,
   alerts: [

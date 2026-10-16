@@ -1,7 +1,6 @@
 import { useApp } from "../../context/AppContext";
 import { BEAD_THEMES } from "../../constants/dhikrData";
-import { buildCustom } from "../../utils/theme";
-import { Seg } from "../common/Seg";
+import { beadMark, buildCustom } from "../../utils/theme";
 
 // Tiny previews for each counter style (64 x 44).
 const ringDots = Array.from({ length: 12 }, (_, i) => {
@@ -42,6 +41,60 @@ const COUNTER_STYLES = [
       <>
         <circle cx="32" cy="22" r="17" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2.5" />
         <path d="M32 5 A17 17 0 0 1 48.2 27" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" />
+      </>
+    ),
+  },
+];
+
+// Three beads on a cord; the middle one shows the mark (64 x 32).
+const side = (
+  <>
+    <path d="M2 26 Q32 6 62 26" fill="none" stroke="currentColor" strokeOpacity="0.35" strokeWidth="1" />
+    <circle cx="13" cy="20" r="3.6" fill="currentColor" opacity="0.55" />
+    <circle cx="51" cy="20" r="3.6" fill="currentColor" opacity="0.55" />
+  </>
+);
+const MARKS = [
+  {
+    v: "raised",
+    l: "Raised",
+    preview: (
+      <>
+        {side}
+        <ellipse cx="32" cy="20" rx="4.6" ry="1.8" fill="currentColor" opacity="0.18" />
+        <circle cx="32" cy="12.5" r="5" fill="var(--primary)" />
+      </>
+    ),
+  },
+  {
+    v: "rim",
+    l: "Rim light",
+    preview: (
+      <>
+        {side}
+        <circle cx="32" cy="16" r="4.2" fill="var(--primary)" />
+        <path d="M26.2 13.9 A6.2 6.2 0 0 1 37.8 13.9" fill="none" stroke="var(--gold)" strokeWidth="1.4" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    v: "marker",
+    l: "Marker",
+    preview: (
+      <>
+        {side}
+        <circle cx="32" cy="16" r="4.2" fill="var(--primary)" />
+        <circle cx="32" cy="6.5" r="1.4" fill="var(--gold)" />
+      </>
+    ),
+  },
+  {
+    v: "none",
+    l: "None",
+    preview: (
+      <>
+        {side}
+        <circle cx="32" cy="16" r="3.8" fill="currentColor" opacity="0.55" />
       </>
     ),
   },
@@ -148,18 +201,29 @@ export const CounterStylePicker = () => {
             )}
           </div>
           <div>
-            <Label>Current bead</Label>
-            <Seg
-              label="Current bead highlight"
-              value={settings.activeStyle}
-              onChange={(v) => set("activeStyle", v)}
-              options={[
-                { v: "glow", l: "Glow" },
-                { v: "ring", l: "Ring" },
-                { v: "pulse", l: "Pulse" },
-                { v: "plain", l: "Plain" },
-              ]}
-            />
+            <Label>Next bead</Label>
+            <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="How the next bead stands out">
+              {MARKS.map((m) => {
+                const on = beadMark(settings.activeStyle) === m.v;
+                return (
+                  <button
+                    key={m.v}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => set("activeStyle", m.v)}
+                    className={`flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1 pb-2.5 pt-3 transition-colors ${
+                      on ? "border-ink bg-surface" : "border-line hover:border-line-strong"
+                    }`}
+                  >
+                    <svg viewBox="0 0 64 32" className="h-8 w-full max-w-16 text-ink" aria-hidden="true">
+                      {m.preview}
+                    </svg>
+                    <span className="text-center text-[0.8125rem] leading-tight font-medium text-ink">{m.l}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </>
       )}
