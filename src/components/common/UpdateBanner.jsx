@@ -1,3 +1,4 @@
+import { isNative } from "../../native/platform";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
@@ -10,7 +11,7 @@ const UpdateBanner = () => {
   const { updateAvailable, applyUpdate, view } = useApp();
   const [dismissed, setDismissed] = useState(false);
   // Never interrupt counting, reflection or the compass.
-  const visible = updateAvailable && !dismissed && !["counter", "names", "qibla"].includes(view);
+  const visible = !isNative && updateAvailable && !dismissed && !["counter", "names", "qibla"].includes(view);
 
   return (
     <AnimatePresence>

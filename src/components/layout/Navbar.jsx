@@ -10,7 +10,7 @@ export const Navbar = () => {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-[color-mix(in_srgb,var(--surface)_96%,transparent)] pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="vt-tabbar fixed inset-x-0 bottom-0 z-30 border-t border-line bg-[color-mix(in_srgb,var(--surface)_96%,transparent)] pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto grid max-w-[34rem] grid-cols-4">
         {NAV_ITEMS.map((n) => {

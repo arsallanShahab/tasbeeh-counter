@@ -8,6 +8,7 @@ import { useGoogleFonts, URDU_FONT } from "./utils/fonts";
 import { useBootScreen } from "./utils/boot";
 import { useDocumentSeo } from "./utils/seo";
 import { store } from "./utils/storage";
+import { isNative } from "./native/platform";
 import HomeView from "./components/home/HomeView";
 import LibraryView from "./components/library/LibraryView";
 import CounterView from "./components/counter/CounterView";
@@ -24,6 +25,7 @@ import { ToastProvider } from "./components/common/Toast";
 
 /* Views that take the whole screen: no tab bar, their own top bar. */
 const IMMERSIVE = ["counter", "names", "qibla"];
+
 
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
@@ -58,6 +60,7 @@ const AppContent = () => {
     root.style.colorScheme = effectiveAppearance;
     // Both media variants, so the app's own light/dark choice wins over the device's.
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", themeVars["--bg"]));
+    if (isNative) import("./native/setup").then((m) => m.paintStatusBar(themeVars["--bg"], effectiveAppearance === "dark"));
   }, [loaded, themeVars, effectiveAppearance, theme, settings.appearance]);
 
   // The boot screen in index.html covers this until the app is ready.
@@ -68,6 +71,7 @@ const AppContent = () => {
   return (
     <div
       className="font-body relative min-h-svh overflow-x-clip bg-page text-ink"
+      id="app-root"
       data-arabic-font={arabicFont.id}
       data-theme={effectiveAppearance}
       style={{ ...themeVars, "--font-arabic": arabicFont.stack }}
@@ -80,6 +84,8 @@ const AppContent = () => {
         Skip to content
       </a>
 
+      <div aria-hidden="true" className="vt-status pointer-events-none fixed inset-x-0 top-0 z-[65] h-[env(safe-area-inset-top)] bg-page" />
+
       <DesktopSidebar />
 
       <main
@@ -91,6 +97,21 @@ const AppContent = () => {
         }`}
       >
         <div className={`mx-auto w-full ${immersive ? "max-w-[34rem] lg:max-w-[1180px]" : "max-w-[34rem] lg:max-w-[1120px]"}`}>
+          {isNative ? (
+            // The app animates pages with View Transitions (native/transitions).
+            <div className="relative">
+                <Routes location={location}>
+                  <Route path="/" element={<HomeView />} />
+                  <Route path="/library" element={<LibraryView />} />
+                  <Route path="/counter" element={<CounterView />} />
+                  <Route path="/names" element={<NamesView />} />
+                  <Route path="/stats" element={<StatsView />} />
+                  <Route path="/settings" element={<SettingsView />} />
+                  <Route path="/qibla" element={<QiblaView />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </div>
+          ) : (
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
@@ -111,6 +132,7 @@ const AppContent = () => {
               </Routes>
             </motion.div>
           </AnimatePresence>
+          )}
         </div>
       </main>
 

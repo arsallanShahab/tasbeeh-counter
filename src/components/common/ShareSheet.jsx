@@ -8,6 +8,7 @@ import { Sheet } from "./Modal";
 import { Button } from "./Button";
 import { useToast } from "./toastContext";
 import Seg from "./Seg";
+import { isNative } from "../../native/platform";
 
 /* Preview and send a share card. `card` is { eyebrow, arabic, title, meaning,
    source, filename }. The look follows the theme in light or dark. */
@@ -62,7 +63,8 @@ export const ShareSheet = ({ open, onClose, card, initialFormat = "card" }) => {
     setBusy(false);
     if (result === "saved") toast("Image saved");
   };
-  const canShareFiles = typeof navigator !== "undefined" && !!navigator.canShare;
+  // In the app the system sheet both shares and saves, so one button does both.
+  const canShareFiles = isNative || (typeof navigator !== "undefined" && !!navigator.canShare);
 
   return (
     <Sheet
@@ -90,7 +92,7 @@ export const ShareSheet = ({ open, onClose, card, initialFormat = "card" }) => {
       </div>
       {wallpaper && (
         <p className="mx-auto mt-3 max-w-[20rem] text-center text-[0.8125rem] leading-snug text-muted">
-          Save it, then set it as your wallpaper from Photos or Gallery.
+          {isNative ? "Tap Share or save, choose Save, then set it as your wallpaper from Photos or Gallery." : "Save it, then set it as your wallpaper from Photos or Gallery."}
         </p>
       )}
 
@@ -126,12 +128,14 @@ export const ShareSheet = ({ open, onClose, card, initialFormat = "card" }) => {
         <div className="flex gap-2">
           {canShareFiles && (
             <Button icon={Share2} loading={busy} disabled={!image} block onClick={() => send("share")}>
-              Share
+              {isNative ? "Share or save" : "Share"}
             </Button>
           )}
-          <Button variant={canShareFiles ? "tonal" : "primary"} icon={Download} disabled={!image || busy} block onClick={() => send("save")}>
-            Save image
-          </Button>
+          {!isNative && (
+            <Button variant={canShareFiles ? "tonal" : "primary"} icon={Download} disabled={!image || busy} block onClick={() => send("save")}>
+              Save image
+            </Button>
+          )}
         </div>
       </div>
     </Sheet>

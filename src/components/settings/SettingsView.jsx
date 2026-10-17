@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { resolveHomeSections } from "../../utils/homeSections";
+import { isNative } from "../../native/platform";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   BookOpenText, Palette, Hand, Compass, Bell, DatabaseBackup, ArrowLeft, Check, ChevronUp, ChevronDown,
@@ -460,7 +461,7 @@ export const SettingsView = () => {
   const handleExport = () => {
     try {
       exportData();
-      toast("Backup saved to your downloads");
+      toast(isNative ? "Choose where to keep your backup" : "Backup saved to your downloads");
     } catch {
       setRestoreError("The backup file couldn't be created. Please try again.");
     }
@@ -827,7 +828,7 @@ export const SettingsView = () => {
       <Group title="Backup" description="Save everything (stats, settings, your own dhikr and sets, and any session in progress) to one file. Restore it on a new phone to carry on where you left off.">
         <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleRestoreFile} />
         <Panel className="divide-y divide-line">
-          <ListRow title="Save a backup file" subtitle="Downloads a .json file" leading={<IconTile icon={Download} size={36} />} onClick={handleExport} />
+          <ListRow title="Save a backup file" subtitle={isNative ? "Save it to Files or Drive, or send it to yourself" : "Downloads a .json file"} leading={<IconTile icon={Download} size={36} />} onClick={handleExport} />
           <ListRow
             title={restoreState === "working" ? "Reading the file" : "Restore from a backup"}
             subtitle="Replaces what is on this device"
@@ -854,13 +855,18 @@ export const SettingsView = () => {
             leading={<IconTile icon={RefreshCw} size={36} />}
             onClick={handleResync}
           />
+          {/* In the app, the store handles updates and installation. */}
+          {isNative ? (
+            <ListRow title="Version" subtitle={`You have version ${appVersion}`} leading={<IconTile icon={Smartphone} size={36} />} />
+          ) : (
           <ListRow
             title={updateAvailable ? "Update ready, reload now" : updateState === "checking" ? "Checking for updates" : "Check for updates"}
             subtitle={`You have version ${appVersion}`}
             leading={<IconTile icon={RefreshCw} size={36} tone={updateAvailable ? "accent" : "neutral"} />}
             onClick={updateAvailable ? applyUpdate : handleCheckUpdates}
           />
-          {installPrompt ? (
+          )}
+          {isNative ? null : installPrompt ? (
             <ListRow title="Install on this device" subtitle="Opens full screen and works offline" leading={<IconTile icon={Smartphone} size={36} tone="accent" />} onClick={promptInstall} />
           ) : isInstalled ? (
             <ListRow title="Installed" subtitle="Running as an app on this device" leading={<IconTile icon={Check} size={36} />} />

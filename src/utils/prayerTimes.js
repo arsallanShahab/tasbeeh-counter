@@ -4,6 +4,7 @@
    *convention* (calculation method, Asr madhhab, high-latitude rule), so we
    expose all three and let the user match their local mosque, plus per-prayer
    minute offsets for the final reconciliation. */
+import { isNative } from "../native/platform";
 import {
   Coordinates,
   CalculationMethod,
@@ -280,6 +281,7 @@ export function timezoneCity() {
 
 /* ─── Geolocation ─────────────────────────────────────────────────────── */
 export function getCurrentPosition(options = {}) {
+  if (isNative) return import("../native/location").then((m) => m.nativePosition());
   return new Promise((resolve, reject) => {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       reject(new Error("Location isn't supported on this device."));

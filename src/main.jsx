@@ -1,16 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { AppRouter } from './native/AppRouter'
 import './index.css'
 import App from './App.jsx'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
+import { isNative } from './native/platform'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <BrowserRouter>
+      <AppRouter>
         <App />
-      </BrowserRouter>
+      </AppRouter>
     </ErrorBoundary>
   </StrictMode>,
 );
@@ -18,7 +19,11 @@ createRoot(document.getElementById('root')).render(
 /* Service worker: production only. In dev it would cache Vite's modules and
    serve stale code, so any worker left over from an earlier dev session is
    removed instead. */
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+/* In the Android and iOS app the store delivers updates and files are bundled,
+   so there is no service worker; the app wires up its native pieces instead. */
+if (isNative) {
+  import("./native/setup").then((m) => m.setupNative());
+} else if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
       .then((reg) => {

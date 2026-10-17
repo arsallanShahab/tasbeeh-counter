@@ -171,7 +171,7 @@ export const QiblaView = () => {
   );
 
   return (
-    <div className="flex min-h-[calc(100svh-1.5rem)] flex-col lg:min-h-[calc(100svh-3rem)]">
+    <div className="screen-fill flex flex-col">
       <header className="flex items-center gap-2">
         <IconButton icon={X} label="Close" onClick={() => navigate(-1)} className="-ml-2" />
         <h1 className="flex-1 text-center font-display text-lg text-ink">

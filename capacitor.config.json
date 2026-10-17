@@ -1,0 +1,18 @@
+{
+  "appId": "com.tasbeehgo.app",
+  "appName": "Tasbeeh Go",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#f3efe6"
+  },
+  "ios": {
+    "backgroundColor": "#f3efe6",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_tasbeeh",
+      "iconColor": "#2c5a46"
+    }
+  }
+}

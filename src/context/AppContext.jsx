@@ -8,6 +8,7 @@ import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
 import { countRhythm, stepSignature, toVibrate } from "../utils/haptics";
+import { isNative } from "../native/platform";
 import { DAILY_IDS } from "../constants/dailyDuas";
 import { regionalHijriOffset } from "../utils/hijri";
 import { WebHaptics } from "web-haptics";
@@ -99,6 +100,7 @@ export const AppProvider = ({ children }) => {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (isNative) return true;
     return (
       window.matchMedia?.("(display-mode: standalone)").matches ||
       window.navigator.standalone === true
@@ -357,6 +359,10 @@ export const AppProvider = ({ children }) => {
 
   const vibe = useCallback((pattern) => {
     if (!settings.haptics) return;
+    if (isNative) {
+      import("../native/haptics").then((m) => m.nativeHaptic(pattern));
+      return;
+    }
     try {
       if (!hapticsRef.current) {
         hapticsRef.current = new WebHaptics();
@@ -693,7 +699,7 @@ export const AppProvider = ({ children }) => {
     if (typeof window === "undefined") return;
     // Vite injects the real version in dev too, while public/version.json says
     // 0.0.0-dev, so without this the banner would show permanently in dev.
-    if (import.meta.env.DEV || APP_VERSION === "0.0.0-dev") return;
+    if (import.meta.env.DEV || APP_VERSION === "0.0.0-dev" || isNative) return;
 
     let cancelled = false;
     const check = async () => {
@@ -965,6 +971,11 @@ export const AppProvider = ({ children }) => {
   );
 
   const requestNotificationPermission = useCallback(async () => {
+    if (isNative) {
+      const perm = await (await import("../native/notifications")).requestNativePermission();
+      setNotifyPermission(perm);
+      return perm === "granted";
+    }
     if (typeof window === "undefined" || !("Notification" in window)) return false;
     const permission = await Notification.requestPermission();
     setNotifyPermission(permission);
@@ -1068,6 +1079,11 @@ export const AppProvider = ({ children }) => {
   /* Auto-request notification permission when reminders are enabled */
   useEffect(() => {
     if (!loaded || !notificationsActive) return;
+    if (isNative) {
+      if (notifyPermission !== "default") return;
+      const timer = setTimeout(() => requestNotificationPermission(), 1500);
+      return () => clearTimeout(timer);
+    }
     if (notifyPermission === "default" && "Notification" in window) {
       // Small delay so it doesn't fire instantly on first render
       const timer = setTimeout(() => {
@@ -1077,7 +1093,31 @@ export const AppProvider = ({ children }) => {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [loaded, notificationsActive, notifyPermission]);
+  }, [loaded, notificationsActive, notifyPermission, requestNotificationPermission]);
+
+  /* In the app: reminders are scheduled with the phone's notification system,
+     so they fire with the app closed. Rescheduled whenever reminder settings
+     change and each time the app returns to the foreground. */
+  const [resumeTick, setResumeTick] = useState(0);
+  useEffect(() => {
+    if (!isNative) return;
+    let off;
+    import("../native/notifications").then((m) => m.nativePermission().then(setNotifyPermission)).catch(() => {});
+    import("../native/setup").then((m) => (off = m.onResume(() => setResumeTick((t) => t + 1))));
+    return () => off?.();
+  }, []);
+  useEffect(() => {
+    if (!isNative || !loaded) return;
+    import("../native/notifications")
+      .then((m) => m.syncNativeReminders(notificationsActive && notifyPermission === "granted" ? m.buildNativeReminders(settings) : []))
+      .catch((e) => console.warn("Scheduling reminders failed:", e));
+  }, [loaded, settings, notificationsActive, notifyPermission, resumeTick]);
+  useEffect(() => {
+    if (!isNative) return;
+    let off;
+    import("../native/notifications").then((m) => (off = m.onReminderTap((url) => navigate(url))));
+    return () => off?.();
+  }, [navigate]);
 
   /* Sync alert configs to service worker for background scheduling */
   const syncAlertsToSW = useCallback(() => {
@@ -1152,7 +1192,7 @@ export const AppProvider = ({ children }) => {
 
   /* Foreground notification check loop + visibility-change handler */
   useEffect(() => {
-    if (notifyPermission !== "granted" || !notificationsActive) return;
+    if (isNative || notifyPermission !== "granted" || !notificationsActive) return;
 
     const checkAlerts = () => {
       const now = new Date();

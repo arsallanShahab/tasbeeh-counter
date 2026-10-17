@@ -11,9 +11,22 @@
     "bump": "node scripts/bump-version.js",
     "bump:patch": "node scripts/bump-version.js patch",
     "bump:minor": "node scripts/bump-version.js minor",
-    "bump:major": "node scripts/bump-version.js major"
+    "bump:major": "node scripts/bump-version.js major",
+    "app:sync": "vite build && cap sync",
+    "app:android": "vite build && cap sync android && cap open android",
+    "app:ios": "vite build && cap sync ios && cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/geolocation": "8.2.4",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/status-bar": "8.0.4",
     "@use-gesture/react": "^10.3.1",
     "adhan": "^4.4.4",
     "lucide-react": "^1.16.0",
@@ -24,6 +37,7 @@
     "web-haptics": "^0.0.6"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/react": "^19.2.14",

@@ -264,7 +264,7 @@ export const CounterView = () => {
 
   return (
     <div
-      className="flex min-h-[calc(100svh-1.5rem)] flex-col lg:min-h-[calc(100svh-3rem)]"
+      className="screen-fill flex flex-col"
       onPointerDown={settings.fullScreenTap ? onDown : undefined}
       onPointerUp={settings.fullScreenTap ? onUp : undefined}
       onPointerCancel={settings.fullScreenTap ? () => (tapStart.current = null) : undefined}
@@ -273,24 +273,20 @@ export const CounterView = () => {
       <h1 className="sr-only">{session.title}</h1>
 
       {/* Top bar */}
-      <header data-tap-skip="true" className="flex items-center gap-2">
-        <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-2" />
-        <div className="min-w-0 flex-1 text-center">
-          <p className="truncate font-display text-lg leading-tight text-ink">{session.title}</p>
-          {multi && (
-            <p className="numerals text-[0.8125rem] text-muted">
-              {i + 1} of {session.steps.length}
-            </p>
-          )}
+      {/* Equal side columns keep the title truly centred between the icons. */}
+      <header data-tap-skip="true" className="grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-center">
+        <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-2 justify-self-start" />
+        <p className="truncate text-center font-display text-lg leading-tight text-ink">{session.title}</p>
+        <div className="-mr-2 flex justify-self-end">
+          <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
+          <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} />
         </div>
-        <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
-        <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} className="-mr-2" />
       </header>
 
       {/* Steps: one segment per dhikr, filling as it is counted. */}
       {multi && (
-        <nav data-tap-skip="true" aria-label="Dhikr in this set" className="mt-4">
-          <ol className="flex gap-1.5">
+        <nav data-tap-skip="true" aria-label={`Dhikr in this set, ${i + 1} of ${session.steps.length}`} className="mt-4 flex items-start gap-3">
+          <ol className="flex min-w-0 flex-1 gap-1.5">
             {session.steps.map((s, idx) => {
               const sd = dById(s.dhikr);
               const pct = Math.min(1, (session.counts[idx] || 0) / s.target);
@@ -326,6 +322,9 @@ export const CounterView = () => {
               );
             })}
           </ol>
+          <span className="numerals shrink-0 pt-0.5 text-[0.8125rem] leading-none font-medium text-muted" aria-hidden="true">
+            {i + 1}/{session.steps.length}
+          </span>
         </nav>
       )}
 

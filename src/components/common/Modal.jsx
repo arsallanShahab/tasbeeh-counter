@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { X } from "lucide-react";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -164,7 +165,11 @@ export const Sheet = ({
     if (!isDesktop) dragControls.start(e);
   };
 
-  return (
+  // Rendered at the app root, outside any page: a page's transform or z-index
+  // must never trap a sheet under the tab bar. The root carries the theme.
+  const host = typeof document !== "undefined" ? document.getElementById("app-root") || document.body : null;
+  if (!host) return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center lg:items-center lg:p-6" data-tap-skip="true">
@@ -183,7 +188,7 @@ export const Sheet = ({
             aria-labelledby={titleId}
             aria-describedby={description ? descId : undefined}
             tabIndex={-1}
-            className={`relative flex max-h-[calc(100dvh-2.5rem)] w-full flex-col rounded-t-[1.75rem] border border-b-0 border-line bg-surface shadow-(--shadow-float) outline-none will-change-transform lg:max-h-[86dvh] lg:rounded-2xl lg:border-b ${width}`}
+            className={`relative flex max-h-[calc(100dvh-2.5rem-env(safe-area-inset-top))] w-full flex-col rounded-t-[1.75rem] border border-b-0 border-line bg-surface shadow-(--shadow-float) outline-none will-change-transform lg:max-h-[86dvh] lg:rounded-2xl lg:border-b ${width}`}
             initial={isDesktop ? { opacity: 0, y: 10, scale: 0.97 } : { y: "100%" }}
             animate={isDesktop ? { opacity: 1, y: 0, scale: 1, transition: DIALOG_IN } : { y: 0, transition: SHEET_IN }}
             exit={isDesktop ? { opacity: 0, y: 6, scale: 0.98, transition: DIALOG_OUT } : { y: "100%", transition: SHEET_OUT }}
@@ -247,7 +252,8 @@ export const Sheet = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    host
   );
 };
 

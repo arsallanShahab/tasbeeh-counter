@@ -1,3 +1,4 @@
+import { isNative } from "../native/platform";
 import { store } from "./storage";
 import { STORAGE_VERSION } from "../constants/dhikrData";
 
@@ -51,6 +52,10 @@ export function downloadBackup(appVersion = "") {
   const backup = buildBackup(appVersion);
   const json = JSON.stringify(backup, null, 2);
   const blob = new Blob([json], { type: "application/json" });
+  if (isNative) {
+    import("../native/share").then((m) => m.nativeShareFile(blob, backupFilename(), "Tasbeeh Go backup"));
+    return backup;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

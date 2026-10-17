@@ -165,7 +165,7 @@ export const NamesView = () => {
   for (let i = Math.max(0, idx - 2); i <= Math.min(LAST, idx + 2); i++) cards.push(i);
 
   return (
-    <div className="flex min-h-[calc(100svh-1.5rem)] flex-col lg:min-h-[calc(100svh-3rem)]">
+    <div className="screen-fill flex flex-col">
       <h1 className="sr-only">99 Names of Allah (Asma ul Husna) with meaning and transliteration</h1>
 
       <header className="flex items-center gap-2">

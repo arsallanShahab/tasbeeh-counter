@@ -390,3 +390,50 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+/* Full-screen views (counter, 99 Names, Qibla) fill exactly the screen inside
+   the immersive padding, whose top and bottom follow the safe areas, so they
+   never scroll on phones with tall status or gesture bars. */
+.screen-fill {
+  min-height: calc(100svh - max(0.75rem, env(safe-area-inset-top)) - max(0.75rem, env(safe-area-inset-bottom)));
+}
+@media (min-width: 1024px) {
+  .screen-fill {
+    min-height: calc(100svh - 3rem);
+  }
+}
+
+/* ─── App page transitions (View Transitions, see native/transitions.js) ───
+   Pushing slides the new page in from the right over the old one, which eases
+   left; popping reverses it; switching tabs crossfades. The tab bar and the
+   status strip are their own layers, so they stay still. */
+.vt-tabbar {
+  view-transition-name: tabbar;
+}
+.vt-status {
+  view-transition-name: status;
+}
+::view-transition-group(tabbar),
+::view-transition-group(status) {
+  animation: none;
+  z-index: 3;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  animation-fill-mode: both;
+  mix-blend-mode: normal;
+}
+@keyframes vt-in-from-right { from { transform: translateX(100%); } }
+@keyframes vt-out-to-left { to { transform: translateX(-28%); } }
+@keyframes vt-in-from-left { from { transform: translateX(-28%); } }
+@keyframes vt-out-to-right { to { transform: translateX(100%); } }
+@keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes vt-fade-out { to { opacity: 0; } }
+:root[data-nav="push"]::view-transition-old(root) { animation-name: vt-out-to-left; }
+:root[data-nav="push"]::view-transition-new(root) { animation-name: vt-in-from-right; box-shadow: -12px 0 32px rgb(0 0 0 / 0.18); }
+:root[data-nav="pop"]::view-transition-old(root) { animation-name: vt-out-to-right; z-index: 2; box-shadow: -12px 0 32px rgb(0 0 0 / 0.18); }
+:root[data-nav="pop"]::view-transition-new(root) { animation-name: vt-in-from-left; }
+:root[data-nav="tab"]::view-transition-old(root) { animation: 120ms ease-out both vt-fade-out; }
+:root[data-nav="tab"]::view-transition-new(root) { animation: 180ms ease-out both vt-fade-in; }

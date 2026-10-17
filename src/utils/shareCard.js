@@ -1,3 +1,5 @@
+import { isNative } from "../native/platform";
+
 /* ─── Share card ─────────────────────────────────────────────────────────
    Draws a dhikr or a Name onto a 1080 x 1350 canvas (a portrait card that
    WhatsApp and Instagram show whole) in the reader's theme and Arabic
@@ -190,6 +192,7 @@ export async function renderShareCard({ eyebrow, arabic, title, meaning, source,
 
 // Share through the system sheet where files are supported, else download.
 export async function shareImage(blob, filename, text, download = false) {
+  if (isNative) return (await import("../native/share")).nativeShareImage(blob, filename, text);
   const file = new File([blob], filename, { type: "image/png" });
   if (!download && navigator.canShare?.({ files: [file] })) {
     try {
