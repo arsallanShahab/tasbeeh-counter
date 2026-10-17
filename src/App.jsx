@@ -15,6 +15,7 @@ import NamesView from "./components/counter/NamesView";
 import StatsView from "./components/stats/StatsView";
 import SettingsView from "./components/settings/SettingsView";
 import QiblaView from "./components/qibla/QiblaView";
+import PrivacyView from "./components/settings/PrivacyView";
 import Navbar from "./components/layout/Navbar";
 import DesktopSidebar from "./components/layout/DesktopSidebar";
 import DhikrEditor from "./components/library/NewDhikrModal";
@@ -107,6 +108,7 @@ const AppContent = () => {
                 <Route path="/stats" element={<StatsView />} />
                 <Route path="/settings" element={<SettingsView />} />
                 <Route path="/qibla" element={<QiblaView />} />
+                <Route path="/privacy" element={<PrivacyView />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </motion.div>

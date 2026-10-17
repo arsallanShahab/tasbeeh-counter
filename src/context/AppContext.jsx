@@ -25,7 +25,7 @@ const AppContext = createContext(null);
 // the literal; in build, the production version. Falls back to a sentinel.
 const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0-dev";
 
-const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names", "qibla"];
+const VALID_VIEWS = ["home", "library", "stats", "settings", "counter", "names", "qibla", "privacy"];
 
 const pathToView = (pathname) => {
   const p = (pathname || "/").replace(/^\//, "").replace(/\/$/, "") || "home";

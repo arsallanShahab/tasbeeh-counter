@@ -3,7 +3,7 @@ import { resolveHomeSections } from "../../utils/homeSections";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   BookOpenText, Palette, Hand, Compass, Bell, DatabaseBackup, ArrowLeft, Check, ChevronUp, ChevronDown,
-  Eye, EyeOff, Plus, Trash2, MapPin, Download, Upload, RefreshCw, RotateCcw, Smartphone, Link2, CircleAlert,
+  Eye, EyeOff, Plus, Trash2, MapPin, Download, Upload, RefreshCw, RotateCcw, Smartphone, Link2, CircleAlert, ShieldCheck,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useApp } from "../../context/AppContext";
@@ -871,6 +871,13 @@ export const SettingsView = () => {
               leading={<IconTile icon={Smartphone} size={36} />}
             />
           )}
+          <ListRow
+            title="Privacy"
+            subtitle="Your data stays on this device"
+            leading={<IconTile icon={ShieldCheck} size={36} />}
+            chevron
+            onClick={() => navigate("/privacy")}
+          />
         </Panel>
       </Group>
 

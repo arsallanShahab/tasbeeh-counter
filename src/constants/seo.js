@@ -40,6 +40,12 @@ export const ROUTE_SEO = {
       "Find the Qibla direction online with a live compass that points to the Kaaba in Makkah from your location. Free Qibla finder — no app download needed, works on phone and desktop.",
     crumb: "Qibla Direction",
   },
+  "/privacy": {
+    title: "Privacy Policy — Tasbeeh Go",
+    description:
+      "Tasbeeh Go keeps your dhikr on your device. No accounts, no ads, no tracking: how the app handles location, reminders and backups.",
+    crumb: "Privacy Policy",
+  },
   "/counter": {
     title: "Counter — Tasbeeh Go",
     description: DEFAULT_DESCRIPTION,
