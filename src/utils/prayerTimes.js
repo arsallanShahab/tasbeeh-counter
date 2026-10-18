@@ -75,10 +75,10 @@ export function autoMethodId(lat, lng) {
   const inBox = (la1, la2, lo1, lo2) =>
     lat >= la1 && lat <= la2 && lng >= lo1 && lng <= lo2;
 
+  // UAE first, since it sits inside the peninsula box below
+  if (inBox(22, 26.5, 51, 57)) return "Dubai";
   // Arabian Peninsula → Umm al-Qura
   if (inBox(12, 32, 34, 60)) return "UmmAlQura";
-  // UAE specifically
-  if (inBox(22, 26.5, 51, 57)) return "Dubai";
   // Egypt & most of North/Sub-Saharan Africa
   if (inBox(-35, 32, -18, 52)) return "Egyptian";
   // South Asia (Pakistan, India, Bangladesh, Afghanistan)

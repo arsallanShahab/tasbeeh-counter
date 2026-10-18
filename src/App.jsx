@@ -68,6 +68,7 @@ const AppContent = () => {
 
   return (
     <div
+      id="app-root"
       className="font-body relative min-h-svh overflow-x-clip bg-page text-ink"
       data-arabic-font={arabicFont.id}
       data-theme={effectiveAppearance}

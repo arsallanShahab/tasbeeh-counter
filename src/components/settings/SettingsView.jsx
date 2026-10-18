@@ -24,7 +24,7 @@ import {
 } from "../../constants/dhikrData";
 import { useEffectiveAppearance } from "../../utils/theme";
 import {
-  CALC_METHODS, HIGH_LAT_RULES, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS, prayerSchedule, fmtTime, methodName,
+  CALC_METHODS, HIGH_LAT_RULES, autoMethodId, SALAH_KEYS, PRAYER_KEYS, PRAYER_LABELS, prayerSchedule, fmtTime, methodName,
   hijriDisplayOffset,
 } from "../../utils/prayerTimes";
 import { hijriFormatted } from "../../utils/hijri";
@@ -59,6 +59,53 @@ const Row = ({ label, hint, children, control }) => {
       {control ? control(id) : children}
     </div>
   );
+};
+
+/* A sheet of choices: a tap applies and closes, arrow keys browse. */
+const OptionSheet = ({ open, onClose, title, description, options, value, onChange }) => {
+  const name = useId();
+  return (
+    <Sheet open={open} onClose={onClose} title={title} description={description}>
+      <div role="radiogroup" aria-label={title} className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+        {options.map((o) => {
+          const on = o.v === value;
+          return (
+            <label
+              key={o.v}
+              onClick={(e) => e.detail && onClose()}
+              className="row-interactive relative flex min-h-[3.75rem] cursor-pointer items-center gap-3 px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-accent"
+            >
+              <input
+                type="radio"
+                name={name}
+                checked={on}
+                onChange={() => onChange(o.v)}
+                className="sr-only"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.9375rem] font-medium text-ink">{o.l}</span>
+                {o.hint && <span className="mt-0.5 block text-sm leading-snug text-muted">{o.hint}</span>}
+              </span>
+              {o.meta && <span className="numerals shrink-0 text-sm text-muted">{o.meta}</span>}
+              <span
+                aria-hidden="true"
+                className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 ${on ? "border-accent bg-accent text-on-accent" : "border-line-strong"}`}
+              >
+                {on && <Check size={14} strokeWidth={3} />}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+};
+
+const HIGH_LAT_HINTS = {
+  auto: "Picks the right rule for your latitude.",
+  middleofthenight: "Isha no later, and Fajr no earlier, than the middle of the night.",
+  seventhofthenight: "Isha within the first seventh of the night, Fajr within the last seventh.",
+  twilightangle: "Splits the night in proportion to the method's twilight angles.",
 };
 
 const ToggleRow = ({ label, hint, on, onChange }) => (
@@ -191,6 +238,30 @@ const PrayerSettings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLoc, loc.lat, loc.lng, p.method, p.madhhab, p.highLatRule, offsetsKey]);
 
+  // The Asr time each school gives today, shown beside its option.
+  const asrTimes = useMemo(() => {
+    if (!hasLoc) return null;
+    try {
+      const at = (madhhab) =>
+        fmtTime(prayerSchedule({ lat: loc.lat, lng: loc.lng, method: p.method, madhhab, highLatRule: p.highLatRule, offsets: p.offsets }).today.asr, p.hour12);
+      return { shafi: at("shafi"), hanafi: at("hanafi") };
+    } catch {
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLoc, loc.lat, loc.lng, p.method, p.highLatRule, offsetsKey, p.hour12]);
+
+  const [pick, setPick] = useState(null);
+  const closePick = () => setPick(null);
+  const autoId = hasLoc ? autoMethodId(loc.lat, loc.lng) : null;
+  const methodSummary = p.method === "auto" ? (autoId ? `Automatic, using ${methodName(autoId)}` : "Automatic") : methodName(p.method);
+  const highLatName = HIGH_LAT_RULES.find((r) => r.id === p.highLatRule)?.name || "Recommended";
+  const changed = PRAYER_KEYS.filter((k) => p.offsets?.[k]);
+  const hasOffsets = changed.length > 0;
+  const offsetSummary = hasOffsets
+    ? changed.map((k) => `${PRAYER_LABELS[k]} ${p.offsets[k] > 0 ? "+" : "\u2212"}${Math.abs(p.offsets[k])}`).join(", ")
+    : "None, times as calculated";
+
   const hijriOffset = p.hijriOffset || 0;
 
   return (
@@ -254,51 +325,81 @@ const PrayerSettings = () => {
       </Group>
 
       <Group title="Calculation" description="Choose the convention your local mosque or authority follows.">
-        <Panel className="space-y-5 p-4">
-          <Field
-            label="Method"
-            hint={p.method === "auto" && preview ? `Using ${methodName(preview.methodId)} for your region.` : undefined}
-          >
-            <Select value={p.method} onChange={(e) => setP({ method: e.target.value })}>
-              {CALC_METHODS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                  {m.note ? `, ${m.note}` : ""}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <div>
-            <p className="mb-2 text-sm font-medium text-ink">Asr time</p>
-            <Seg
-              label="Asr calculation"
-              value={p.madhhab}
-              onChange={(v) => setP({ madhhab: v })}
-              options={[{ v: "shafi", l: "Standard" }, { v: "hanafi", l: "Hanafi" }]}
-            />
-          </div>
-          <Field label="High-latitude rule" hint="Only changes Fajr and Isha far north or south, where twilight lasts all night.">
-            <Select value={p.highLatRule} onChange={(e) => setP({ highLatRule: e.target.value })}>
-              {HIGH_LAT_RULES.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <div>
-            <p className="mb-2 text-sm font-medium text-ink">Clock</p>
-            <Seg
-              label="Time format"
-              value={p.hour12 ? "12" : "24"}
-              onChange={(v) => setP({ hour12: v === "12" })}
-              options={[{ v: "12", l: "12-hour" }, { v: "24", l: "24-hour" }]}
-            />
-          </div>
+        <Panel className="divide-y divide-line">
+          <ListRow title="Calculation method" subtitle={methodSummary} chevron onClick={() => setPick("method")} />
+          <ListRow
+            title="Asr time"
+            subtitle={p.madhhab === "hanafi" ? "Hanafi" : "Standard (Shafi'i, Maliki, Hanbali)"}
+            meta={preview ? fmtTime(preview.today.asr, p.hour12) : undefined}
+            chevron
+            onClick={() => setPick("asr")}
+          />
+          <ListRow title="High-latitude rule" subtitle={highLatName} chevron onClick={() => setPick("highLat")} />
+          <ListRow title="Adjust times" subtitle={offsetSummary} chevron onClick={() => setPick("offsets")} />
+          <Row
+            label="Clock"
+            hint={`Times show as ${fmtTime(new Date(2000, 0, 1, 16, 5), p.hour12)}`}
+            control={() => (
+              <Seg
+                label="Time format"
+                size="sm"
+                className="shrink-0"
+                value={p.hour12 ? "12" : "24"}
+                onChange={(v) => setP({ hour12: v === "12" })}
+                options={[{ v: "12", l: "12-hour" }, { v: "24", l: "24-hour" }]}
+              />
+            )}
+          />
         </Panel>
       </Group>
 
-      <Group title="Adjust times" description="Move any time by a few minutes to match your mosque's printed timetable.">
+      <OptionSheet
+        open={pick === "method"}
+        onClose={closePick}
+        title="Calculation method"
+        description="Sets the sun angles used for Fajr and Isha."
+        value={p.method}
+        onChange={(v) => setP({ method: v })}
+        options={CALC_METHODS.map((m) => ({
+          v: m.id,
+          l: m.name,
+          hint: m.id === "auto" ? (autoId ? `Uses ${methodName(autoId)} for your region` : m.note) : `Fajr / Isha: ${m.note}`,
+        }))}
+      />
+      <OptionSheet
+        open={pick === "asr"}
+        onClose={closePick}
+        title="Asr time"
+        description="The schools differ on when Asr begins. Follow the one you pray by."
+        value={p.madhhab}
+        onChange={(v) => setP({ madhhab: v })}
+        options={[
+          { v: "shafi", l: "Standard", hint: "Shafi'i, Maliki and Hanbali. Begins when a shadow equals its object's length.", meta: asrTimes?.shafi },
+          { v: "hanafi", l: "Hanafi", hint: "Begins when a shadow is twice its object's length, so it is later.", meta: asrTimes?.hanafi },
+        ]}
+      />
+      <OptionSheet
+        open={pick === "highLat"}
+        onClose={closePick}
+        title="High-latitude rule"
+        description="Only changes Fajr and Isha far north or south, where twilight can last all night."
+        value={p.highLatRule}
+        onChange={(v) => setP({ highLatRule: v })}
+        options={HIGH_LAT_RULES.map((r) => ({ v: r.id, l: r.name, hint: HIGH_LAT_HINTS[r.id] }))}
+      />
+      <Sheet
+        open={pick === "offsets"}
+        onClose={closePick}
+        title="Adjust times"
+        description="Move any time by a few minutes to match your mosque's printed timetable."
+        footer={
+          hasOffsets ? (
+            <Button variant="secondary" icon={RotateCcw} onClick={() => setP({ offsets: {} })}>
+              Reset all to calculated
+            </Button>
+          ) : undefined
+        }
+      >
         <ListGroup>
           {PRAYER_KEYS.map((key) => (
             <div key={key} className="flex items-center gap-3 px-4 py-2.5">
@@ -316,7 +417,7 @@ const PrayerSettings = () => {
             </div>
           ))}
         </ListGroup>
-      </Group>
+      </Sheet>
 
       <Group
         title="Hijri date"

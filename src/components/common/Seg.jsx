@@ -33,7 +33,7 @@ export const Seg = ({ options, value, onChange, label, size = "md", className = 
             aria-checked={on}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(o.v)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 font-medium transition-colors duration-150 ${
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 font-medium whitespace-nowrap transition-colors duration-150 ${
               size === "sm" ? "h-8 text-[0.8125rem]" : "h-9 text-sm"
             } ${on ? "bg-surface text-ink shadow-[var(--shadow-raise)]" : "text-muted hover:text-ink"}`}
           >
