@@ -274,7 +274,7 @@ export const CounterView = () => {
       {/* Top bar: equal sides, so the title sits in the true centre. */}
       <header data-tap-skip="true" className="grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-center">
         <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-2" />
-        <p className="truncate text-center font-display text-lg leading-tight text-ink">{session.title}</p>
+        <p className="line-clamp-2 text-center font-display text-lg leading-tight text-ink [overflow-wrap:anywhere]">{session.title}</p>
         <div className="-mr-2 flex justify-end">
           <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
           <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} />
@@ -303,7 +303,7 @@ export const CounterView = () => {
                     }}
                     className="group block w-full py-2.5 text-left"
                   >
-                    <span className="block h-1.5 overflow-hidden rounded-full bg-line">
+                    <span className={`block h-1.5 overflow-hidden rounded-full ${active ? "bg-[color-mix(in_srgb,var(--line-strong)_55%,var(--line))]" : "bg-line"}`}>
                       <span
                         className={`block h-full rounded-full transition-[width] duration-300 ${pct >= 1 ? "bg-gold" : "bg-accent"}`}
                         style={{ width: `${pct * 100}%` }}
