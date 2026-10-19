@@ -16,7 +16,6 @@ import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
 import CounterStylePicker from "./CounterStylePicker";
 import DuaSheet from "../duas/DuaSheet";
-import { stepSignature } from "../../utils/haptics";
 import { ArabicFontPicker, ControlLabel, FieldToggles, LanguageControl, TextSizeControls } from "../settings/ReadingControls";
 import { useToast } from "../common/toastContext";
 
@@ -26,7 +25,7 @@ export const CounterView = () => {
   const {
     view, setView, session, setSession, settings, setSettings, complete, setComplete,
     targetEdit, setTargetEdit, customT, setCustomT, dById, increment, decrement, resetSession,
-    goStep, applyTarget, vibe,
+    goStep, applyTarget, feel,
   } = useApp();
 
   const isDesktop = useIsDesktop();
@@ -304,7 +303,8 @@ export const CounterView = () => {
                     onClick={() => {
                       setSession((cur) => ({ ...cur, stepIndex: idx }));
                       setComplete(false);
-                      vibe(settings.stepRhythm && session.steps.length > 1 ? stepSignature(idx) : 6);
+                      if (settings.stepRhythm && session.steps.length > 1) feel("step", idx + 1);
+                      else feel("tap");
                     }}
                     className="group block w-full pt-2 text-left"
                   >

@@ -59,7 +59,7 @@ const NameCard = ({ name, index, lang, large }) => {
 /* The 99 Names as a deck of cards. The current Name sits centred with its
    neighbours peeking in; drag, swipe, tap a neighbour, or use the arrows. */
 export const NamesView = () => {
-  const { view, setView, namesSession, settings, navigateNames, startNamesSession, startDhikr, dById, vibe } = useApp();
+  const { view, setView, namesSession, settings, navigateNames, startNamesSession, startDhikr, dById, feel } = useApp();
   const isDesktop = useIsDesktop();
 
   const idx = namesSession.index;
@@ -109,7 +109,7 @@ export const NamesView = () => {
   const jumpTo = (target) => {
     if (target !== idx) {
       startNamesSession(target);
-      vibe(8);
+      feel("tap");
     }
     setOverview(false);
   };

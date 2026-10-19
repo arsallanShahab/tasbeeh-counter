@@ -7,10 +7,9 @@ import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
-import { countRhythm, stepSignature, toVibrate } from "../utils/haptics";
+import { haptic, sound, MILESTONE } from "../utils/feedback";
 import { DAILY_IDS } from "../constants/dailyDuas";
 import { regionalHijriOffset } from "../utils/hijri";
-import { WebHaptics } from "web-haptics";
 
 // Counts per dhikr per day, for the weekly reflection; about two months are kept.
 const bumpDay = (all = {}, day, id, by) => {
@@ -64,7 +63,7 @@ export const AppProvider = ({ children }) => {
   /* Live mirrors of the two counting sessions.
 
      State updaters must be pure. React StrictMode invokes every queued updater
-     twice in development, so a setStats / vibe / setTimeout sitting inside one
+     twice in development, so a setStats / feel / setTimeout sitting inside one
      runs twice — which is exactly how a single tap used to score two in the
      stats, fire two haptics, and schedule two auto-advances. Everything derived
      now happens in the callbacks below, which read the session from these refs.
@@ -133,7 +132,6 @@ export const AppProvider = ({ children }) => {
   );
   
   const saveTimer = useRef(null);
-  const audioRef = useRef(null);
 
   /* Load state from storage on init */
   useEffect(() => {
@@ -353,82 +351,33 @@ export const AppProvider = ({ children }) => {
   /* Utility functions */
   const dById = useCallback((id) => dhikrs.find((d) => d.id === id), [dhikrs]);
 
-  const hapticsRef = useRef(null);
-
-  const vibe = useCallback((pattern) => {
-    if (!settings.haptics) return;
-    try {
-      if (!hapticsRef.current) {
-        hapticsRef.current = new WebHaptics();
-      }
-      // Map numeric vibe patterns to high-end WebHaptics presets
-      if (pattern === 8) {
-        hapticsRef.current.trigger("selection"); // Crisp selection haptic for standard counting clicks (very low click haptic)
-      } else if (pattern === 5 || pattern === 6) {
-        hapticsRef.current.trigger("soft"); // Padded soft impact for undo / navigation clicks
-      } else if (Array.isArray(pattern) && pattern.includes(38)) {
-        hapticsRef.current.trigger("success"); // Premium success haptic burst for target reached
-      } else {
-        hapticsRef.current.trigger(pattern);
-      }
-    } catch (e) {
-      console.warn("Haptics trigger failed:", e);
-      // Fallback to standard vibration if web-haptics fails
-      if (navigator.vibrate) {
-        navigator.vibrate(pattern?.pattern ? toVibrate(pattern) : pattern);
-      }
-    }
-  }, [settings.haptics]);
+  // kind: count | milestone | step | target | tap (see utils/feedback).
+  const feel = useCallback(
+    (kind, n) =>
+      haptic(kind, { enabled: settings.haptics, strength: settings.hapticStrength, milestonesOnly: settings.hapticMilestones, n }),
+    [settings.haptics, settings.hapticStrength, settings.hapticMilestones]
+  );
+  const chime = useCallback((kind) => sound(kind, { enabled: settings.sound, type: settings.soundType }), [settings.sound, settings.soundType]);
+  // A count: a mark every 33 on long targets, otherwise a tick (n of them in a set's rhythm).
+  const feelCount = useCallback(
+    (count, target, n) => feel(target > MILESTONE && count % MILESTONE === 0 ? "milestone" : "count", n),
+    [feel]
+  );
 
   const setTargetEdit = useCallback((newTargetEdit) => {
     setTargetEditInternal(newTargetEdit);
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const setSettings = useCallback((newSettingsVal) => {
     setSettingsInternal((prev) => {
       const next = typeof newSettingsVal === "function" ? newSettingsVal(prev) : newSettingsVal;
-      // Triggers click feedback vibration when changing settings
-      if (prev.haptics || next.haptics) {
-        try {
-          if (!hapticsRef.current) {
-            hapticsRef.current = new WebHaptics();
-          }
-          hapticsRef.current.trigger("selection");
-        } catch (e) {
-          if (navigator.vibrate) {
-            navigator.vibrate(8);
-          }
-        }
-      }
+      // A light tap confirms a change, felt at the new strength.
+      if (next.haptics) haptic("tap", { strength: next.hapticStrength });
       return next;
     });
   }, []);
 
-  const click = useCallback(() => {
-    if (!settings.sound) return;
-    try {
-      if (!audioRef.current) {
-        audioRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      const ctx = audioRef.current;
-      // Resume if context was suspended (browser security)
-      if (ctx.state === "suspended") {
-        ctx.resume();
-      }
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = 880;
-      g.gain.value = 0.04;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
-      o.stop(ctx.currentTime + 0.09);
-    } catch (e) {
-      console.warn("Audio synthesis failed:", e);
-    }
-  }, [settings.sound]);
 
 
   /* Session controls */
@@ -523,11 +472,11 @@ export const AppProvider = ({ children }) => {
       };
     });
 
-    // In a set, each count can tap out which dhikr this is (see utils/haptics).
+    // In a set, each count can tap out which dhikr this is (see utils/feedback).
     const rhythm = settings.stepRhythm && s.steps.length > 1;
     if (reached) {
-      vibe([0, 38, 28, 38]);
-      click();
+      feel("target");
+      chime("target");
 
       // A finished set (every step) or round of a single dhikr, once per round.
       const key = s.sourceListId || (s.steps.length === 1 ? s.steps[0].dhikr : null);
@@ -555,7 +504,7 @@ export const AppProvider = ({ children }) => {
             if (nextIndex >= cur.steps.length) return cur; // Boundary guard
             return { ...cur, stepIndex: nextIndex };
           });
-          if (rhythm) vibe(stepSignature(i + 1));
+          if (rhythm) feel("step", i + 2);
         }, 420);
       } else if (s.steps.length === 1 && settings.loop) {
         setTimeout(() => {
@@ -572,11 +521,11 @@ export const AppProvider = ({ children }) => {
         setTimeout(() => setComplete(true), 250);
       }
     } else {
-      vibe(rhythm && i > 0 ? countRhythm(i) : 8);
-      click();
+      feelCount(nextCount, step.target, rhythm ? i + 1 : 1);
+      chime("count");
     }
 
-  }, [settings.autoAdvance, settings.loop, settings.stepRhythm, vibe, click]);
+  }, [settings.autoAdvance, settings.loop, settings.stepRhythm, feel, feelCount, chime]);
 
   const decrement = useCallback(() => {
     const s = sessionRef.current;
@@ -608,8 +557,8 @@ export const AppProvider = ({ children }) => {
       };
     });
 
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const resetSession = useCallback(() => {
     setSession((s) => {
@@ -622,8 +571,8 @@ export const AppProvider = ({ children }) => {
         recordedLoop: undefined
       };
     });
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const goStep = useCallback((dir) => {
     const s = sessionRef.current;
@@ -632,10 +581,11 @@ export const AppProvider = ({ children }) => {
     if (nextIndex !== s.stepIndex) {
       sessionRef.current = { ...s, stepIndex: nextIndex };
       setSession((cur) => (cur ? { ...cur, stepIndex: nextIndex } : cur));
-      vibe(settings.stepRhythm && s.steps.length > 1 ? stepSignature(nextIndex) : 8);
+      if (settings.stepRhythm && s.steps.length > 1) feel("step", nextIndex + 1);
+      else feel("tap");
     }
     setComplete(false);
-  }, [vibe, settings.stepRhythm]);
+  }, [feel, settings.stepRhythm]);
 
   const applyTarget = useCallback((val) => {
     const v = Math.max(1, Math.round(Number(val) || 0));
@@ -647,13 +597,13 @@ export const AppProvider = ({ children }) => {
     });
     setTargetEdit(false);
     setCustomT("");
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const togglePin = useCallback((id) => {
     setPinned((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   /* ─── PWA: install prompt + update lifecycle ───────────────────────── */
   useEffect(() => {
@@ -1237,14 +1187,14 @@ export const AppProvider = ({ children }) => {
     });
 
     if (nextCount === prev.targets[i]) {
-      vibe([0, 38, 28, 38]);
-      click();
+      feel("target");
+      chime("target");
     } else {
-      vibe(8);
-      click();
+      feelCount(nextCount, prev.targets[i]);
+      chime("count");
     }
 
-  }, [vibe, click]);
+  }, [feel, feelCount, chime]);
 
   const decrementName = useCallback(() => {
     const prev = namesSessionRef.current;
@@ -1274,8 +1224,8 @@ export const AppProvider = ({ children }) => {
       };
     });
 
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const resetName = useCallback(() => {
     setNamesSession((prev) => {
@@ -1284,18 +1234,18 @@ export const AppProvider = ({ children }) => {
       counts[i] = 0;
       return { ...prev, counts };
     });
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const navigateNames = useCallback((dir) => {
     setNamesSession((prev) => {
       const nextIndex = Math.min(Math.max(prev.index + dir, 0), 98);
       if (nextIndex !== prev.index) {
-        vibe(8);
+        feel("tap");
       }
       return { ...prev, index: nextIndex };
     });
-  }, [vibe]);
+  }, [feel]);
 
   const applyNameTarget = useCallback((val) => {
     const v = Math.max(1, Math.round(Number(val) || 0));
@@ -1307,8 +1257,8 @@ export const AppProvider = ({ children }) => {
     });
     setTargetEdit(false);
     setCustomT("");
-    vibe(8);
-  }, [vibe]);
+    feel("tap");
+  }, [feel]);
 
   const cleanUpApp = useCallback(async () => {
     // 1. Unregister service workers
@@ -1504,8 +1454,8 @@ export const AppProvider = ({ children }) => {
         searchQuery,
         setSearchQuery,
         dById,
-        vibe,
-        click,
+        feel,
+        chime,
         openSession,
         startList,
         startDhikr,

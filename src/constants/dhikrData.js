@@ -1414,8 +1414,11 @@ export const DEFAULT_SETTINGS = {
   duaList: [],
   reflectionSeen: null,
   haptics: true,
+  hapticStrength: "soft", // soft | firm
+  hapticMilestones: false, // only every 33 and the target
   stepRhythm: false, // tap out which dhikr of a set you are on
   sound: false,
+  soundType: "bead", // bead | click
   autoAdvance: true,
   loop: true,
   counterStyle: "strand",

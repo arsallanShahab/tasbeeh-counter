@@ -49,7 +49,7 @@ function useContinuousAngle(target) {
 }
 
 export const QiblaView = () => {
-  const { settings, requestPrayerLocation, vibe } = useApp();
+  const { settings, requestPrayerLocation, feel } = useApp();
   const navigate = useNavigate();
   const loc = settings.prayer?.location || {};
   const hasLoc = loc.lat != null && loc.lng != null;
@@ -69,11 +69,11 @@ export const QiblaView = () => {
   useEffect(() => {
     if (aligned && !alignedRef.current) {
       alignedRef.current = true;
-      vibe([0, 38, 28, 38]);
+      feel("target");
     } else if (!aligned) {
       alignedRef.current = false;
     }
-  }, [aligned, vibe]);
+  }, [aligned, feel]);
 
   const handleOrientation = useCallback((e) => {
     let hd = null;
