@@ -19,7 +19,15 @@ if (typeof navigator !== "undefined" && navigator.getBattery) {
     .catch(() => {});
 }
 
-export const MILESTONE = 33;
+// Whether `count` is a mark along the way to `target`: every 33 when the target is
+// made of 33s, every 100 on long round targets, otherwise each quarter. Never in
+// the last tenth, so a mark cannot run into the target's own double pulse.
+export function isMilestone(count, target) {
+  if (!(target >= 40) || count <= 0 || count >= target || target - count < target / 10) return false;
+  if (target % 33 === 0) return count % 33 === 0;
+  if (target >= 200 && target % 100 === 0) return count % 100 === 0;
+  return [1, 2, 3].some((q) => count === Math.round((target * q) / 4));
+}
 // Milliseconds the motor runs: a tick per count, a mark for moments.
 const PULSE = { soft: { tick: 6, mark: 14 }, firm: { tick: 14, mark: 26 } };
 const GAP = 70;

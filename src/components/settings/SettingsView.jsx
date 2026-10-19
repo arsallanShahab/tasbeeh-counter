@@ -756,7 +756,7 @@ export const SettingsView = () => {
 
   const sectionCounting = (
     <div className="space-y-10">
-      <Group title="Feel and sound" description="Each count is a light tick, gentle enough for a thousand. Every 33rd count and the target are marked a little more.">
+      <Group title="Feel and sound" description="Each count is a light tick, gentle enough for a thousand. A few marks along the way, and the target, are felt a little more.">
         <Panel className="divide-y divide-line">
           <Row
             label="Vibration"
@@ -774,7 +774,7 @@ export const SettingsView = () => {
           {settings.haptics && (
             <ToggleRow
               label="Only at milestones"
-              hint="Every 33 counts and at the target, not each count. This happens by itself when your battery is low."
+              hint="Just the marks along the way and the target: every 33 on a 99, each quarter on a 100, every 100 on a thousand. This happens by itself when your battery is low."
               on={!!settings.hapticMilestones}
               onChange={() => set("hapticMilestones", !settings.hapticMilestones)}
             />

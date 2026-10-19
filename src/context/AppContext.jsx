@@ -8,7 +8,7 @@ import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
-import { haptic, sound, MILESTONE } from "../utils/feedback";
+import { haptic, sound, isMilestone } from "../utils/feedback";
 import { regionalHijriOffset } from "../utils/hijri";
 
 // Counts per dhikr per day, for the weekly reflection; about two months are kept.
@@ -383,9 +383,9 @@ export const AppProvider = ({ children }) => {
     [settings.haptics, settings.hapticStrength, settings.hapticMilestones]
   );
   const chime = useCallback((kind) => sound(kind, { enabled: settings.sound, type: settings.soundType }), [settings.sound, settings.soundType]);
-  // A count: a mark every 33 on long targets, otherwise a tick (n of them in a set's rhythm).
+  // A count: a mark at the milestones along the way (see isMilestone), otherwise a tick (n of them in a set's rhythm).
   const feelCount = useCallback(
-    (count, target, n) => feel(target > MILESTONE && count % MILESTONE === 0 ? "milestone" : "count", n),
+    (count, target, n) => feel(isMilestone(count, target) ? "milestone" : "count", n),
     [feel]
   );
 
