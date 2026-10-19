@@ -271,25 +271,20 @@ export const CounterView = () => {
     >
       <h1 className="sr-only">{session.title}</h1>
 
-      {/* Top bar */}
-      <header data-tap-skip="true" className="flex items-center gap-2">
+      {/* Top bar: equal sides, so the title sits in the true centre. */}
+      <header data-tap-skip="true" className="grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-center">
         <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-2" />
-        <div className="min-w-0 flex-1 text-center">
-          <p className="truncate font-display text-lg leading-tight text-ink">{session.title}</p>
-          {multi && (
-            <p className="numerals text-[0.8125rem] text-muted">
-              {i + 1} of {session.steps.length}
-            </p>
-          )}
+        <p className="truncate text-center font-display text-lg leading-tight text-ink">{session.title}</p>
+        <div className="-mr-2 flex justify-end">
+          <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
+          <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} />
         </div>
-        <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
-        <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} className="-mr-2" />
       </header>
 
       {/* Steps: one segment per dhikr, filling as it is counted. */}
       {multi && (
-        <nav data-tap-skip="true" aria-label="Dhikr in this set" className="mt-4">
-          <ol className="flex gap-1.5">
+        <nav data-tap-skip="true" aria-label={`Dhikr in this set, ${i + 1} of ${session.steps.length}`} className="mt-2 flex items-start gap-3">
+          <ol className="flex min-w-0 flex-1 gap-1.5">
             {session.steps.map((s, idx) => {
               const sd = dById(s.dhikr);
               const pct = Math.min(1, (session.counts[idx] || 0) / s.target);
@@ -306,9 +301,9 @@ export const CounterView = () => {
                       if (settings.stepRhythm && session.steps.length > 1) feel("step", idx + 1);
                       else feel("tap");
                     }}
-                    className="group block w-full pt-2 text-left"
+                    className="group block w-full py-2.5 text-left"
                   >
-                    <span className="block h-1 overflow-hidden rounded-full bg-line">
+                    <span className="block h-1.5 overflow-hidden rounded-full bg-line">
                       <span
                         className={`block h-full rounded-full transition-[width] duration-300 ${pct >= 1 ? "bg-gold" : "bg-accent"}`}
                         style={{ width: `${pct * 100}%` }}
@@ -326,6 +321,9 @@ export const CounterView = () => {
               );
             })}
           </ol>
+          <span aria-hidden="true" className="numerals shrink-0 py-1 text-sm text-muted">
+            {i + 1}/{session.steps.length}
+          </span>
         </nav>
       )}
 
