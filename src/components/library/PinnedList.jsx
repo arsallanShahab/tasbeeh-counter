@@ -1,8 +1,9 @@
+import { shortTr } from "../../utils/dhikrName";
 import { useMemo, useState } from "react";
 import { Reorder, useDragControls } from "motion/react";
 import { ArrowDownToLine, ArrowUpToLine, Check, ChevronDown, ChevronUp, Ellipsis, GripVertical, Info, Pencil, Pin, Play, Search, SquareCheck, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { shelfOfOccasion } from "../../constants/shelves";
+import { shelfOfItem } from "../../constants/shelves";
 import { fmt } from "../../utils/stats";
 import { midnight } from "../../utils/adhkar";
 import { EmptyState, SectionHeader } from "../common/Layout";
@@ -17,14 +18,6 @@ const isCustom = (id) => typeof id === "string" && id.startsWith("c_");
 const setTotal = (l) => l.steps.reduce((a, s) => a + (Number(s.target) || 0), 0);
 const minutes = (n) => Math.max(1, Math.round((n * 1.3) / 60));
 
-// The shelf an item belongs to, for its drawing.
-const shelfFor = (kind, data) => {
-  if (isCustom(data.id)) return "yours";
-  if (data.tags?.includes("daily")) return "moments";
-  if (data.tags?.includes("names-of-allah")) return "names";
-  const occ = kind === "list" ? data.occasion : data.tags?.find((t) => shelfOfOccasion(t));
-  return (occ && shelfOfOccasion(occ)) || "more";
-};
 
 const daysSince = (t) => (t ? Math.round((midnight(new Date()) - midnight(new Date(t))) / 864e5) : null);
 const statusOf = (last) => {
@@ -46,6 +39,7 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all"); // all | todo | stale
   const [menu, setMenu] = useState(null); // item whose actions are open
+  const [organise, setOrganise] = useState(false);
 
   const items = useMemo(
     () =>
@@ -62,9 +56,9 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
             id,
             kind,
             data,
-            title: l ? l.name : d.tr,
+            title: l ? l.name : shortTr(d),
             desc: l ? l.steps.map((s) => dById(s.dhikr)?.tr).filter(Boolean).join(" · ") || "No dhikr yet" : meaning || "",
-            meta: l ? `Set · ${l.steps.length} dhikr` : `Dhikr · ×${fmt(total)}`,
+            meta: l ? `${l.steps.length}\u00a0${l.steps.length === 1 ? "dhikr" : "dhikrs"}` : `×${fmt(total)}`,
             mins: minutes(total),
             total,
             status: statusOf(stats.completed?.[id]?.last),
@@ -106,17 +100,16 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
 
   const body = (it) => (
     <>
-      <ShelfArt shelf={shelfFor(it.kind, it.data)} size={40} />
+      <ShelfArt shelf={shelfOfItem(it.kind, it.data)} size={40} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.9375rem] font-medium text-ink">{it.title}</span>
-        {it.desc && <span className="block truncate text-sm text-muted">{it.desc}</span>}
-        {/* Status first: it is what a review is for. One line, always. */}
-        <span className="numerals mt-0.5 block truncate text-[0.8125rem] text-muted">
+        <span className="line-clamp-2 text-[0.9375rem] font-medium leading-snug text-ink [overflow-wrap:anywhere]">{it.title}</span>
+        {/* Status first: it is what a review is for. Wraps rather than cuts. */}
+        <span className="numerals mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted">
           <span className={it.status.done ? "font-medium text-accent" : ""}>
             {it.status.done && <Check size={13} strokeWidth={2.5} className="-mt-0.5 mr-1 inline" aria-hidden="true" />}
             {it.status.text}
           </span>
-          {` · ${it.meta}${it.total >= 20 ? ` · ${it.mins} min` : ""}`}
+          {` · ${it.meta}${it.total >= 20 ? ` · ${it.mins}\u00a0min` : ""}`}
         </span>
       </span>
     </>
@@ -124,7 +117,22 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
 
   return (
     <section aria-labelledby="pinned-h" className="space-y-4">
-      <SectionHeader id="pinned-h" title="Pinned to Today" count={items.length || null} />
+      <SectionHeader
+        id="pinned-h"
+        title="Pinned to Today"
+        action={
+          items.length > 1 &&
+          (mode === "view" ? (
+            <Button variant="link" size="sm" onClick={() => setOrganise(true)} aria-haspopup="dialog">
+              Organise
+            </Button>
+          ) : (
+            <Button variant="link" size="sm" icon={Check} onClick={exitModes}>
+              Done
+            </Button>
+          ))
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState
@@ -144,28 +152,8 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
               ? "Drag the handle, or use the arrows. This is the order on Today."
               : mode === "select"
                 ? `${picked.size} selected`
-                : `${items.length} pinned · about ${totalMins} min in total · ${doneToday} done today`}
+                : `${items.length} pinned · ${doneToday} done today · about ${totalMins}\u00a0min`}
           </p>
-
-          {/* Tools on their own row, so the heading never has to wrap. */}
-          {items.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {mode === "view" ? (
-                <>
-                  <Button variant="tonal" size="sm" icon={GripVertical} onClick={() => setMode("reorder")}>
-                    Reorder
-                  </Button>
-                  <Button variant="tonal" size="sm" icon={SquareCheck} onClick={() => setMode("select")}>
-                    Select
-                  </Button>
-                </>
-              ) : (
-                <Button size="sm" icon={Check} onClick={exitModes}>
-                  Done
-                </Button>
-              )}
-            </div>
-          )}
 
           {long && mode !== "reorder" && (
             <div className="space-y-3">
@@ -273,6 +261,31 @@ export const PinnedList = ({ onDetails, onBrowse }) => {
       )}
 
       {/* Row actions: the menu keeps Unpin a deliberate choice. */}
+      <Sheet open={organise} onClose={() => setOrganise(false)} size="sm" title="Organise pinned">
+        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
+          {[
+            { icon: GripVertical, label: "Reorder", hint: "Change the order they appear on Today", to: "reorder" },
+            { icon: SquareCheck, label: "Select several", hint: "Unpin more than one at a time", to: "select" },
+          ].map((o) => (
+            <button
+              key={o.to}
+              type="button"
+              onClick={() => {
+                setOrganise(false);
+                setMode(o.to);
+              }}
+              className="row-interactive flex min-h-[3.75rem] w-full items-center gap-3 px-4 py-3 text-left"
+            >
+              <o.icon size={18} className="shrink-0 text-muted" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.9375rem] font-medium text-ink">{o.label}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted">{o.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Sheet>
+
       <Sheet open={!!menu} onClose={() => setMenu(null)} size="sm" title={menu?.title || ""} description={menu ? `${menu.meta} · ${menu.status.text}` : ""}>
         {menu && (
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line">

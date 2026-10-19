@@ -65,6 +65,7 @@ export const ListRow = ({
   chevron = false,
   className = "",
   titleClassName = "",
+  wrap = false,
   ariaLabel,
   children,
 }) => {
@@ -75,7 +76,7 @@ export const ListRow = ({
         <span className={cx("line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]", titleClassName)}>
           {title}
         </span>
-        {subtitle && <span className="mt-0.5 block truncate text-sm text-muted">{subtitle}</span>}
+        {subtitle && <span className={cx("mt-0.5 text-sm text-muted", wrap ? "line-clamp-2 leading-snug" : "block truncate")}>{subtitle}</span>}
         {children}
       </span>
       {meta && <span className="numerals shrink-0 text-sm text-muted">{meta}</span>}

@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Pin, Sparkles } from "lucide-react";
+import { ArrowRight, Pin } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { ICONS } from "../../constants/dhikrData";
+import { shelfOfItem } from "../../constants/shelves";
+import ShelfArt from "../common/ShelfArt";
 import { fmt } from "../../utils/stats";
-import { DhikrTile, IconTile, ListGroup, ListRow, SectionHeader } from "../common/Layout";
+import { shortTr } from "../../utils/dhikrName";
+import { ListGroup, ListRow, SectionHeader } from "../common/Layout";
 import { Button } from "../common/Button";
 import Seg from "../common/Seg";
 
-const PEEK = 5; // rows on Today; everything else is one tap away in the Library
+const PEEK = 7; // rows on Today; everything else is one tap away in the Library
 const setTotal = (l) => l.steps.reduce((a, s) => a + (Number(s.target) || 0), 0);
 
 /* Your shortcuts on Today: what you pinned, or what you finish most. Today
    only ever shows a few; the full, searchable, reorderable list lives in
    the Library under Yours. */
 export const YourDhikr = () => {
-  const { pinned, lists, dhikrs, stats, dById, startList, startDhikr } = useApp();
+  const { pinned, lists, dhikrs, stats, startList, startDhikr } = useApp();
   const navigate = useNavigate();
 
   const find = (id) => {
@@ -38,12 +40,14 @@ export const YourDhikr = () => {
 
   const row = ({ type, data, n }) => {
     const isList = type === "list";
-    const name = isList ? data.name : data.tr;
-    const sub = isList ? data.steps.map((s) => dById(s.dhikr)?.tr).filter(Boolean).join(" · ") || "No dhikr yet" : data.en;
+    const name = isList ? data.name : shortTr(data);
+    // A set says how many dhikrs it holds; a single dhikr needs no second line.
+    const steps = isList ? data.steps.length : 0;
+    const sub = !isList ? undefined : steps === 0 ? "No dhikr yet" : `${steps} ${steps === 1 ? "dhikr" : "dhikrs"}`;
     return (
       <ListRow
         key={data.id}
-        leading={isList ? <IconTile icon={ICONS[data.icon] || Sparkles} /> : <DhikrTile />}
+        leading={<ShelfArt shelf={shelfOfItem(type, data)} size={40} />}
         title={name}
         subtitle={view === "most" ? `Completed ${fmt(n)} ${n === 1 ? "time" : "times"}` : sub}
         meta={`×${fmt(isList ? setTotal(data) : data.target)}`}

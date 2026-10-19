@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { resolveHomeSections } from "../utils/homeSections";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH } from "../constants/dhikrData";
+import { SEED_DHIKRS, SEED_LISTS, DEFAULT_SETTINGS, STORAGE_VERSION, SEED_NAMES_OF_ALLAH, THEMES } from "../constants/dhikrData";
 import { store } from "../utils/storage";
+import { STATE_KEYS, toStored, withBuiltIns, sessionFits } from "../utils/persist";
 import { downloadBackup } from "../utils/backup";
 import { dateKey } from "../utils/stats";
 import { prayerSchedule, buildPrayerAlerts, getCurrentPosition, timezoneCity, fmtHHMM } from "../utils/prayerTimes";
 import { lastThird } from "../utils/duaTimes";
 import { haptic, sound, MILESTONE } from "../utils/feedback";
-import { DAILY_IDS } from "../constants/dailyDuas";
 import { regionalHijriOffset } from "../utils/hijri";
 
 // Counts per dhikr per day, for the weekly reflection; about two months are kept.
@@ -47,6 +47,7 @@ export const AppProvider = ({ children }) => {
   const activeOccasion = searchParams.get("occasion") || "all";
 
   const [loaded, setLoaded] = useState(false);
+  const [saveProblem, setSaveProblem] = useState(false); // the browser refused a save
   const [dhikrs, setDhikrs] = useState(() => [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH]);
   const [lists, setLists] = useState(SEED_LISTS);
   const [pinned, setPinned] = useState(["after-salah", "istighfar-100", "durood-100"]);
@@ -137,50 +138,19 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const loadState = async () => {
       const storedVersion = store.get("storage_version", 1);
-      
-      let loadedDhikrs = store.get("dhikrs", null);
-      let loadedLists = store.get("lists", null);
-      
-      if (!loadedDhikrs || !loadedLists || storedVersion < STORAGE_VERSION) {
-        // Upgrade / Migrate required!
-        // 1. Keep custom items that user created
-        const customDhikrs = loadedDhikrs ? loadedDhikrs.filter(d => d.id.startsWith("c_") || d.tags?.includes("custom")) : [];
-        const customLists = loadedLists ? loadedLists.filter(l => l.id.startsWith("c_")) : [];
-        
-        // 2. Overwrite defaults with new SEED_DHIKRS, SEED_NAMES_OF_ALLAH & SEED_LISTS, appending custom items
-        loadedDhikrs = [...SEED_DHIKRS, ...SEED_NAMES_OF_ALLAH, ...customDhikrs];
-        loadedLists = [...SEED_LISTS, ...customLists];
-        
-        // 3. Clear active session on structure upgrade to avoid mismatch crashes
+      const loadedDhikrs = withBuiltIns("dhikrs", store.get("dhikrs", []));
+      const loadedLists = withBuiltIns("lists", store.get("lists", []));
+      // A content update can rename or remove built-ins, so a session is kept only if it still fits.
+      const savedSession = store.get("session", null);
+      if (storedVersion >= STORAGE_VERSION && sessionFits(savedSession, loadedDhikrs)) {
+        setSession(savedSession);
+        setComplete(store.get("complete", false));
+      } else {
         setSession(null);
         setComplete(false);
-        store.set("session", null);
-        store.set("complete", false);
-        
-        // 4. Save migrated arrays to storage
-        store.set("dhikrs", loadedDhikrs);
-        store.set("lists", loadedLists);
-        store.set("storage_version", STORAGE_VERSION);
-      } else {
-        // Normal load
-        setSession(store.get("session", null));
-        setComplete(store.get("complete", false));
       }
+      store.set("storage_version", STORAGE_VERSION);
 
-      // One-time adds of newer built-in dhikr and sets, keeping everything else as is.
-      const missing = (have, seed, ids) => seed.filter((x) => ids.includes(x.id) && !have.some((h) => h.id === x.id));
-      for (const [flag, dIds, lIds] of [
-        ["seeds_seasonal_v1", ["takbir_eid", "arafah_dua", "iftar_dua"], ["dhul-hijjah-ten", "arafah-day", "eid-takbir", "last-ten-nights", "iftar"]],
-        ["seeds_night_v1", ["waking_night"], ["tahajjud"]],
-        ["seeds_daily_v1", DAILY_IDS, []],
-      ]) {
-        if (store.get(flag, false)) continue;
-        loadedDhikrs = [...loadedDhikrs, ...missing(loadedDhikrs, SEED_DHIKRS, dIds)];
-        loadedLists = [...loadedLists, ...missing(loadedLists, SEED_LISTS, lIds)];
-        store.set("dhikrs", loadedDhikrs);
-        store.set("lists", loadedLists);
-        store.set(flag, true);
-      }
       const loadedNamesSession = store.get("names_session", null);
       if (loadedNamesSession) {
         setNamesSession(loadedNamesSession);
@@ -193,13 +163,14 @@ export const AppProvider = ({ children }) => {
       
       // Load and migrate settings if legacy format
       const loadedSettings = store.get("settings", {});
+      // A first visit is marked before the migrations below save anything, so a rerun still sees it.
+      if (Object.keys(loadedSettings).length === 0) loadedSettings.onboarded = false;
       if (loadedSettings.theme === "dark" || loadedSettings.theme === "light") {
         loadedSettings.appearance = loadedSettings.theme;
         loadedSettings.theme = "classic";
       }
 
-      // One-time move off the old Pastel default onto Qalam. Pastel stays
-      // available in Settings for anyone who wants it back.
+      // One-time move off the old Pastel default onto Qalam.
       if (!store.get("theme_default_v2", false)) {
         if (!loadedSettings.theme || loadedSettings.theme === "pastel") {
           loadedSettings.theme = "qalam";
@@ -297,56 +268,110 @@ export const AppProvider = ({ children }) => {
         store.set("hijri_live_v2", true);
       }
 
+      // A removed theme falls back to the default.
+      if (!THEMES[mergedSettings.theme]) mergedSettings.theme = "qalam";
+      // Settings saved before setup existed mean a returning user, who skips it.
+      mergedSettings.onboarded = loadedSettings.onboarded ?? true;
+
       setSettingsInternal(mergedSettings);
       setLoaded(true);
     };
     loadState();
   }, []);
 
-  /* Save state to storage (debounced) */
+  /* Saving. Each key is written only when it changed, and only if storage
+     still holds what this tab last saw there; otherwise another tab wrote
+     since, and its newer data is taken instead of overwritten. A key that
+     vanished means storage was cleared on purpose, so it stays cleared. */
+  const synced = useRef({}); // per key: the state value last read or written
+  const syncedRaw = useRef(null); // per key: its exact stored text at that moment
+  const latest = useRef(null);
+  useEffect(() => {
+    latest.current = { dhikrs, lists, pinned, stats, settings, session, complete, names_session: namesSession };
+  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession]);
+
+  const adopt = useCallback((key, raw) => {
+    let value;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const next = withBuiltIns(key, value);
+    synced.current[key] = next;
+    syncedRaw.current[key] = raw;
+    // Updated now, not on the next render, so a save in between cannot write the old value back.
+    if (latest.current) latest.current = { ...latest.current, [key]: next };
+    const set = { dhikrs: setDhikrs, lists: setLists, pinned: setPinned, stats: setStats, settings: setSettingsInternal, session: setSession, complete: setComplete, names_session: setNamesSession }[key];
+    set?.(next);
+  }, []);
+
+  const persist = useCallback(() => {
+    const cur = latest.current;
+    if (!cur || !syncedRaw.current) return;
+    for (const key of STATE_KEYS) {
+      if (synced.current[key] === cur[key]) continue;
+      const now = store.getRaw(key);
+      if (now !== syncedRaw.current[key]) {
+        if (now !== null) adopt(key, now);
+        continue;
+      }
+      const raw = JSON.stringify(toStored(key, cur[key]) ?? null);
+      if (store.setRaw(key, raw)) syncedRaw.current[key] = raw;
+      else setSaveProblem(true);
+      synced.current[key] = cur[key];
+    }
+  }, [adopt]);
+
+  // Once loaded, note what storage holds, so the first save knows its starting point.
+  useEffect(() => {
+    if (!loaded || syncedRaw.current) return;
+    syncedRaw.current = Object.fromEntries(STATE_KEYS.map((k) => [k, store.getRaw(k)]));
+  }, [loaded]);
+
+  // Asked once, after a finished set or 100 counts, so a prompt (Firefox) never lands mid-count.
+  const worthKeeping = stats.total >= 100 || Object.keys(stats.completed || {}).length > 0;
+  useEffect(() => {
+    if (!loaded || !worthKeeping || store.get("persist_asked", false)) return;
+    store.set("persist_asked", true);
+    navigator.storage?.persist?.().catch(() => {});
+  }, [loaded, worthKeeping]);
+
+  // Debounced while counting.
   useEffect(() => {
     if (!loaded) return;
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      store.set("dhikrs", dhikrs);
-      store.set("lists", lists);
-      store.set("pinned", pinned);
-      store.set("stats", stats);
-      store.set("settings", settings);
-      store.set("session", session);
-      store.set("complete", complete);
-      store.set("names_session", namesSession);
-    }, 700);
+    saveTimer.current = setTimeout(persist, 700);
     return () => clearTimeout(saveTimer.current);
-  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession, loaded]);
+  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession, loaded, persist]);
 
-  /* Write everything now, skipping the debounce. Runs when the page is hidden
-     or closed, and before an update reload, so the last taps are never lost. */
-  const flushRef = useRef(null);
+  // At once when the page is hidden or closed, so the last taps are never lost.
   useEffect(() => {
-    if (!loaded) return;
-    flushRef.current = () => {
-      store.set("dhikrs", dhikrs);
-      store.set("lists", lists);
-      store.set("pinned", pinned);
-      store.set("stats", stats);
-      store.set("settings", settings);
-      store.set("session", session);
-      store.set("complete", complete);
-      store.set("names_session", namesSession);
+    const onVis = () => (document.visibilityState === "hidden" ? persist() : catchUp());
+    // Back in view, or back from the browser's page cache: take anything another tab saved meanwhile.
+    const catchUp = () => {
+      if (!syncedRaw.current) return;
+      for (const key of STATE_KEYS) {
+        const now = store.getRaw(key);
+        if (now !== null && now !== syncedRaw.current[key]) adopt(key, now);
+      }
     };
-  }, [loaded, dhikrs, lists, pinned, stats, settings, session, complete, namesSession]);
-
-  useEffect(() => {
-    const flush = () => flushRef.current?.();
-    const onVis = () => document.visibilityState === "hidden" && flush();
-    window.addEventListener("pagehide", flush);
+    const onShow = (e) => e.persisted && catchUp();
+    // Another tab saved: follow it live.
+    const onStorage = (e) => {
+      if (e.storageArea === window.localStorage && STATE_KEYS.includes(e.key) && e.newValue !== null && syncedRaw.current) adopt(e.key, e.newValue);
+    };
+    window.addEventListener("pagehide", persist);
+    window.addEventListener("pageshow", onShow);
+    window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVis);
     return () => {
-      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("pagehide", persist);
+      window.removeEventListener("pageshow", onShow);
+      window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, []);
+  }, [persist, adopt]);
 
   /* Utility functions */
   const dById = useCallback((id) => dhikrs.find((d) => d.id === id), [dhikrs]);
@@ -706,7 +731,7 @@ export const AppProvider = ({ children }) => {
     });
 
   const applyUpdate = useCallback(async () => {
-    flushRef.current?.();
+    persist();
     // main.jsx reloads on controllerchange only when this flag is set.
     window.__tgUpdateRequested = true;
     try {
@@ -727,7 +752,7 @@ export const AppProvider = ({ children }) => {
       console.warn("Applying update failed:", e);
     }
     window.location.reload();
-  }, []);
+  }, [persist]);
 
   /* Settings > Check for updates. Returns true when a newer version is ready
      to apply (it is then announced the same way as an automatic find). */
@@ -767,8 +792,8 @@ export const AppProvider = ({ children }) => {
     setPinned((p) => p.filter((id) =>
       nextDhikrs.some((d) => d.id === id) || nextLists.some((l) => l.id === id)
     ));
-    store.set("dhikrs", nextDhikrs);
-    store.set("lists", nextLists);
+    store.set("dhikrs", toStored("dhikrs", nextDhikrs));
+    store.set("lists", toStored("lists", nextLists));
     store.set("storage_version", STORAGE_VERSION);
     return { dhikrs: nextDhikrs.length, lists: nextLists.length };
   }, [dhikrs, lists]);
@@ -1310,8 +1335,8 @@ export const AppProvider = ({ children }) => {
     }
     
     store.set("stats", currentStats);
-    store.set("dhikrs", nextDhikrs);
-    store.set("lists", nextLists);
+    store.set("dhikrs", toStored("dhikrs", nextDhikrs));
+    store.set("lists", toStored("lists", nextLists));
     store.set("pinned", ["after-salah", "istighfar-100", "durood-100"]);
     store.set("settings", DEFAULT_SETTINGS);
     store.set("storage_version", STORAGE_VERSION);
@@ -1325,16 +1350,11 @@ export const AppProvider = ({ children }) => {
      storage on a 700ms timer, so a fresh count could lag — flush synchronously
      first to guarantee the export captures the very latest state. */
   const exportData = useCallback(() => {
-    store.set("dhikrs", dhikrs);
-    store.set("lists", lists);
-    store.set("pinned", pinned);
-    store.set("stats", stats);
-    store.set("settings", settings);
-    store.set("session", session);
-    store.set("complete", complete);
-    store.set("names_session", namesSession);
-    return downloadBackup(APP_VERSION);
-  }, [dhikrs, lists, pinned, stats, settings, session, complete, namesSession]);
+    persist();
+    const backup = downloadBackup(APP_VERSION, latest.current);
+    setSettingsInternal((s) => ({ ...s, lastBackupAt: Date.now() }));
+    return backup;
+  }, [persist]);
 
   /* Restore a parsed backup's inner `data` object. We rebuild the library by
      merging the *current* SEED data with the backup's custom items (same logic
@@ -1404,8 +1424,8 @@ export const AppProvider = ({ children }) => {
     setSession(nextSession);
     setComplete(nextComplete);
 
-    store.set("dhikrs", nextDhikrs);
-    store.set("lists", nextLists);
+    store.set("dhikrs", toStored("dhikrs", nextDhikrs));
+    store.set("lists", toStored("lists", nextLists));
     store.set("pinned", nextPinned);
     store.set("stats", nextStats);
     store.set("settings", nextSettings);
@@ -1494,6 +1514,7 @@ export const AppProvider = ({ children }) => {
         cleanUpApp,
         exportData,
         importData,
+        saveProblem,
       }}
     >
       {children}

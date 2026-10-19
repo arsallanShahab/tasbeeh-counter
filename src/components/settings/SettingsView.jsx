@@ -109,6 +109,13 @@ const HIGH_LAT_HINTS = {
   twilightangle: "Splits the night in proportion to the method's twilight angles.",
 };
 
+// "Last saved today", "… 3 days ago", or a nudge when there is none yet.
+const lastBackupLabel = (at) => {
+  if (!at) return "None saved yet. Downloads a .json file";
+  const days = Math.floor((Date.now() - at) / 86400000);
+  return `Last saved ${days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`}`;
+};
+
 const ToggleRow = ({ label, hint, on, onChange }) => (
   <Row label={label} hint={hint} control={(id) => <Toggle on={on} onClick={onChange} labelledBy={id} />} />
 );
@@ -683,6 +690,17 @@ export const SettingsView = () => {
 
   const sectionAppearance = (
     <div className="space-y-10">
+      <Group title="Your name" description="Used for your greeting on Today. It stays on this device.">
+        <Field label="Name" optional>
+          <TextInput
+            value={settings.name || ""}
+            onChange={(e) => set("name", e.target.value.slice(0, 40))}
+            autoComplete="given-name"
+            maxLength={40}
+          />
+        </Field>
+      </Group>
+
       <Group title="Light or dark">
         <Seg
           label="Appearance"
@@ -972,7 +990,7 @@ export const SettingsView = () => {
       <Group title="Backup" description="Save everything (stats, settings, your own dhikr and sets, and any session in progress) to one file. Restore it on a new phone to carry on where you left off.">
         <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleRestoreFile} />
         <Panel className="divide-y divide-line">
-          <ListRow title="Save a backup file" subtitle="Downloads a .json file" leading={<IconTile icon={Download} size={36} />} onClick={handleExport} />
+          <ListRow title="Save a backup file" subtitle={lastBackupLabel(settings.lastBackupAt)} leading={<IconTile icon={Download} size={36} />} onClick={handleExport} />
           <ListRow
             title={restoreState === "working" ? "Reading the file" : "Restore from a backup"}
             subtitle="Replaces what is on this device"
@@ -1016,6 +1034,13 @@ export const SettingsView = () => {
               leading={<IconTile icon={Smartphone} size={36} />}
             />
           )}
+          <ListRow
+            title="Set up again"
+            subtitle="Go through the first questions once more"
+            leading={<IconTile icon={RotateCcw} size={36} />}
+            chevron
+            onClick={() => navigate("/?setup")}
+          />
           <ListRow
             title="Privacy"
             subtitle="Your data stays on this device"

@@ -14,5 +14,23 @@ export const store = {
     } catch (e) {
       console.warn("Storage write failed for key:", key, e);
     }
-  }
+  },
+  // The stored text as is, or null when the key is missing or storage is unavailable.
+  getRaw(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  // Returns false when the browser refuses the write (full, or a private window).
+  setRaw(key, raw) {
+    try {
+      localStorage.setItem(key, raw);
+      return true;
+    } catch (e) {
+      console.warn("Storage write failed for key:", key, e);
+      return false;
+    }
+  },
 };

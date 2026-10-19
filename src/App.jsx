@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import { THEMES, ARABIC_FONTS } from "./constants/dhikrData";
 import { useEffectiveAppearance } from "./utils/theme";
@@ -17,11 +17,16 @@ import SettingsView from "./components/settings/SettingsView";
 import QiblaView from "./components/qibla/QiblaView";
 import PrivacyView from "./components/settings/PrivacyView";
 import Navbar from "./components/layout/Navbar";
+import Onboarding from "./components/onboarding/Onboarding";
 import DesktopSidebar from "./components/layout/DesktopSidebar";
 import DhikrEditor from "./components/library/NewDhikrModal";
 import SetEditor from "./components/library/NewListModal";
 import UpdateBanner from "./components/common/UpdateBanner";
+import SaveWarning from "./components/common/SaveWarning";
 import { ToastProvider } from "./components/common/Toast";
+
+// Crawlers and test browsers see the site, not the first-run setup; ?setup opens it on purpose.
+const IS_BOT = typeof navigator !== "undefined" && /bot|crawl|spider|slurp|lighthouse|headless/i.test(navigator.userAgent);
 
 /* Views that take the whole screen: no tab bar, their own top bar. */
 const IMMERSIVE = ["counter", "names", "qibla"];
@@ -29,12 +34,18 @@ const IMMERSIVE = ["counter", "names", "qibla"];
 const AppContent = () => {
   const { loaded, view, settings, modal, setModal } = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
+  const wantsSetup = new URLSearchParams(location.search).has("setup");
+  const setupOpen = loaded && (wantsSetup || (!settings.onboarded && location.pathname === "/" && !IS_BOT));
   const effectiveAppearance = useEffectiveAppearance(settings.appearance);
   useDocumentSeo();
   useBootScreen(loaded);
 
   const theme = THEMES[settings.theme] || THEMES.qalam;
   const themeVars = theme[effectiveAppearance];
+  // The first-run setup is always on paper, so its illustration sits right; the bars follow it.
+  const chrome = setupOpen ? "light" : effectiveAppearance;
+  const chromeVars = theme[chrome];
   const arabicFont = ARABIC_FONTS.find((f) => f.id === settings.arabicFont) || ARABIC_FONTS[0];
 
   useGoogleFonts([
@@ -53,13 +64,13 @@ const AppContent = () => {
     store.set("paint", { appearance: settings.appearance, light: pick(theme.light), dark: pick(theme.dark) });
     // The page root and body read these too; browsers tint their bars from them.
     const root = document.documentElement;
-    for (const k of ["--bg", "--bg2", "--text", "--primary"]) root.style.setProperty(k, themeVars[k]);
-    root.style.background = themeVars["--bg"];
-    root.style.color = themeVars["--text"];
-    root.style.colorScheme = effectiveAppearance;
+    for (const k of ["--bg", "--bg2", "--text", "--primary"]) root.style.setProperty(k, chromeVars[k]);
+    root.style.background = chromeVars["--bg"];
+    root.style.color = chromeVars["--text"];
+    root.style.colorScheme = chrome;
     // Both media variants, so the app's own light/dark choice wins over the device's.
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", themeVars["--bg"]));
-  }, [loaded, themeVars, effectiveAppearance, theme, settings.appearance]);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", chromeVars["--bg"]));
+  }, [loaded, themeVars, chromeVars, chrome, theme, settings.appearance]);
 
   // The boot screen in index.html covers this until the app is ready.
   if (!loaded) return <div className="min-h-svh" aria-hidden="true" />;
@@ -82,6 +93,7 @@ const AppContent = () => {
         Skip to content
       </a>
 
+      <div inert={setupOpen} className="contents">
       <DesktopSidebar />
 
       <main
@@ -118,11 +130,15 @@ const AppContent = () => {
       </main>
 
       {!immersive && <Navbar />}
+      </div>
+
+      {setupOpen && <Onboarding onDone={() => wantsSetup && navigate("/", { replace: true })} />}
 
       <DhikrEditor isOpen={modal === "dhikr"} onClose={() => setModal(null)} />
       <SetEditor isOpen={modal === "list"} onClose={() => setModal(null)} />
 
       <UpdateBanner />
+      <SaveWarning />
       </ToastProvider>
     </div>
   );

@@ -1,3 +1,4 @@
+import { shortTr } from "../../utils/dhikrName";
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Search, X, Pin, Play, Sparkles, ChevronDown, ChevronLeft, Pencil, ArrowRight, FolderPlus } from "lucide-react";
@@ -78,13 +79,12 @@ export const LibraryView = () => {
 
   const setRow = (l) => {
     const Ico = ICONS[l.icon] || Sparkles;
-    const names = l.steps.map((s) => dById(s.dhikr)?.tr).filter(Boolean);
     return (
       <ListRow
         key={`set-${l.id}`}
         leading={<IconTile icon={Ico} tone={isCustom(l.id) ? "accent" : "neutral"} />}
         title={l.name}
-        subtitle={names.length ? `Set · ×${fmt(setTotal(l))} · ${names.join(" · ")}` : "Set · no dhikr yet"}
+        subtitle={l.steps.length ? `Set · ${l.steps.length} ${l.steps.length === 1 ? "dhikr" : "dhikrs"} · ×${fmt(setTotal(l))}` : "Set · no dhikr yet"}
         onClick={() => openItem("list", l.id)}
         ariaLabel={`${l.name}, set, details`}
         trailing={
@@ -97,14 +97,13 @@ export const LibraryView = () => {
     );
   };
 
-  // Same three lines as a pinned row: name, meaning, then count and time.
-  const dhikrRow = (d) => (
+  // Its opening words and how long it takes, no icon: the group label already says these are dhikr. Search adds the meaning.
+  const dhikrRow = (d, { withMeaning = false } = {}) => (
     <div key={`dhikr-${d.id}`} className="flex items-center gap-1 pr-2">
-      <button type="button" onClick={() => openItem("dhikr", d.id)} aria-label={`${d.tr}, details`} className="row-interactive flex min-h-[4.5rem] min-w-0 flex-1 items-center gap-3.5 py-3 pl-4 text-left">
-        <DhikrTile />
+      <button type="button" onClick={() => openItem("dhikr", d.id)} aria-label={`${shortTr(d)}, details`} className="row-interactive flex min-h-[4rem] min-w-0 flex-1 items-center gap-3.5 py-3 pl-4 text-left">
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[0.9375rem] font-medium text-ink">{d.tr}</span>
-          {meaning(d) && <span className="block truncate text-sm text-muted">{meaning(d)}</span>}
+          <span className="line-clamp-2 text-[0.9375rem] leading-snug font-medium text-ink [overflow-wrap:anywhere]">{shortTr(d)}</span>
+          {withMeaning && meaning(d) && <span className="mt-0.5 line-clamp-2 text-sm leading-snug text-muted">{meaning(d)}</span>}
           <span className="numerals mt-0.5 block truncate text-[0.8125rem] text-muted">
             ×{fmt(d.target)}
             {d.target >= 20 ? ` · about ${durationLabel(d.target).replace("about ", "")}` : ""}
@@ -112,8 +111,8 @@ export const LibraryView = () => {
           </span>
         </span>
       </button>
-      {pinBtn(d.id, d.tr)}
-      <IconButton icon={Play} label={`Begin ${d.tr}`} size="sm" onClick={() => startDhikr(d)} />
+      {pinBtn(d.id, shortTr(d))}
+      <IconButton icon={Play} label={`Begin ${shortTr(d)}`} size="sm" onClick={() => startDhikr(d)} />
     </div>
   );
 
@@ -180,7 +179,6 @@ export const LibraryView = () => {
   const setCard = (l) => {
     const Ico = ICONS[l.icon] || Sparkles;
     const total = setTotal(l);
-    const names = l.steps.map((st) => dById(st.dhikr)?.tr).filter(Boolean);
     return (
       <li key={`card-${l.id}`} className="flex min-w-0 flex-col rounded-2xl border border-line bg-surface">
         <button type="button" onClick={() => openItem("list", l.id)} aria-label={`${l.name}, set, details`} className="row-interactive flex min-w-0 flex-1 items-start gap-3.5 rounded-t-2xl p-4 text-left">
@@ -188,9 +186,8 @@ export const LibraryView = () => {
           <span className="min-w-0 flex-1">
             <span className="block text-base leading-snug font-medium text-ink [overflow-wrap:anywhere]">{l.name}</span>
             <span className="numerals mt-0.5 block text-sm text-muted">
-              {l.steps.length} dhikr · {fmt(total)} counts{total >= 20 ? ` · ${durationLabel(total)}` : ""}
+              {l.steps.length} {l.steps.length === 1 ? "dhikr" : "dhikrs"} · {fmt(total)} counts{total >= 20 ? ` · ${durationLabel(total)}` : ""}
             </span>
-            {names.length > 0 && <span className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted">{names.join(" · ")}</span>}
           </span>
         </button>
         <div className="flex items-center justify-between gap-2 border-t border-line py-1.5 pl-2 pr-2">
@@ -224,7 +221,7 @@ export const LibraryView = () => {
         {ds.length > 0 && (
           <div className="space-y-2.5">
             {both && <h3 className="eyebrow">Single dhikr</h3>}
-            {rowList(`gl-${id}`, ds.map(dhikrRow))}
+            {rowList(`gl-${id}`, ds.map((d) => dhikrRow(d)))}
           </div>
         )}
       </section>
@@ -284,7 +281,23 @@ export const LibraryView = () => {
       <PinnedList onDetails={openItem} onBrowse={() => openShelf("routine")} />
 
       <section aria-labelledby="created-h" className="space-y-4">
-        <SectionHeader id="created-h" title="Made by you" count={mySets.length + myDhikrs.length || null} />
+        <SectionHeader
+          id="created-h"
+          title="Made by you"
+          count={mySets.length + myDhikrs.length || null}
+          action={
+            mySets.length + myDhikrs.length > 0 && (
+              <div className="flex items-center gap-1">
+                <Button variant="link" size="sm" icon={Plus} onClick={() => openEditor("list")}>
+                  Set
+                </Button>
+                <Button variant="link" size="sm" icon={Plus} onClick={() => openEditor("dhikr")}>
+                  Dhikr
+                </Button>
+              </div>
+            )
+          }
+        />
         {mySets.length + myDhikrs.length === 0 ? (
           <EmptyState
             icon={FolderPlus}
@@ -420,7 +433,7 @@ export const LibraryView = () => {
           {fmt(resultCount)} {resultCount === 1 ? "result" : "results"} across the library
         </p>
         {results.sets.length > 0 && group("r-sets", "Sets", results.sets.map(setRow))}
-        {results.dhikr.length > 0 && group("r-dhikr", "Dhikr", results.dhikr.map(dhikrRow))}
+        {results.dhikr.length > 0 && group("r-dhikr", "Dhikr", results.dhikr.map((d) => dhikrRow(d, { withMeaning: true })))}
         {results.daily.length > 0 && group("r-daily", "Du'as for daily life", results.daily.map(dailyRow))}
         {results.names.length > 0 && group("r-names", "Names of Allah", results.names.map(nameRow))}
       </div>
@@ -433,7 +446,8 @@ export const LibraryView = () => {
           key={s.key}
           leading={<ShelfArt shelf={s.key} size={48} fallback={<IconTile icon={s.icon} tone={s.key === "yours" ? "accent" : "neutral"} size={48} />} />}
           title={s.title}
-          subtitle={s.desc}
+          subtitle={s.hint || s.desc}
+          wrap
           meta={fmt(countOf(s))}
           chevron
           onClick={() => openShelf(s.key)}
@@ -444,13 +458,12 @@ export const LibraryView = () => {
   );
 
   const shelfView = shelf && (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <Button variant="link" size="sm" icon={ChevronLeft} className="-ml-3" onClick={() => openShelf(null)}>
+        <Button variant="link" size="sm" icon={ChevronLeft} className="-ml-3 mb-2" onClick={() => openShelf(null)}>
           Library
         </Button>
-        <h2 className="mt-1 font-display text-[2rem] leading-tight text-ink">{shelf.title}</h2>
-        <p className="mt-1 text-[0.9375rem] text-muted">{shelf.desc}</p>
+        <PageHeader title={shelf.title} description={shelf.desc} />
       </div>
       {shelf.key === "yours" ? yours : shelf.key === "moments" ? <DailyDuas /> : shelf.key === "names" ? namesBody : occasionBody(shelf)}
     </div>
@@ -458,21 +471,27 @@ export const LibraryView = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Library"
-        actions={
-          <>
-            <Button variant="secondary" size="sm" icon={Plus} onClick={() => openEditor("dhikr")} aria-label="New dhikr">
-              Dhikr
-            </Button>
-            <Button size="sm" icon={Plus} onClick={() => openEditor("list")} aria-label="New set">
-              Set
-            </Button>
-          </>
-        }
-      />
-      {searchBox}
-      <div className="min-w-0">{results ? searchView : shelf ? shelfView : shelvesView}</div>
+      {shelf && !results ? (
+        shelfView
+      ) : (
+        <>
+          <PageHeader
+            title="Library"
+            actions={
+              <>
+                <Button variant="secondary" size="sm" icon={Plus} onClick={() => openEditor("dhikr")} aria-label="New dhikr">
+                  Dhikr
+                </Button>
+                <Button size="sm" icon={Plus} onClick={() => openEditor("list")} aria-label="New set">
+                  Set
+                </Button>
+              </>
+            }
+          />
+          {searchBox}
+          <div className="min-w-0">{results ? searchView : shelvesView}</div>
+        </>
+      )}
 
       <ItemSheet item={item} onClose={closeItem} />
       <DhikrReader open={!!reading} onClose={() => setReading(null)} d={reading} lang={settings.lang} arabicScale={settings.arabicScale ?? 1} textScale={settings.textScale ?? 1} />

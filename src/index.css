@@ -390,3 +390,14 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+/* Illustrated icons (components/common/ShelfArt): the drawing for the nearest theme. */
+.set-icon {
+  background: var(--set-light) center / contain no-repeat;
+}
+[data-theme="dark"] .set-icon {
+  background-image: var(--set-dark);
+}
+[data-theme="light"] .set-icon {
+  background-image: var(--set-light);
+}

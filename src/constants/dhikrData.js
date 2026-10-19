@@ -1413,6 +1413,8 @@ export const DEFAULT_SETTINGS = {
   adhkarSlots: ["fajr", "morning", "dhuhr", "asr", "evening", "maghrib", "isha", "sleep"],
   duaList: [],
   reflectionSeen: null,
+  onboarded: false, // first-run setup done (returning users are marked on load)
+  name: "",
   haptics: true,
   hapticStrength: "soft", // soft | firm
   hapticMilestones: false, // only every 33 and the target
@@ -1455,7 +1457,7 @@ export const DEFAULT_SETTINGS = {
 
 export const THEMES = {
   qalam: {
-    name: "Qalam",
+    name: "Tasbeeh Go",
     sub: "Paper & ink",
     light: { "--bg": "#f3efe6", "--bg2": "#ebe5d8", "--surface": "#fbf9f4", "--surface2": "#efe9dd", "--line": "#ddd5c5", "--line-strong": "#898173", "--text": "#1c231f", "--muted": "#5c635d", "--primary": "#2c5a46", "--primary-dim": "#dde8df", "--on-primary": "#ffffff", "--gold": "#82560f", "--on-gold": "#ffffff", "--danger": "#9b3a2b" },
     dark: { "--bg": "#111411", "--bg2": "#161a16", "--surface": "#1a1f1b", "--surface2": "#222923", "--line": "#2e362f", "--line-strong": "#6c756d", "--text": "#ebe7dc", "--muted": "#a2a89d", "--primary": "#93c3a3", "--primary-dim": "#23352b", "--on-primary": "#111411", "--gold": "#d6b46e", "--on-gold": "#111411", "--danger": "#e38b79" },
@@ -1465,14 +1467,6 @@ export const THEMES = {
     sub: "Sandstone & sage",
     light: { "--bg": "#f4efe1", "--bg2": "#efe8d5", "--surface": "#ffffff", "--surface2": "#faf5e9", "--line": "#e4dcc6", "--line-strong": "#8a836f", "--text": "#10302a", "--muted": "#586b62", "--primary": "#00664e", "--primary-dim": "#bfe3d6", "--on-primary": "#ffffff", "--gold": "#7b5200", "--on-gold": "#ffffff", "--danger": "#a32d20" },
     dark: { "--bg": "#07140f", "--bg2": "#0a1d16", "--surface": "#0f2820", "--surface2": "#143729", "--line": "#1d4536", "--line-strong": "#5b8472", "--text": "#eaf4ee", "--muted": "#85a89a", "--primary": "#3db999", "--primary-dim": "#004333", "--on-primary": "#07140f", "--gold": "#e0bd5c", "--on-gold": "#07140f", "--danger": "#ee8677" },
-  },
-  pastel: {
-    name: "Tasbeeh Go",
-    sub: "Cream & navy",
-    // Loaded on demand only while this theme is active (see utils/fonts.js).
-    fonts: ["Fredoka:wght@400..700", "Nunito:wght@400..800"],
-    light: { "--bg": "#faf2e4", "--bg2": "#f4e8d4", "--surface": "#fffdf8", "--surface2": "#fbf3e5", "--line": "#ece0cc", "--line-strong": "#8e8371", "--text": "#1f2c54", "--muted": "#69657d", "--primary": "#00675c", "--primary-dim": "#ceeae5", "--on-primary": "#ffffff", "--gold": "#845000", "--on-gold": "#ffffff", "--danger": "#93433b", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
-    dark: { "--bg": "#131e3c", "--bg2": "#182549", "--surface": "#1f2e57", "--surface2": "#293a69", "--line": "#36477c", "--line-strong": "#7186c0", "--text": "#f6efe0", "--muted": "#9fa7c3", "--primary": "#79c5ba", "--primary-dim": "#2c4449", "--on-primary": "#131e3c", "--gold": "#e9b56e", "--on-gold": "#131e3c", "--danger": "#eea29a", "--font-display": "'Fredoka', sans-serif", "--font-body": "'Nunito', sans-serif" },
   },
   sage: {
     name: "Sage & Oat",

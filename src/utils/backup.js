@@ -1,5 +1,6 @@
 import { store } from "./storage";
 import { STORAGE_VERSION } from "../constants/dhikrData";
+import { toStored } from "./persist";
 
 /* A backup is a self-describing JSON snapshot of every localStorage key that
    makes up the user's state. Bumping BACKUP_FORMAT lets future readers detect
@@ -19,12 +20,11 @@ const BACKUP_KEYS = [
   "names_session",
 ];
 
-/* Read the current persisted state straight from storage (not React state) so
-   exports are consistent even mid-session. */
-export function buildBackup(appVersion = "") {
+// From the app's current state when given, otherwise from storage.
+export function buildBackup(appVersion = "", state = null) {
   const data = {};
   for (const key of BACKUP_KEYS) {
-    data[key] = store.get(key, null);
+    data[key] = state ? toStored(key, state[key] ?? null) : store.get(key, null);
   }
   return {
     type: BACKUP_TYPE,
@@ -47,8 +47,8 @@ export function backupFilename() {
 
 /* Trigger a file download of the current backup. Returns the backup object so
    callers can show a summary. */
-export function downloadBackup(appVersion = "") {
-  const backup = buildBackup(appVersion);
+export function downloadBackup(appVersion = "", state = null) {
+  const backup = buildBackup(appVersion, state);
   const json = JSON.stringify(backup, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -70,7 +70,7 @@ export function parseBackup(text) {
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    throw new Error("This file isn't valid JSON.");
+    throw new Error("This file isn't valid JSON.", { cause: e });
   }
   if (!parsed || typeof parsed !== "object") {
     throw new Error("This file doesn't look like a Tasbeeh backup.");

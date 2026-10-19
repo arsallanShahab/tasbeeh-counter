@@ -16,6 +16,7 @@ export const HomeIntro = ({ occasion: occ = null }) => {
 
   const d = new Date(now);
   const hr = d.getHours();
+  const first = (settings.name || "").trim().split(/\s+/)[0];
   const greet = hr < 5 ? "Peaceful night" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
 
   const offset = hijriDisplayOffset(settings.prayer, d);
@@ -39,7 +40,8 @@ export const HomeIntro = ({ occasion: occ = null }) => {
         )}
       </p>
       <p className="mt-2 font-display text-[2.5rem] leading-[1.02] font-medium tracking-[-0.015em] text-ink lg:text-6xl">
-        {greet}.
+        {greet}
+        {first ? <span className="[overflow-wrap:anywhere]">, {first}</span> : null}.
       </p>
 
       {occ && (

@@ -16,6 +16,7 @@ export const AdhkarChecklist = () => {
   const { settings, setSettings, stats, setStats, lists, startList } = useApp();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [showPassed, setShowPassed] = useState(false);
   const now = new Date(useNow(60000));
 
   const prayer = settings.prayer;
@@ -62,6 +63,13 @@ export const AdhkarChecklist = () => {
     return "Passed";
   };
 
+  // Done, now and the next moment show; the rest fold into one line.
+  const nextLater = slots.find((s) => statusOf(s.key) === "later");
+  const visible = (s) => ["done", "now"].includes(statusOf(s.key)) || s === nextLater;
+  const shown = showPassed ? slots : slots.filter(visible);
+  const earlier = slots.filter((s) => !visible(s) && statusOf(s.key) === "passed").length;
+  const later = slots.filter((s) => !visible(s) && statusOf(s.key) === "later").length;
+
   return (
     <>
     <section aria-labelledby="adhkar-h" className="space-y-4">
@@ -76,7 +84,7 @@ export const AdhkarChecklist = () => {
         }
       />
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {slots.map((slot) => {
+        {shown.map((slot) => {
           const status = statusOf(slot.key);
           const isDone = status === "done";
           const manual = !!done[slot.key]?.manual;
@@ -118,6 +126,19 @@ export const AdhkarChecklist = () => {
           );
         })}
       </ul>
+      {earlier + later > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowPassed((v) => !v)}
+          aria-expanded={showPassed}
+          className="row-interactive -mx-2 flex min-h-11 w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 text-left text-sm text-muted"
+        >
+          <span className="min-w-0 truncate">
+            {showPassed ? "Showing every moment" : [earlier && `${earlier} earlier`, later && `${later} later`].filter(Boolean).join(" · ")}
+          </span>
+          <span className="shrink-0 font-medium text-accent">{showPassed ? "Show less" : "Show all"}</span>
+        </button>
+      )}
       {!times.exact && (
         <p className="text-sm text-muted">
           Times are approximate.{" "}
