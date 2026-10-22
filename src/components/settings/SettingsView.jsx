@@ -28,7 +28,7 @@ import {
   hijriDisplayOffset,
 } from "../../utils/prayerTimes";
 import { hijriFormatted } from "../../utils/hijri";
-import { sound, knowsRingerMode } from "../../utils/feedback";
+import FeelControls from "./FeelControls";
 
 /* ─── Building blocks ──────────────────────────────────────────────────── */
 
@@ -749,59 +749,10 @@ export const SettingsView = () => {
     </div>
   );
 
-  const pickSound = (v) => {
-    setSettings((s) => ({ ...s, sound: v !== "off", soundType: v === "off" ? s.soundType : v }));
-    if (v !== "off") sound("count", { type: v });
-  };
-
   const sectionCounting = (
     <div className="space-y-10">
       <Group title="Feel and sound" description="Each count is a light tick, gentle enough for a thousand. Finishing a dhikr is felt a little more, and long counts are also marked every 100.">
-        <Panel className="divide-y divide-line">
-          <Row
-            label="Vibration"
-            control={() => (
-              <Seg
-                label="Vibration"
-                size="sm"
-                className="shrink-0"
-                value={settings.haptics ? settings.hapticStrength || "soft" : "off"}
-                onChange={(v) => setSettings((s) => ({ ...s, haptics: v !== "off", hapticStrength: v === "off" ? s.hapticStrength : v }))}
-                options={[{ v: "off", l: "Off" }, { v: "soft", l: "Soft" }, { v: "firm", l: "Firm" }]}
-              />
-            )}
-          />
-          {settings.haptics && (
-            <ToggleRow
-              label="Only when a dhikr is done"
-              hint="A pulse at each tick mark, plus every 100 on long counts, instead of every count. This happens by itself when your battery is low."
-              on={!!settings.hapticMilestones}
-              onChange={() => set("hapticMilestones", !settings.hapticMilestones)}
-            />
-          )}
-          {settings.haptics && (
-            <ToggleRow
-              label="Feel which dhikr you're on"
-              hint="In a set, each count taps once for the first dhikr, twice for the second, up to four."
-              on={!!settings.stepRhythm}
-              onChange={() => set("stepRhythm", !settings.stepRhythm)}
-            />
-          )}
-          <Row
-            label="Sound"
-            hint={knowsRingerMode() ? "Stays quiet while your phone is on silent or vibrate." : undefined}
-            control={() => (
-              <Seg
-                label="Sound"
-                size="sm"
-                className="shrink-0"
-                value={settings.sound ? settings.soundType || "bead" : "off"}
-                onChange={pickSound}
-                options={[{ v: "off", l: "Off" }, { v: "bead", l: "Bead" }, { v: "click", l: "Click" }]}
-              />
-            )}
-          />
-        </Panel>
+        <FeelControls />
       </Group>
 
       <Group title="Counting">

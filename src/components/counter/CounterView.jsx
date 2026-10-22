@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
-  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, Hand, BookOpen, Palette, ALargeSmall, ArrowRight,
+  X, ChevronLeft, ChevronRight, Undo2, RotateCcw, Pencil, Check, BookOpen, SlidersHorizontal, ArrowRight,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useIsDesktop } from "../../hooks/useMediaQuery";
@@ -15,26 +15,41 @@ import BeadStrand from "./BeadStrand";
 import TransBlock from "./TransBlock";
 import DhikrReader from "./DhikrReader";
 import CounterStylePicker from "./CounterStylePicker";
+import FeelControls from "../settings/FeelControls";
+import Seg from "../common/Seg";
 import DuaSheet from "../duas/DuaSheet";
 import { ArabicFontPicker, ControlLabel, FieldToggles, LanguageControl, TextSizeControls } from "../settings/ReadingControls";
-import { useToast } from "../common/toastContext";
 
 const PRESETS = [33, 100, 300, 1000];
 
 export const CounterView = () => {
   const {
-    view, setView, session, setSession, settings, setSettings, complete, setComplete,
+    view, setView, session, setSession, settings, complete, setComplete,
     targetEdit, setTargetEdit, customT, setCustomT, dById, increment, decrement, resetSession,
     goStep, applyTarget, feel,
   } = useApp();
 
   const isDesktop = useIsDesktop();
   const [readerOpen, setReaderOpen] = useState(false);
-  const [styleOpen, setStyleOpen] = useState(false);
-  const [displayOpen, setDisplayOpen] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  // The Adjust sheet reopens on the tab last used.
+  const [adjustTab, setAdjustTabState] = useState(() => {
+    try {
+      return localStorage.getItem("counter_adjust_tab") || "feel";
+    } catch {
+      return "feel";
+    }
+  });
+  const setAdjustTab = (t) => {
+    setAdjustTabState(t);
+    try {
+      localStorage.setItem("counter_adjust_tab", t);
+    } catch {
+      // private window
+    }
+  };
   const [duaOpen, setDuaOpen] = useState(false);
   const navigate = useNavigate();
-  const toast = useToast();
   const tapStart = useRef(null);
 
   // Pulse the number on each count, locally, without re-rendering the app.
@@ -239,17 +254,6 @@ export const CounterView = () => {
       )}
       <IconButton icon={Undo2} label="Undo last count" disabled={count === 0} onClick={decrement} />
       <IconButton icon={RotateCcw} label="Start this session again" onClick={resetSession} />
-      <IconButton
-        icon={Hand}
-        label={settings.fullScreenTap ? "Tap anywhere: on" : "Tap anywhere: off"}
-        pressed={!!settings.fullScreenTap}
-        onClick={() => {
-          const on = !settings.fullScreenTap;
-          setSettings((s) => ({ ...s, fullScreenTap: on }));
-          toast(on ? "Tap anywhere on the screen to count" : "Tap the beads to count");
-        }}
-      />
-      <IconButton icon={Palette} label="Counter style" onClick={() => setStyleOpen(true)} />
       {multi && (
         <IconButton
           icon={ChevronRight}
@@ -273,11 +277,11 @@ export const CounterView = () => {
 
       {/* Top bar: equal sides, so the title sits in the true centre. */}
       <header data-tap-skip="true" className="grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-center">
-        <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-2" />
+        <IconButton icon={X} label="Close counter" onClick={() => setView("home")} className="-ml-4" />
         <p className="line-clamp-2 text-center font-display text-lg leading-tight text-ink [overflow-wrap:anywhere]">{session.title}</p>
-        <div className="-mr-2 flex justify-end">
-          <IconButton icon={ALargeSmall} label="Display: text size and lines" onClick={() => setDisplayOpen(true)} />
+        <div className="-mr-3.5 flex justify-end">
           <IconButton icon={BookOpen} label="Read in full" onClick={() => setReaderOpen(true)} />
+          <IconButton icon={SlidersHorizontal} label="Adjust: feel, text and beads" onClick={() => setAdjustOpen(true)} />
         </div>
       </header>
 
@@ -466,53 +470,65 @@ export const CounterView = () => {
         <p className="mt-3 text-[0.8125rem] text-muted">Applies to this session only. Edit the set to change it for good.</p>
       </Sheet>
 
-      <Sheet open={styleOpen} onClose={() => setStyleOpen(false)} title="Counter style" description="Changes apply straight away.">
-        <CounterStylePicker />
-      </Sheet>
-
-      {/* Display: a live preview of the current dhikr above the controls. */}
-      <Sheet open={displayOpen} onClose={() => setDisplayOpen(false)} title="Display" description="Changes apply straight away.">
-        {d && (
-          <div className="mb-6 rounded-2xl bg-sunken px-4 py-4">
-            <TransBlock
-              d={d}
-              lang={settings.lang}
-              fieldOrder={settings.dhikrFieldOrder}
-              fieldVisible={settings.dhikrFieldVisible}
-              collapsedMax={150}
-              fade="to-sunken"
-              arabicScale={settings.arabicScale ?? 1}
-              textScale={settings.textScale ?? 1}
-            />
+      <Sheet open={adjustOpen} onClose={() => setAdjustOpen(false)} title="Adjust" description="Changes apply straight away.">
+        <Seg
+          label="Adjust"
+          className="mb-6"
+          value={adjustTab}
+          onChange={setAdjustTab}
+          options={[
+            { v: "feel", l: "Feel" },
+            { v: "text", l: "Text" },
+            { v: "beads", l: "Beads" },
+          ]}
+        />
+        {adjustTab === "feel" && <FeelControls rhythm={multi} tapAnywhere />}
+        {adjustTab === "beads" && <CounterStylePicker />}
+        {adjustTab === "text" && (
+          <>
+          {d && (
+            <div className="mb-6 rounded-2xl bg-sunken px-4 py-4">
+              <TransBlock
+                d={d}
+                lang={settings.lang}
+                fieldOrder={settings.dhikrFieldOrder}
+                fieldVisible={settings.dhikrFieldVisible}
+                collapsedMax={150}
+                fade="to-sunken"
+                arabicScale={settings.arabicScale ?? 1}
+                textScale={settings.textScale ?? 1}
+              />
+            </div>
+          )}
+          <div className="space-y-6">
+            <TextSizeControls />
+            <div>
+              <ControlLabel hint="Keep at least one">Show while counting</ControlLabel>
+              <FieldToggles />
+            </div>
+            <div>
+              <ControlLabel>Translation</ControlLabel>
+              <LanguageControl />
+            </div>
+            <div>
+              <ControlLabel>Arabic typeface</ControlLabel>
+              <ArabicFontPicker layout="rail" />
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              iconRight={ArrowRight}
+              className="-ml-2"
+              onClick={() => {
+                setAdjustOpen(false);
+                navigate("/settings?panel=display");
+              }}
+            >
+              Reorder lines in Settings
+            </Button>
           </div>
+          </>
         )}
-        <div className="space-y-6">
-          <TextSizeControls />
-          <div>
-            <ControlLabel hint="Keep at least one">Show while counting</ControlLabel>
-            <FieldToggles />
-          </div>
-          <div>
-            <ControlLabel>Translation</ControlLabel>
-            <LanguageControl />
-          </div>
-          <div>
-            <ControlLabel>Arabic typeface</ControlLabel>
-            <ArabicFontPicker layout="rail" />
-          </div>
-          <Button
-            variant="link"
-            size="sm"
-            iconRight={ArrowRight}
-            className="-ml-2"
-            onClick={() => {
-              setDisplayOpen(false);
-              navigate("/settings?panel=display");
-            }}
-          >
-            Reorder lines in Settings
-          </Button>
-        </div>
       </Sheet>
 
       <DhikrReader

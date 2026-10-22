@@ -9,6 +9,8 @@ import Toggle from "../common/Toggle";
 import { SetIcon } from "../common/ShelfArt";
 import { fmtTime } from "../../utils/prayerTimes";
 import { THEMES } from "../../constants/dhikrData";
+import FeelControls from "../settings/FeelControls";
+import Welcome, { StarPattern, Halo } from "./Welcome";
 import { haptic, sound } from "../../utils/feedback";
 
 const GOALS = [
@@ -19,6 +21,7 @@ const GOALS = [
 ];
 const LANGS = { en: "English", ur: "Urdu", both: "English and Urdu" };
 const REMINDER_IDS = ["morning", "evening", "sleep"];
+const STEPS = ["welcome", "name", "reading", "goal", "prayer", "reminders", "feel", "done"];
 
 // One of several choices, each a full-width row with a plain explanation.
 const Choices = ({ label, options, value, onChange }) => {
@@ -66,6 +69,9 @@ const Row = ({ label, hint, children }) => {
   );
 };
 
+// The same greeting Today shows, by the hour.
+const greeting = (h = new Date().getHours()) => (h < 5 ? "Peaceful night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+
 const Caption = ({ children }) => <p className="mb-2 text-sm font-medium text-ink">{children}</p>;
 
 export default function Onboarding({ onDone }) {
@@ -77,6 +83,7 @@ export default function Onboarding({ onDone }) {
   const [askedNotify, setAskedNotify] = useState(false);
   const [tries, setTries] = useState(0);
   const headingRef = useRef(null);
+  const nameRef = useRef(null);
 
   const p = settings.prayer || {};
   const hasLoc = p.location?.lat != null && p.location?.lng != null;
@@ -97,7 +104,6 @@ export default function Onboarding({ onDone }) {
     onDone();
   };
 
-  const STEPS = ["welcome", "name", "reading", "goal", "prayer", "reminders", "feel", "done"];
   const key = STEPS[step];
   const go = (d) => {
     if (d > 0) haptic("tap", { enabled: settings.haptics, strength: settings.hapticStrength });
@@ -106,7 +112,9 @@ export default function Onboarding({ onDone }) {
   };
 
   useEffect(() => {
-    if (step > 0) headingRef.current?.focus({ preventScroll: true });
+    // The name step is just a field, so it opens the keyboard; other steps lead with their question.
+    if (STEPS[step] === "name") nameRef.current?.focus({ preventScroll: true });
+    else if (step > 0) headingRef.current?.focus({ preventScroll: true });
   }, [step]);
 
   const next = async () => {
@@ -143,10 +151,6 @@ export default function Onboarding({ onDone }) {
   };
 
   const content = {
-    welcome: {
-      title: "Assalamu alaikum",
-      body: "Tasbeeh Go is a quiet companion for your daily dhikr. Answer a few short questions and it will be set up the way you like. It takes about a minute.",
-    },
     name: {
       art: "profile",
       title: "What should we call you?",
@@ -162,6 +166,7 @@ export default function Onboarding({ onDone }) {
             Your name
           </label>
           <TextInput
+            ref={nameRef}
             id="ob-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -170,6 +175,14 @@ export default function Onboarding({ onDone }) {
             maxLength={40}
             enterKeyHint="next"
           />
+          {name.trim() && (
+            <p className="mt-4 rounded-2xl bg-sunken px-4 py-3.5" aria-live="polite">
+              <span className="eyebrow block">On Today</span>
+              <span className="mt-1 block font-display text-[1.375rem] leading-snug text-ink [overflow-wrap:anywhere]">
+                {greeting()}, {name.trim().split(/\s+/)[0]}.
+              </span>
+            </p>
+          )}
         </form>
       ),
     },
@@ -331,35 +344,7 @@ export default function Onboarding({ onDone }) {
       body: "A light tick as you count, so you can keep your eyes closed. Try it below.",
       ui: (
         <div className="space-y-6">
-          <div>
-            <Caption>Vibration</Caption>
-            <Seg
-              label="Vibration"
-              value={settings.haptics ? settings.hapticStrength || "soft" : "off"}
-              onChange={(v) => setSettings((s) => ({ ...s, haptics: v !== "off", hapticStrength: v === "off" ? s.hapticStrength : v }))}
-              options={[
-                { v: "off", l: "Off" },
-                { v: "soft", l: "Soft" },
-                { v: "firm", l: "Firm" },
-              ]}
-            />
-          </div>
-          <div>
-            <Caption>Sound</Caption>
-            <Seg
-              label="Sound"
-              value={settings.sound ? settings.soundType || "bead" : "off"}
-              onChange={(v) => {
-                setSettings((s) => ({ ...s, sound: v !== "off", soundType: v === "off" ? s.soundType : v }));
-                if (v !== "off") sound("count", { type: v });
-              }}
-              options={[
-                { v: "off", l: "Off" },
-                { v: "bead", l: "Bead" },
-                { v: "click", l: "Click" },
-              ]}
-            />
-          </div>
+          <FeelControls rhythm={false} />
           <div className="flex flex-col items-center gap-2 pt-2">
             <button
               type="button"
@@ -402,23 +387,14 @@ export default function Onboarding({ onDone }) {
   }[key];
 
   const total = STEPS.length - 2; // the questions between welcome and done
-  const cta = key === "welcome" ? "Get started" : key === "done" ? "Go to Today" : "Continue";
+  const cta = key === "done" ? "Go to Today" : "Continue";
 
   const welcome = key === "welcome";
-  const art = (big) =>
-    welcome ? (
-      <img
-        src="/intro-onboard.webp"
-        alt=""
-        width={720}
-        height={783}
-        decoding="async"
-        fetchPriority="high"
-        className={big ? "h-auto w-[min(26rem,80%)] object-contain" : "mx-auto h-auto w-[min(17rem,68vw)] max-h-[40svh] object-contain"}
-      />
-    ) : (
-      <SetIcon name={content.art} size={big ? 200 : 80} tile={!big} />
-    );
+  const art = (big) => (
+    <Halo size={big ? 280 : 92}>
+      <SetIcon name={content.art} size={big ? 170 : 54} tile={false} />
+    </Halo>
+  );
   const ease = [0.22, 1, 0.36, 1];
   // Direction is read when each screen leaves, so Back slides the old one out to the right.
   const slide = {
@@ -426,8 +402,6 @@ export default function Onboarding({ onDone }) {
     center: { opacity: 1, x: 0, transition: { duration: 0.26, ease } },
     exit: (d) => ({ opacity: 0, x: d * -32, transition: { duration: 0.12, ease: [0.4, 0, 1, 1] } }),
   };
-  // The welcome arrives in a short sequence: picture, words, then the button.
-  const rise = (i) => (welcome ? { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.32, delay: 0.06 + i * 0.07, ease } } } : {});
 
   return (
     <div
@@ -438,6 +412,11 @@ export default function Onboarding({ onDone }) {
       style={{ ...(THEMES[settings.theme] || THEMES.qalam).light, colorScheme: "light" }}
       className="fixed inset-0 z-[80] flex bg-page text-ink"
     >
+      {welcome ? (
+        <Welcome questions={total} onBegin={next} onSkip={finish} />
+      ) : (
+      <>
+      <StarPattern className="h-56 lg:hidden" opacity={0.07} />
       {/* Desktop: the picture has its own panel. */}
       <aside aria-hidden="true" className="relative hidden flex-1 items-center justify-center overflow-hidden bg-page-2 lg:flex">
         <div className="absolute inset-0 bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--primary)_10%,transparent),transparent)]" />
@@ -456,7 +435,6 @@ export default function Onboarding({ onDone }) {
 
       <div className="flex min-w-0 flex-1 flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] lg:max-w-[36rem]">
         <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col overflow-hidden lg:max-w-none lg:justify-center lg:overflow-y-auto lg:px-10 lg:py-24">
-          {!welcome && (
             <header className="flex h-14 shrink-0 items-center gap-2 px-3 lg:absolute lg:inset-x-10 lg:top-6 lg:px-0">
               <div className="w-11">
                 <IconButton icon={ArrowLeft} label="Back" onClick={() => go(-1)} />
@@ -478,7 +456,6 @@ export default function Onboarding({ onDone }) {
                 )}
               </div>
             </header>
-          )}
 
           <div className="relative flex-1 overflow-y-auto overflow-x-hidden lg:flex-none lg:overflow-visible">
             <AnimatePresence mode="wait" initial={false} custom={dir}>
@@ -489,27 +466,24 @@ export default function Onboarding({ onDone }) {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className={`px-6 pb-10 lg:px-0 ${welcome ? "flex min-h-full flex-col justify-center text-center lg:text-left" : "pt-2 lg:pt-0"}`}
+                className="px-6 pt-2 pb-10 lg:px-0 lg:pt-0"
               >
-                <motion.div {...rise(0)} className={`relative lg:hidden ${welcome ? "" : "-ml-1"}`}>
-                  {welcome && <div aria-hidden="true" className="absolute inset-x-0 top-1/2 mx-auto aspect-square w-[min(22rem,90vw)] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--primary)_11%,transparent),transparent)]" />}
+                <div className="relative -ml-1 lg:hidden">
                   <div className="relative">{art(false)}</div>
-                </motion.div>
-                {!welcome && key !== "done" && <p className="eyebrow mt-6 lg:mt-0">Step {step} of {total}</p>}
+                </div>
+                {key !== "done" && <p className="eyebrow mt-6 lg:mt-0">Step {step} of {total}</p>}
                 <motion.h1
-                  {...rise(1)}
-                  id="ob-title"
+                                    id="ob-title"
                   ref={headingRef}
                   tabIndex={-1}
                   className={`font-display font-medium tracking-[-0.01em] text-ink outline-none [overflow-wrap:anywhere] ${
-                    welcome ? "mt-8 text-[2.75rem] leading-[1.04] lg:mt-0 lg:text-6xl" : `${key === "done" ? "mt-6 lg:mt-0" : "mt-2"} text-[2.25rem] leading-[1.08] lg:text-5xl`
+                    `${key === "done" ? "mt-6 lg:mt-0" : "mt-2"} text-[2.25rem] leading-[1.08] lg:text-5xl`
                   }`}
                 >
                   {content.title}
                 </motion.h1>
                 <motion.p
-                  {...rise(2)}
-                  className={`mt-3 text-[0.9375rem] leading-relaxed text-muted lg:text-base ${welcome ? "mx-auto max-w-[34ch] lg:mx-0" : "max-w-[44ch]"}`}
+                                    className={`mt-3 text-[0.9375rem] leading-relaxed text-muted lg:text-base max-w-[44ch]`}
                 >
                   {content.body}
                 </motion.p>
@@ -518,19 +492,16 @@ export default function Onboarding({ onDone }) {
             </AnimatePresence>
           </div>
 
-          <motion.footer {...rise(3)} className="relative shrink-0 px-6 pt-2 pb-5 lg:px-0 lg:pt-0 lg:pb-0">
+          <motion.footer className="relative shrink-0 px-6 pt-2 pb-5 lg:px-0 lg:pt-0 lg:pb-0">
             <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-page to-transparent lg:hidden" />
             <Button size="lg" block onClick={next}>
               {cta}
             </Button>
-            {welcome && (
-              <button type="button" onClick={finish} className="mt-2 min-h-11 w-full rounded-lg text-sm font-medium text-muted hover:text-ink">
-                Skip and use the defaults
-              </button>
-            )}
           </motion.footer>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
